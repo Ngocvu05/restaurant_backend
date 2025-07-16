@@ -34,7 +34,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/actuator/health",
-            "/chat/ws/**"
+            "/chat/ws/**",
+            "/chat/api/v1/messages/**",
+            "/chat/api/v1/rooms/**"
     );
 
     //  Use shared key generation logic

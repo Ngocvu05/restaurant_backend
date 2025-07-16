@@ -1,5 +1,6 @@
 package com.restaurant.chat_service.service.implement;
 
+import com.restaurant.chat_service.dto.ChatMessageRequest;
 import com.restaurant.chat_service.model.ChatRoom;
 import com.restaurant.chat_service.repository.ChatRoomRepository;
 import com.restaurant.chat_service.service.IChatRoomService;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -34,5 +36,35 @@ public class ChatRoomServiceImpl implements IChatRoomService {
                 .build();
 
         return chatRoomRepository.save(chatRoom);
+    }
+
+    @Override
+    public ChatRoom getOrCreateRoom(ChatMessageRequest request) {
+        String roomId = request.getChatRoomId();
+
+        return chatRoomRepository.findByRoomId(roomId).orElseGet(() -> {
+            ChatRoom.ChatRoomBuilder builder = ChatRoom.builder()
+                    .roomId(roomId)
+                    .name("Chat with AI")
+                    .type(ChatRoomType.AI)
+                    .description("AI assistant chat")
+                    .status(ChatRoomStatus.ACTIVE)
+                    .sessionId(request.getSessionId());
+
+            if (request.getUserId() != null) {
+                builder.userId(request.getUserId());
+            }
+
+            return chatRoomRepository.save(builder.build());
+        });
+    }
+
+    @Override
+    public void convertSessionToUser(String sessionId, Long userId) {
+        List<ChatRoom> rooms = chatRoomRepository.findBySessionIdAndUserId(sessionId, null);
+        for (ChatRoom room : rooms) {
+            room.setUserId(userId);
+            chatRoomRepository.save(room);
+        }
     }
 }

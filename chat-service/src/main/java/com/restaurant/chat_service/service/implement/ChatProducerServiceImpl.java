@@ -1,5 +1,7 @@
 package com.restaurant.chat_service.service.implement;
 
+import com.restaurant.chat_service.config.RabbitMQConfig;
+import com.restaurant.chat_service.dto.ChatMessageRequest;
 import com.restaurant.chat_service.service.IChatProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,5 +34,10 @@ public class ChatProducerServiceImpl implements IChatProducerService {
                 AI_ROUTING_KEY,
                 payload
         );
+    }
+
+    @Override
+    public void sendMessageToChatQueue(ChatMessageRequest request) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.CHAT_ROUTING_KEY, request);
     }
 }

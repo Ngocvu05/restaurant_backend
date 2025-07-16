@@ -1,10 +1,13 @@
 package com.restaurant.chat_service.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.restaurant.chat_service.status.SenderType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -16,6 +19,6 @@ public class ChatMessageRequest {
     private String chatRoomId;
     private String sessionId;
     private String message;
-    private String senderType;
-    private String timestamp;
+    private SenderType senderType;
+    private LocalDateTime timestamp;
 }

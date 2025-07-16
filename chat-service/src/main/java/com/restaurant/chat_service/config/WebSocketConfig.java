@@ -14,8 +14,6 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import java.security.Principal;
-
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -25,8 +23,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
-        //config.setApplicationDestinationPrefixes("/app");
-        config.setUserDestinationPrefix("/user");
+        config.setApplicationDestinationPrefixes("/app");
+        //config.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -43,8 +41,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
                 if (accessor != null && accessor.getCommand() == StompCommand.CONNECT) {
-                    Principal principal = (Principal) accessor.getSessionAttributes().get("principal");
-                    accessor.setUser(principal);
+                    String userId = accessor.getFirstNativeHeader("X-User-Id");
+                    String role = accessor.getFirstNativeHeader("X-User-Role");
+                    String subject = accessor.getFirstNativeHeader("X-User-Subject");
+
+                    //Can store user information in session attributes
+                    if (userId != null) {
+                        accessor.getSessionAttributes().put("userId", userId);
+                        accessor.getSessionAttributes().put("role", role);
+                        accessor.getSessionAttributes().put("subject", subject);
+                    }
                 }
                 return message;
             }

@@ -13,10 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -26,7 +25,7 @@ public class ChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final IChatProducerService chatProducerService;
 
-    @PostMapping("/send")
+    //@PostMapping("/send")
     public ResponseEntity<?> sendChatMessage(@RequestBody ChatMessageRequest request) {
         log.info("✅ ChatController - Received request from Postman {}", request);
 
@@ -56,5 +55,24 @@ public class ChatController {
             log.error("❌ ChatController - Lỗi khi gửi tin nhắn đến AI", e);
             return ResponseEntity.status(500).body("❌ Có lỗi xảy ra khi gửi tin nhắn");
         }
+    }
+
+    @PostMapping("/send")
+    public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
+                                      @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        log.info("✅ ChatController - Received message: {}", request);
+
+        if (userIdHeader != null) {
+            request.setUserId(Long.parseLong(userIdHeader));
+        }
+
+        chatProducerService.sendMessageToChatQueue(request);
+        return ResponseEntity.ok("Đã gửi message tới AI");
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getChatHistory(@RequestHeader("X-User-Id") Long userId) {
+        List<ChatRoom> rooms = chatRoomRepository.findByUserId(userId);
+        return ResponseEntity.ok(rooms);
     }
 }
