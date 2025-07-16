@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận đặt bàn</title>
+    <style>
+        /* Responsive table (cho mobile) */
+        @media only screen and (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            td {
+                text-align: left !important;
+                padding-left: 50% !important;
+            }
+        }
+    </style>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px;">
+<div style="max-width: 650px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background-color: #000; padding: 20px; text-align: center;">
+        <img src="https://i.ibb.co/fnMbd6K/klassy-logo.png" alt="Klassy Cafe" style="max-height: 60px;"/>
+    </div>
+
+    <div style="padding: 30px;">
+        <h2 style="color: #333;">Chào bạn <span style="color: #e58f00;" th:text="${fullName}"></span>,</h2>
+        <p>Cảm ơn bạn đã đặt bàn tại <strong>Klassy Cafe</strong>.</p>
+
+        <h3>🪑 Thông tin đặt bàn:</h3>
+        <ul>
+            <li><strong>Bàn:</strong> <span th:text="${tableName}"></span></li>
+            <li><strong>Số khách:</strong> <span th:text="${guests}"></span></li>
+            <li><strong>Thời gian:</strong> <span th:text="${bookingTime}"></span></li>
+        </ul>
+
+        <div th:utext="${preOrderTableHtml}"></div>
+
+        <p>Chúng tôi rất mong được đón tiếp bạn!</p>
+        <p style="color: #999; font-size: 13px;">Nếu bạn có câu hỏi, hãy liên hệ hotline hoặc fanpage Klassy Cafe.</p>
+    </div>
+
+    <div style="background-color: #333; color: #eee; padding: 15px; text-align: center; font-size: 13px;">
+        © 2025 Klassy Cafe. All rights reserved.
+    </div>
+</div>
+</body>
+</html>

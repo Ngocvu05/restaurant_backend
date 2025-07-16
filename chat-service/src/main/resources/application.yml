@@ -1,0 +1,213 @@
+spring:
+  application:
+    name: chat-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/restaurant_chat}
+    username: ${SPRING_DATASOURCE_USERNAME:restaurant_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:restaurant_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+        shutdown-timeout: 100ms
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:chat_user}
+    password: ${RABBITMQ_PASSWORD:chat_pass}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+    connection-timeout: 30000
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
+        multiplier: 2
+    listener:
+      simple:
+        missing-queues-fatal: false
+
+app:
+  ai:
+    system-prompt: ${APP_AI_SYSTEM_PROMPT:You are a helpful AI assistant for restaurant management. You can help with menu recommendations, order management, and customer service inquiries.}
+    max-tokens: ${APP_AI_MAX_TOKENS:512}
+    temperature: ${APP_AI_TEMPERATURE:0.7}
+    conversation-history-limit: ${APP_AI_CONVERSATION_HISTORY_LIMIT:10}
+
+  groq:
+    api-key: ${GROQ_API_KEY}
+    base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1/chat/completions}
+    model: ${GROQ_MODEL:llama3-8b-8192}
+    temperature: ${GROQ_TEMPERATURE:0.7}
+    max-tokens: ${GROQ_MAX_TOKENS:512}
+    system-prompt: ${APP_AI_SYSTEM_PROMPT:You are a helpful AI assistant for restaurant management...}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://discovery-service:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 30
+    healthcheck:
+      enabled: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    instance-id: ${spring.application.name}:${spring.profiles.active:default}:${server.port}
+
+server:
+  port: ${SERVER_PORT:8083}
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    max-connections: 8192
+
+logging:
+  level:
+    root: INFO
+    com.restaurant.management: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.ai: ${LOG_LEVEL_SPRING_AI:DEBUG}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_PARAMS:TRACE}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/<service-name>.log}
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 3GB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,env,configprops
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    redis:
+      enabled: true
+    rabbit:
+      enabled: true
+    db:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+websocket:
+  allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,https://restaurant-frontend.com}
+  message-broker:
+    enabled: true
+    relay-host: ${WEBSOCKET_RELAY_HOST:localhost}
+    relay-port: ${WEBSOCKET_RELAY_PORT:61613}
+    client-login: ${WEBSOCKET_CLIENT_LOGIN:guest}
+    client-passcode: ${WEBSOCKET_CLIENT_PASSCODE:guest}
+    system-login: ${WEBSOCKET_SYSTEM_LOGIN:guest}
+    system-passcode: ${WEBSOCKET_SYSTEM_PASSCODE:guest}
+    heartbeat-send-interval: 10000
+    heartbeat-receive-interval: 10000
+
+# Security configuration
+security:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+# Circuit breaker configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      huggingface-api:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      huggingface-api:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+  timelimiter:
+    instances:
+      huggingface-api:
+        timeout-duration: 30s
+
+# Cache configuration
+cache:
+  redis:
+    time-to-live: 300
+    cache-null-values: false
+    key-prefix: "chat-service:"
+  caffeine:
+    spec: "maximumSize=1000,expireAfterWrite=300s"
+
+# Rate limiting
+rate-limit:
+  enabled: true
+  requests-per-minute: 100
+  burst-capacity: 200
+

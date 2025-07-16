@@ -1,0 +1,395 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: restaurant
+      MYSQL_USER: restaurant_user
+      MYSQL_PASSWORD: restaurant_pass
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./init-chat-db.sql:/docker-entrypoint-initdb.d/init-chat-db.sql
+    networks:
+      - microservices-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: chat_user
+      RABBITMQ_DEFAULT_PASS: chat_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - microservices-network
+
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - microservices-network
+
+  discovery-service:
+    build:
+      context: ./discovery-service
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - microservices-network
+
+  user-service:
+    build:
+      context: ./backend-service
+    container_name: user-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/restaurant
+      - SPRING_DATASOURCE_USERNAME=restaurant_user
+      - SPRING_DATASOURCE_PASSWORD=restaurant_pass
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
+      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+      - JWT_SECRET=bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
+      - JWT_EXPIRATION=86400000
+      - LOG_FILE_PATH=./logs/<service-name>.log
+    ports:
+      - "8081:8081"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - microservices-network
+    volumes:
+      - ./logs:/logs
+
+  search-service:
+    build:
+      context: ./search-service
+    container_name: search-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/restaurant
+      - SPRING_DATASOURCE_USERNAME=restaurant_user
+      - SPRING_DATASOURCE_PASSWORD=restaurant_pass
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
+      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+      - JWT_SECRET=bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
+      - JWT_EXPIRATION=86400000
+      - LOG_FILE_PATH=./logs/<service-name>.log
+    ports:
+      - "8082:8082"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - ./logs:/logs
+    networks:
+      - microservices-network
+
+  chat-service:
+    build:
+      context: ./chat-service
+    container_name: chat-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+      # Database configuration
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/restaurant_chat?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=restaurant_user
+      - SPRING_DATASOURCE_PASSWORD=restaurant_pass
+
+      # Redis configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+
+      # RabbitMQ configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=chat_user
+      - RABBITMQ_PASSWORD=chat_pass
+      - RABBITMQ_VIRTUAL_HOST=/
+
+      # API AI configuration
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_BASE_URL=https://api.groq.com/openai/v1/chat/completions
+      - GROQ_MODEL=llama3-8b-8192
+      - GROQ_MAX_TOKENS=512
+      - GROQ_TEMPERATURE=0.7
+      - GROQ_TIMEOUT=30000
+
+      # AI Configuration
+      - APP_AI_SYSTEM_PROMPT=You are a helpful AI assistant for a restaurant management system. You can help users with questions about orders, menu items, reservations, and general restaurant operations. Be friendly, professional, and concise in your responses.
+      - APP_AI_MAX_TOKENS=500
+      - APP_AI_TEMPERATURE=0.7
+      - APP_AI_CONVERSATION_HISTORY_LIMIT=10
+
+      # Eureka Configuration
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
+      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+
+      # JWT Configuration
+      - JWT_SECRET=bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
+      - JWT_EXPIRATION=86400000
+
+      # WebSocket Configuration
+      - WEBSOCKET_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
+      - WEBSOCKET_RELAY_HOST=rabbitmq
+      - WEBSOCKET_RELAY_PORT=61613
+      - WEBSOCKET_CLIENT_LOGIN=guest
+      - WEBSOCKET_CLIENT_PASSCODE=guest
+      - WEBSOCKET_SYSTEM_LOGIN=guest
+      - WEBSOCKET_SYSTEM_PASSCODE=guest
+
+      # CORS Configuration
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
+
+      # Logging Configuration
+      - LOG_LEVEL_APP=INFO
+      - LOG_LEVEL_SPRING_AI=DEBUG
+      - LOG_LEVEL_SPRING_WEB=INFO
+      - LOG_LEVEL_HIBERNATE=WARN
+      - LOG_LEVEL_HIBERNATE_SQL=DEBUG
+      - LOG_LEVEL_HIBERNATE_PARAMS=TRACE
+      - LOG_LEVEL_SECURITY=INFO
+      - LOG_FILE_PATH=./logs/chat-service.log
+
+      # Server Configuration
+      - SERVER_PORT=8083
+
+      # JVM Options for better performance
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication
+    ports:
+      - "8083:8083"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    volumes:
+      - ./logs:/logs
+    networks:
+      - microservices-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      chat-service:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - JWT_SECRET=bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
+      - JWT_EXPIRATION=86400000
+      # Gateway routes for chat service
+      - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_URI=lb://chat-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_PREDICATES_PATH=/chat/**
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - microservices-network
+
+  # Optional: Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - microservices-network
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - microservices-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.0
+    container_name: logstash
+    volumes:
+      - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logs:/logs
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    depends_on:
+      - elasticsearch
+
+networks:
+  microservices-network:
+    driver: bridge
+    name: microservices-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+  esdata:
+  chat_logs:
+  prometheus_data:
+  grafana_data:

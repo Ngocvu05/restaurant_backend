@@ -1,0 +1,31 @@
+Chạy lần đầu (build image + khởi tạo):
+docker-compose up --build -d
+
+Lần sau chỉ cần:
+docker-compose up -d
+
+docker ps
+
+./gradlew clean build
+
+cài elasticsearch trên docker
+docker run -d -p 9200:9200 -e "discovery.type=single-node" elasticsearch:8.11.1
+
+
+./gradlew clean build -x test (skip test)
+
+Run application với ./gradlew bootRun
+
+./gradlew clean build -x test --refresh-dependencies
+
+
+# Chạy lại chat-service (dạng detached) - không sửa build.gradle
+docker-compose up -d chat-service
+
+# Chạy lại chat-service (dạng detached) - sửa build.gradle
+docker-compose build chat-service
+
+docker-compose restart chat-service
+
+View log service
+docker compose logs -f chat-service

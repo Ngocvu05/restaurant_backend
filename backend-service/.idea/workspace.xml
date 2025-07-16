@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1df1b29b-607a-49c8-a36d-b418a07a5e8f" name="Changes" comment="add pageable for notification, enhance security, modify storage type">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/admin/mapper/DishAdminMapper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/dto/BookingDetailResponseDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/implement/PaymentMapperImpl.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/QrPaymentService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/QrPaymentServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/admin/service/implement/AdminDishServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/admin/service/implement/AdminDishServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/common/PaymentMethod.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/common/PaymentMethod.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/common/PaymentStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/common/PaymentStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/controller/BookingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/controller/BookingController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/dto/ImageDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/dto/ImageDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/dto/UserDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/dto/UserDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/EntityToDTOMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/PaymentMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/implement/DishAdminMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/admin/mapper/implement/DishAdminMapperImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/implement/UserMapperImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/mapper/implement/UserMapperImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/BookingRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/BookingRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/ImageRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/ImageRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/PaymentRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/PaymentRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/BookingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/BookingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/ImageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/ImageService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/BookingServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/BookingServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/ImageServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/ImageServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/management/restaurant/service/implement/UserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/uploads/0f9d3114-bdc2-447f-a902-5df80f5cbd42_20240917_104951.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/uploads/82c27f1f-50c0-48b0-a619-8aaf6d8eccb1_20240917_104951.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/uploads/images/17b14149-3679-46b5-9d1d-0e4c11f7c6a1_salad.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/uploads/images/fa80b394-49a1-487d-b45a-bdadad585a3f_pizza.jpg" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="restaurant" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="restaurant" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="restaurant" type="f1a62948:ProjectNode" />
+                <item name="Dependencies" type="6de06a37:ExternalSystemViewDefaultContributor$MyDependenciesNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="restaurant" type="f1a62948:ProjectNode" />
+                <item name="Run Configurations" type="7b0102dc:RunConfigurationsNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Enum" />
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="Ngocvu05 &lt;ngocvu.ngoc06@gmail.com&gt;" />
+      </list>
+    </option>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;history&quot;: [
+    {
+      &quot;searchQuery&quot;: &quot;add&quot;,
+      &quot;state&quot;: &quot;OPEN&quot;,
+      &quot;assignee&quot;: &quot;Ngocvu05&quot;
+    },
+    {
+      &quot;searchQuery&quot;: &quot;add&quot;,
+      &quot;state&quot;: &quot;OPEN&quot;,
+      &quot;assignee&quot;: &quot;Ngocvu05&quot;,
+      &quot;author&quot;: &quot;Ngocvu05&quot;
+    }
+  ],
+  &quot;lastFilter&quot;: {
+    &quot;searchQuery&quot;: &quot;add&quot;,
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Ngocvu05&quot;,
+    &quot;author&quot;: &quot;Ngocvu05&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Ngocvu05/restaurant_management_v2.git&quot;,
+    &quot;accountId&quot;: &quot;ff79d57e-0630-4f70-b68e-535535f7a712&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="2ycYDirK7UAkkM7SLFXJ5iRLDo7" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+    <ConfirmationsSetting value="2" id="Remove" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Docker.docker-compose.yml.mysql: Compose Deployment.executor": "Run",
+    "Docker.docker-compose.yml: Compose Deployment.executor": "Run",
+    "Gradle.Build restaurant.executor": "Run",
+    "Gradle.D:/Project/project_restaurant/back_end/restaurant.executor": "Run",
+    "Gradle.Download Sources.executor": "Run",
+    "Gradle.Upgrade Gradle wrapper.executor": "Run",
+    "Gradle.restaurant [build].executor": "Run",
+    "Gradle.restaurant [clean].executor": "Run",
+    "Gradle.restaurant [dependencies].executor": "Run",
+    "Gradle.restaurant [test].executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.RestaurantApplication.executor": "Run",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/Project/project_restaurant/search-service",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "SDKs",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.26091954",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
+    ],
+    "com.intellij.ide.scratch.LRUPopupBuilder$1/": [
+      "MySQL"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Project\project_restaurant\back_end\restaurant\src\main\resources" />
+    </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.management.restaurant.security" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Spring Boot.RestaurantApplication">
+    <configuration name="restaurant [build]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="build" />
+          </list>
+        </option>
+        <option name="vmOptions" value="-Xshare:off" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="restaurant [clean]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="clean" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="restaurant [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="dependencies" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="RestaurantApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="restaurant.main" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.management.restaurant.RestaurantApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
+      <deployment type="docker-compose.yml">
+        <settings />
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml.mysql: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="mysql" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Docker.docker-compose.yml: Compose Deployment" />
+      <item itemvalue="Docker.docker-compose.yml.mysql: Compose Deployment" />
+      <item itemvalue="Gradle.restaurant [dependencies]" />
+      <item itemvalue="Gradle.restaurant [build]" />
+      <item itemvalue="Gradle.restaurant [clean]" />
+      <item itemvalue="Spring Boot.RestaurantApplication" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Docker.docker-compose.yml.mysql: Compose Deployment" />
+        <item itemvalue="Docker.docker-compose.yml: Compose Deployment" />
+        <item itemvalue="Gradle.restaurant [dependencies]" />
+        <item itemvalue="Gradle.restaurant [clean]" />
+        <item itemvalue="Gradle.restaurant [build]" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-a94e463ab2e7-intellij.indexing.shared.core-IU-243.26574.91" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.26574.91" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="StructureViewState">
+    <option name="selectedTab" value="Logical" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1df1b29b-607a-49c8-a36d-b418a07a5e8f" name="Changes" comment="" />
+      <created>1750135210967</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1750135210967</updated>
+      <workItem from="1750135212210" duration="360000" />
+      <workItem from="1750141341596" duration="11838000" />
+      <workItem from="1750211371439" duration="473000" />
+      <workItem from="1750211893903" duration="21025000" />
+      <workItem from="1750249678666" duration="837000" />
+      <workItem from="1750250749848" duration="912000" />
+      <workItem from="1750253617613" duration="4977000" />
+      <workItem from="1750315071081" duration="2762000" />
+      <workItem from="1750384522782" duration="9955000" />
+      <workItem from="1750423581679" duration="496000" />
+      <workItem from="1750425611182" duration="1130000" />
+      <workItem from="1750686181171" duration="1088000" />
+      <workItem from="1750687509271" duration="1177000" />
+      <workItem from="1750689481615" duration="654000" />
+      <workItem from="1750690167567" duration="777000" />
+      <workItem from="1750692082876" duration="496000" />
+      <workItem from="1750728228005" duration="16962000" />
+      <workItem from="1750814898800" duration="16658000" />
+      <workItem from="1750852100087" duration="8344000" />
+      <workItem from="1750901513058" duration="12816000" />
+      <workItem from="1750988966624" duration="17332000" />
+      <workItem from="1751105977361" duration="395000" />
+      <workItem from="1751117807820" duration="9211000" />
+      <workItem from="1751247381544" duration="21144000" />
+      <workItem from="1751333105698" duration="19536000" />
+      <workItem from="1751421614224" duration="78000" />
+      <workItem from="1751421742895" duration="694000" />
+      <workItem from="1751422453381" duration="19336000" />
+      <workItem from="1751459157843" duration="3128000" />
+      <workItem from="1751470903988" duration="3870000" />
+      <workItem from="1751506379274" duration="4549000" />
+      <workItem from="1751512750767" duration="12132000" />
+    </task>
+    <task id="LOCAL-00001" summary="commit from asus">
+      <option name="closed" value="true" />
+      <created>1750325137774</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1750325137774</updated>
+    </task>
+    <task id="LOCAL-00002" summary="WIP: commit tạm để pull">
+      <option name="closed" value="true" />
+      <created>1750686214022</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1750686214022</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add spring security">
+      <option name="closed" value="true" />
+      <created>1750747887033</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1750747887033</updated>
+    </task>
+    <task id="LOCAL-00004" summary="add spring security">
+      <option name="closed" value="true" />
+      <created>1750757376603</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1750757376603</updated>
+    </task>
+    <task id="LOCAL-00005" summary="add admin">
+      <option name="closed" value="true" />
+      <created>1750925527367</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1750925527367</updated>
+    </task>
+    <task id="LOCAL-00006" summary="add admin">
+      <option name="closed" value="true" />
+      <created>1750926316851</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1750926316851</updated>
+    </task>
+    <task id="LOCAL-00007" summary="add admin">
+      <option name="closed" value="true" />
+      <created>1750930925992</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1750930925992</updated>
+    </task>
+    <task id="LOCAL-00008" summary="add admin">
+      <option name="closed" value="true" />
+      <created>1751106044614</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1751106044614</updated>
+    </task>
+    <task id="LOCAL-00009" summary="add websocket">
+      <option name="closed" value="true" />
+      <created>1751277171331</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1751277171331</updated>
+    </task>
+    <task id="LOCAL-00010" summary="add websocket done">
+      <option name="closed" value="true" />
+      <created>1751363263311</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1751363263311</updated>
+    </task>
+    <task id="LOCAL-00011" summary="add pageable for notification, enhance security, modify storage type">
+      <option name="closed" value="true" />
+      <created>1751449559431</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1751449559431</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="commit from asus" />
+    <MESSAGE value="WIP: commit tạm để pull" />
+    <MESSAGE value="add spring security" />
+    <MESSAGE value="add template, avtar" />
+    <MESSAGE value="add admin" />
+    <MESSAGE value="add websocket" />
+    <MESSAGE value="add websocket done" />
+    <MESSAGE value="add pagable for notification, enhance security, modify storage type" />
+    <MESSAGE value="add pageable for notification, enhance security, modify storage type" />
+    <option name="LAST_COMMIT_MESSAGE" value="add pageable for notification, enhance security, modify storage type" />
+  </component>
+  <component name="XDebuggerManager">
+    <pin-to-top-manager>
+      <pinned-members>
+        <PinnedItemInfo parentTag="com.management.restaurant.admin.dto.DishAdminDTO" memberName="imageUrls" />
+        <PinnedItemInfo parentTag="jdk.proxy4.$Proxy149" memberName="h" />
+      </pinned-members>
+    </pin-to-top-manager>
+    <watches-manager>
+      <configuration name="SpringBootApplicationConfigurationType">
+        <watch expression="getAvatarUrl(user)" language="JAVA" />
+        <watch expression="user" language="JAVA" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

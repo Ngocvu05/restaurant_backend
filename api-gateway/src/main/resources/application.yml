@@ -1,0 +1,105 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  main:
+    web-application-type: reactive
+    allow-bean-definition-overriding: true
+
+  cloud:
+    gateway:
+      routes:
+        - id: user-service-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/users/api/v1/auth/**
+          filters:
+            - StripPrefix=1
+            - RemoveRequestHeader=Authorization
+            - RemoveRequestHeader=authorization
+
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/users/**
+          filters:
+            - StripPrefix=1
+
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=/search/**
+          filters:
+            - StripPrefix=1
+
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/chat/**
+          filters:
+            - StripPrefix=1
+      globals:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      discovery:
+        locator:
+          enabled: false
+
+      default-filters:
+        - PreserveHostHeader
+
+  web:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      allowed-headers: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  secret: bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
+  expiration: JWT_EXPIRATION:86400000
+  algorithm: HS256
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/api-gateway.log}
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 3GB
