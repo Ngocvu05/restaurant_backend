@@ -247,12 +247,12 @@ INSERT INTO `notifications` VALUES (23, 'Hello Admin', 1, '2025-07-01 14:17:46',
 INSERT INTO `notifications` VALUES (24, 'Hello Admin', 1, '2025-07-01 14:20:35', 1, 'new notification', NULL);
 INSERT INTO `notifications` VALUES (25, 'Hello Admin', 1, '2025-07-01 14:25:10', 1, 'New Notification', NULL);
 INSERT INTO `notifications` VALUES (26, 'Hello Admin', 1, '2025-07-01 14:25:19', 1, 'New Notification', NULL);
-INSERT INTO `notifications` VALUES (28, 'Người dùng mới đã tạo tài khoản: testpush1', 1, '2025-07-01 16:08:42', 1, 'New Account', NULL);
-INSERT INTO `notifications` VALUES (29, 'Người dùng mới đã tạo tài khoản: testpush1', 0, '2025-07-01 16:08:42', 3, 'New Account', NULL);
-INSERT INTO `notifications` VALUES (30, 'Người dùng customer đã đặt bàn.', 1, '2025-07-01 16:15:25', 1, 'Đặt bàn mới', NULL);
-INSERT INTO `notifications` VALUES (31, 'Người dùng customer đã đặt bàn.', 0, '2025-07-01 16:15:25', 3, 'Đặt bàn mới', NULL);
-INSERT INTO `notifications` VALUES (32, 'Admin đã thêm một bàn mới.', 1, '2025-07-02 15:28:29', NULL, 'Thêm ảnh mới', 1);
-INSERT INTO `notifications` VALUES (33, 'Admin đã thêm một bàn mới.', 0, '2025-07-02 15:28:29', NULL, 'Thêm ảnh mới', 3);
+INSERT INTO `notifications` VALUES (28, 'Người dùng mới đã tạo tài khoản: testpush1', 1, '2025-07-01 16:08:42', 1, 'New Account', 1);
+INSERT INTO `notifications` VALUES (29, 'Người dùng mới đã tạo tài khoản: testpush1', 0, '2025-07-01 16:08:42', 3, 'New Account', 1);
+INSERT INTO `notifications` VALUES (30, 'Người dùng customer đã đặt bàn.', 1, '2025-07-01 16:15:25', 1, 'Đặt bàn mới', 1);
+INSERT INTO `notifications` VALUES (31, 'Người dùng customer đã đặt bàn.', 0, '2025-07-01 16:15:25', 3, 'Đặt bàn mới', 1);
+INSERT INTO `notifications` VALUES (32, 'Admin đã thêm một bàn mới.', 1, '2025-07-02 15:28:29', 1, 'Thêm ảnh mới', 1);
+INSERT INTO `notifications` VALUES (33, 'Admin đã thêm một bàn mới.', 0, '2025-07-02 15:28:29', 1, 'Thêm ảnh mới', 3);
 INSERT INTO `notifications` VALUES (34, 'Người dùng mới đã tạo tài khoản: newuser', 1, '2025-07-02 15:33:56', NULL, 'New Account', 1);
 INSERT INTO `notifications` VALUES (35, 'Người dùng mới đã tạo tài khoản: newuser', 0, '2025-07-02 15:33:56', NULL, 'New Account', 3);
 
@@ -441,22 +441,7 @@ INSERT INTO `users` VALUES (6, 'Thu Duc', '2025-07-02 15:33:53.182822', 'ngocvu.
 DROP PROCEDURE IF EXISTS `generate_dishes`;
 delimiter ;;
 CREATE PROCEDURE `generate_dishes`()
-BEGIN
-  DECLARE i INT DEFAULT 1;
-  WHILE i <= 90 DO
-    INSERT INTO dishes (name, description, price, available, category, created_at, order_count)
-    VALUES (
-      CONCAT('Món ăn số ', i+10),
-      CONCAT('Mô tả món ăn số ', i+10),
-      ROUND(30000 + (RAND() * 20000), -3),
-      TRUE,
-      ELT(1 + FLOOR(RAND() * 3), 'Món chính', 'Khai vị', 'Đồ uống'),
-      NOW(),
-      FLOOR(RAND() * 50)
-    );
-    SET i = i + 1;
-  END WHILE;
-END
+
 ;;
 delimiter ;
 
