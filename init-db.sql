@@ -11,7 +11,7 @@
  Target Server Version : 80405 (8.4.5)
  File Encoding         : 65001
 
- Date: 09/07/2025 14:08:05
+ Date: 16/07/2025 16:48:54
 */
 
 SET NAMES utf8mb4;
@@ -46,6 +46,71 @@ INSERT INTO `bookings` VALUES (2, '2025-06-30 08:36:27.807000', 'hahah', 2, 0, '
 INSERT INTO `bookings` VALUES (3, '2025-06-30 08:43:40.464000', 'kakak', 2, 0, 'CANCELLED', 309996.00, 1, 2);
 INSERT INTO `bookings` VALUES (4, '2025-06-30 08:52:04.727000', 'test qr code', 2, 0, 'RESERVED', 743000.00, 1, 2);
 INSERT INTO `bookings` VALUES (5, '2025-07-01 09:15:01.543000', 'aaa', 2, 0, 'PENDING', 60000.00, 1, 2);
+
+-- ----------------------------
+-- Table structure for chat_messages
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_messages`;
+CREATE TABLE `chat_messages`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `chat_room_id` bigint NOT NULL,
+  `message_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `sender_id` bigint NOT NULL,
+  `sender_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `sender_type` enum('USER','AI','SYSTEM') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'USER',
+  `parent_message_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `type` enum('TEXT','IMAGE','FILE','SYSTEM') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'TEXT',
+  `status` enum('SENT','DELIVERED','READ','FAILED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'SENT',
+  `is_ai_generated` tinyint(1) NULL DEFAULT 0,
+  `is_read` tinyint(1) NULL DEFAULT 0,
+  `deleted` tinyint(1) NULL DEFAULT 0,
+  `metadata` json NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `message_id`(`message_id` ASC) USING BTREE,
+  INDEX `parent_message_id`(`parent_message_id` ASC) USING BTREE,
+  INDEX `idx_chat_room_id`(`chat_room_id` ASC) USING BTREE,
+  INDEX `idx_message_id`(`message_id` ASC) USING BTREE,
+  INDEX `idx_sender_id`(`sender_id` ASC) USING BTREE,
+  INDEX `idx_created_at`(`created_at` ASC) USING BTREE,
+  INDEX `idx_sender_type`(`sender_type` ASC) USING BTREE,
+  INDEX `idx_deleted`(`deleted` ASC) USING BTREE,
+  INDEX `idx_messages_room_created`(`chat_room_id` ASC, `created_at` DESC) USING BTREE,
+  INDEX `idx_messages_unread`(`chat_room_id` ASC, `is_read` ASC, `created_at` DESC) USING BTREE,
+  CONSTRAINT `chat_messages_ibfk_1` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_rooms` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `chat_messages_ibfk_2` FOREIGN KEY (`parent_message_id`) REFERENCES `chat_messages` (`message_id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_messages
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for chat_rooms
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_rooms`;
+CREATE TABLE `chat_rooms`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `session_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `active` tinyint(1) NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_session`(`user_id` ASC, `session_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_session_id`(`session_id` ASC) USING BTREE,
+  INDEX `idx_active`(`active` ASC) USING BTREE,
+  INDEX `idx_rooms_user_updated`(`user_id` ASC, `updated_at` DESC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_rooms
+-- ----------------------------
+INSERT INTO `chat_rooms` VALUES (1, 1, 'default_session', 'Default Chat Room', 1, '2025-07-16 08:30:46', '2025-07-16 08:30:46');
 
 -- ----------------------------
 -- Table structure for dishes
