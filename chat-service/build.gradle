@@ -59,6 +59,9 @@ dependencies {
 	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 	implementation 'com.github.ben-manes.caffeine:jcache:3.1.8'
 
+	//Prometheus metrics -> monitoring
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.amqp:spring-rabbit-test'
 }

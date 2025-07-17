@@ -14,6 +14,7 @@ import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.repository.UserRoleRepository;
 import com.management.restaurant.service.AuthService;
 import com.management.restaurant.security.JwtService;
+import com.management.restaurant.service.ChatEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +37,8 @@ public class AuthServiceImpl implements AuthService {
     private FileStorageService fileStorageService;
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+    @Autowired
+    private ChatEventProducer chatEventProducer;
 
     @Override
     public AuthResponse register(RegisterRequest request, MultipartFile avatarFile) {
@@ -78,6 +81,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtService.generateToken(user);
+        chatEventProducer.sendSessionConversion(null, user.getId());
         return new AuthResponse(token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
     }
 

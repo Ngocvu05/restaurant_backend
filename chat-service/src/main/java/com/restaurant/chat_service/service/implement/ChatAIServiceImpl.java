@@ -35,11 +35,20 @@ public class ChatAIServiceImpl implements IChatAIService {
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        // 👉 Prompt: giữ nguyên ngôn ngữ khi phản hồi
+        String prompt = """
+            Bạn là trợ lý AI. Đây là tin nhắn từ người dùng:
+
+            "%s"
+
+            Hãy phản hồi một cách tự nhiên và giữ nguyên ngôn ngữ người dùng sử dụng (ví dụ: nếu là tiếng Việt thì trả lời tiếng Việt, nếu là tiếng Anh thì trả lời tiếng Anh).
+        """.formatted(userInput.trim());
+
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
         requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", props.getSystemPrompt()),
-                Map.of("role", "user", "content", userInput)
+                Map.of("role", "user", "content", prompt)
         ));
         requestBody.put("temperature", props.getTemperature());
         requestBody.put("max_tokens", props.getMaxTokens());
@@ -52,6 +61,7 @@ public class ChatAIServiceImpl implements IChatAIService {
             );
 
             if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("✅ Prompt gửi AI:\n{}", prompt);
                 return extractTextFromGroqResponse(response.getBody());
             } else {
                 log.error("❌ Groq API trả về lỗi: {}", response.getStatusCode());
@@ -62,7 +72,6 @@ public class ChatAIServiceImpl implements IChatAIService {
             return "Xin lỗi, AI đang bận. Vui lòng thử lại sau.";
         }
     }
-
 
     private String extractTextFromGroqResponse(String responseJson) {
         try {

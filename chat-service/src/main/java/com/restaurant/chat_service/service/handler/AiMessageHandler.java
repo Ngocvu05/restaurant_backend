@@ -22,7 +22,7 @@ public class AiMessageHandler implements IChatMessageHandler {
 
     @Override
     public boolean supports(SenderType senderType) {
-        return senderType == SenderType.ASSISTANT;
+        return senderType == SenderType.AI;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class AiMessageHandler implements IChatMessageHandler {
                 .senderName(senderName)
                 .content("⏳ AI is processing...")
                 .type(MessageType.AI_RESPONSE)
-                .senderType(SenderType.ASSISTANT)
+                .senderType(SenderType.AI)
                 .isRead(false)
                 .isAiGenerated(true)
                 .build();

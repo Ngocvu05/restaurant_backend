@@ -1,5 +1,6 @@
 package com.restaurant.chat_service.dto;
 
+import com.restaurant.chat_service.status.SenderType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,4 +15,5 @@ public class ChatMessageResponse {
     private String sessionId;
     private Long userId;
     private Long chatRoomId;
+    private SenderType senderType;
 }

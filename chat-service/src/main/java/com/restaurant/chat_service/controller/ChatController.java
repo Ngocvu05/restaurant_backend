@@ -38,7 +38,7 @@ public class ChatController {
                                 .sessionId(request.getSessionId())
                                 .userId(request.getUserId())
                                 .name("Chat with AI")
-                                .type(ChatRoomType.AI)
+                                .type(ChatRoomType.AI_SUPPORT)
                                 .description("AI assistant chat")
                                 .status(ChatRoomStatus.ACTIVE)
                                 .build();

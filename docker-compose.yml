@@ -39,7 +39,7 @@ services:
     networks:
       - microservices-network
 
-  rabbitmq:
+  rabbitmq :
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     restart: always
@@ -112,12 +112,20 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/restaurant
       - SPRING_DATASOURCE_USERNAME=restaurant_user
       - SPRING_DATASOURCE_PASSWORD=restaurant_pass
+
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+      # RabbitMQ configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=chat_user
+      - RABBITMQ_PASSWORD=chat_pass
+      - RABBITMQ_VIRTUAL_HOST=/
+     # JWT configuration
       - JWT_SECRET=bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
       - JWT_EXPIRATION=86400000
       - LOG_FILE_PATH=./logs/<service-name>.log
@@ -339,8 +347,9 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3001:3001"
+      - "3001:3000"
     environment:
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana

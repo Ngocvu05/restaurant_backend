@@ -19,6 +19,8 @@ public class RabbitMQConfig {
     public static final String CHAT_ROUTING_KEY = "chat.message";
     public static final String CHAT_RESPONSE_ROUTING_KEY = "chat.response";
 
+    public static final String CONVERT_SESSION_ROUTING_KEY = "chat.convert.session";
+
     // Exchange
     @Bean
     public TopicExchange chatExchange() {
@@ -30,6 +32,12 @@ public class RabbitMQConfig {
     public Queue chatQueue() {
         return new Queue(CHAT_QUEUE, true);
     }
+
+    @Bean
+    public Queue sessionConversionQueue() {
+        return new Queue(CONVERT_SESSION_ROUTING_KEY, true); // durable = true
+    }
+
 
     // Chat Binding
     @Bean
@@ -73,5 +81,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(responseQueue())
                 .to(chatExchange())
                 .with(CHAT_RESPONSE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding bindingSessionConversionQueue() {
+        return BindingBuilder
+                .bind(sessionConversionQueue())
+                .to(chatExchange())
+                .with(CONVERT_SESSION_ROUTING_KEY);
     }
 }

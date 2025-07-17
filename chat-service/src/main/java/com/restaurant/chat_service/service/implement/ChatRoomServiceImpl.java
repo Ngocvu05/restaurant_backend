@@ -30,7 +30,7 @@ public class ChatRoomServiceImpl implements IChatRoomService {
                 .name("Chat with AI - " + userId)
                 .userId(userId)
                 .sessionId(sessionId)
-                .type(ChatRoomType.AI)
+                .type(ChatRoomType.AI_SUPPORT)
                 .status(ChatRoomStatus.ACTIVE)
                 .description("AI assistant chat")
                 .build();
@@ -41,21 +41,27 @@ public class ChatRoomServiceImpl implements IChatRoomService {
     @Override
     public ChatRoom getOrCreateRoom(ChatMessageRequest request) {
         String roomId = request.getChatRoomId();
+        Long userId = request.getUserId();
 
         return chatRoomRepository.findByRoomId(roomId).orElseGet(() -> {
+            // If roomId is not provided, generate a new one
+            if (roomId == null || roomId.isBlank()) {
+                throw new IllegalArgumentException("Session ID is required to create or get chat room");
+            }
+
             ChatRoom.ChatRoomBuilder builder = ChatRoom.builder()
                     .roomId(roomId)
                     .name("Chat with AI")
-                    .type(ChatRoomType.AI)
+                    .type(ChatRoomType.AI_SUPPORT)
                     .description("AI assistant chat")
                     .status(ChatRoomStatus.ACTIVE)
                     .sessionId(request.getSessionId());
-
-            if (request.getUserId() != null) {
-                builder.userId(request.getUserId());
+            // If userId is provided, set it in the chat room
+            if (userId != null) {
+                builder.userId(userId);
             }
-
             return chatRoomRepository.save(builder.build());
+
         });
     }
 
