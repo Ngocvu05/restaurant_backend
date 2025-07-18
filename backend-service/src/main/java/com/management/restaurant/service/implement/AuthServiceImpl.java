@@ -68,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
+        return new AuthResponse(null,token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
     }
 
     @Override
@@ -82,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtService.generateToken(user);
         chatEventProducer.sendSessionConversion(null, user.getId());
-        return new AuthResponse(token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
+        return new AuthResponse(user.getId(),token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = tokenEntity.getUser();
         String newAccessToken = jwtService.generateToken(user);
-        return new AuthResponse(newAccessToken, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), refreshToken);
+        return new AuthResponse(null,newAccessToken, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), refreshToken);
     }
 
 

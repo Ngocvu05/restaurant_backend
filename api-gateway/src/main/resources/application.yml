@@ -51,6 +51,8 @@ spring:
               - DELETE
               - OPTIONS
             allowedHeaders: "*"
+            exposedHeaders:
+              - "X-User-Id"
             allowCredentials: true
             maxAge: 3600
 
@@ -60,12 +62,6 @@ spring:
 
       default-filters:
         - PreserveHostHeader
-
-  web:
-    cors:
-      allowed-origins: "*"
-      allowed-methods: "*"
-      allowed-headers: "*"
 
 eureka:
   client:
