@@ -82,7 +82,7 @@ public class ChatAIServiceImpl implements IChatAIService {
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // 👉 Prompt: giữ nguyên ngôn ngữ khi phản hồi
+        //  Prompt: response your language
         String prompt = """
             Bạn là trợ lý AI. Đây là tin nhắn từ người dùng:
 
@@ -108,14 +108,14 @@ public class ChatAIServiceImpl implements IChatAIService {
             );
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("✅ Prompt gửi AI:\n{}", prompt);
+                log.info("✅Guest Chat -  Prompt gửi AI:\n{}", prompt);
                 return extractTextFromGroqResponse(response.getBody());
             } else {
-                log.error("❌ Groq API trả về lỗi: {}", response.getStatusCode());
+                log.error("❌ Guest Chat -   Groq API trả về lỗi: {}", response.getStatusCode());
                 return "Không thể phản hồi từ AI.";
             }
         } catch (Exception e) {
-            log.error("❌ Lỗi khi gọi Groq API", e);
+            log.error("❌ Guest Chat -  Lỗi khi gọi Groq API", e);
             return "Xin lỗi, AI đang bận. Vui lòng thử lại sau.";
         }
     }

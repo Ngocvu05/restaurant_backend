@@ -34,11 +34,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/actuator/health",
-            "/chat/ws/**",
+            "/chat/ws",           // ✅ WebSocket endpoint
+            "/chat/ws/**",        // ✅ WebSocket với SockJS
+            "/chat/api/v1/guest", // ✅ Guest endpoints
             "/chat/api/v1/guest/**"
     );
 
-    //  Use shared key generation logic
+    // Use shared key generation logic
     private Key getSignKey() {
         return JwtKeyUtil.getSigningKey(jwtSecret);
     }
@@ -46,18 +48,33 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-        log.info(">>> JWT Filter - Path: {}", path);
+        String method = exchange.getRequest().getMethod().name();
 
-        // Check if the path is a public endpoint
+        log.info(">>> JWT Filter - Path: {}, Method: {}", path, method);
+
+        // ✅ Always allow OPTIONS requests (CORS preflight)
+        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
+            log.info(">>> OPTIONS request detected, allowing without JWT validation");
+            return chain.filter(exchange);
+        }
+
+        // ✅ Check if the path is a public endpoint
         boolean isPublicEndpoint = PUBLIC_URLS.stream()
-                .anyMatch(publicUrl -> path.equals(publicUrl) || path.startsWith(publicUrl + "/"));
+                .anyMatch(publicUrl -> {
+                    boolean matches = path.equals(publicUrl) || path.startsWith(publicUrl);
+                    if (matches) {
+                        log.info(">>> Public endpoint matched: {} for path: {}", publicUrl, path);
+                    }
+                    return matches;
+                });
 
         if (isPublicEndpoint) {
             log.info(">>> Public endpoint detected, skipping JWT validation: {}", path);
+
             // Remove the Authorization header before forwarding to downstream service
             ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
                     .headers(headers -> headers.remove("Authorization"))
-                    .headers(headers -> headers.remove("authorization") )
+                    .headers(headers -> headers.remove("authorization"))
                     .build();
 
             ServerWebExchange modifiedExchange = exchange.mutate()
@@ -67,15 +84,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(modifiedExchange);
         }
 
-        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
-            return chain.filter(exchange);
-        }
-
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
         log.info(">>> JWT Filter - Authorization header present: {}", authHeader != null);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn(">>> Missing or invalid Authorization header");
+            log.warn(">>> Missing or invalid Authorization header for path: {}", path);
             return handleUnauthorized(exchange, "Missing or invalid Authorization header");
         }
 
@@ -137,6 +150,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
+
+        // ✅ Add CORS headers to error response
+        response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
         response.getHeaders().add("Content-Type", "application/json");
 
         String body = String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message);
@@ -147,6 +164,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> handleInternalServerError(ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        // ✅ Add CORS headers to error response
+        response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
         response.getHeaders().add("Content-Type", "application/json");
 
         String body = "{\"error\":\"Internal Server Error\",\"message\":\"Token validation failed\"}";

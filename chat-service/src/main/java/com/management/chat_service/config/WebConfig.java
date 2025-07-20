@@ -12,12 +12,12 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
+                /*registry.addMapping("/**")
                         .allowedOriginPatterns("http://localhost:3000") //Frontend Origin
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*") // hoặc: .allowedHeaders("Authorization", "X-User-Id", ...)
                         .exposedHeaders("X-User-Id", "X-User-Role")
-                        .allowCredentials(true); // nếu bạn dùng cookie
+                        .allowCredentials(true); // nếu bạn dùng cookie*/
             }
         };
     }

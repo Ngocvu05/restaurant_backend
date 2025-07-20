@@ -40,21 +40,6 @@ spring:
             - Path=/chat/**
           filters:
             - StripPrefix=1
-      globals:
-        cors-configurations:
-          '[/**]':
-            allowedOriginPatterns: "http://localhost:3000"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            exposedHeaders:
-              - "X-User-Id"
-            allowCredentials: true
-            maxAge: 3600
 
       discovery:
         locator:

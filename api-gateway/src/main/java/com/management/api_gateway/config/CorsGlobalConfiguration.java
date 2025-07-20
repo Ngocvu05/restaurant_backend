@@ -17,16 +17,22 @@ public class CorsGlobalConfiguration {
     public CorsWebFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Cho phép credentials (cookies, authorization headers)
+        // ✅ Allow credentials (cookies, authorization headers)
         config.setAllowCredentials(true);
 
-        // ✅ Cấu hình origins cụ thể
-        config.setAllowedOriginPatterns(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+        // ✅ Allow specific origins (không dùng allowedOrigins với allowCredentials=true)
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:8080"
+        ));
 
-        // ✅ Cho phép tất cả methods
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
+        // ✅ Allow all common HTTP methods
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"
+        ));
 
-        // ✅ Cấu hình headers cụ thể
+        // ✅ Allow specific headers
         config.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
@@ -34,13 +40,21 @@ public class CorsGlobalConfiguration {
                 "Accept",
                 "Origin",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+                "Access-Control-Request-Headers",
+                "X-User-Id",
+                "X-User-Role"
         ));
 
-        // ✅ Expose headers cần thiết
-        config.setExposedHeaders(List.of("Authorization", "Content-Type", "X-Total-Count"));
+        // ✅ Expose headers that frontend might need
+        config.setExposedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Total-Count",
+                "X-User-Id",
+                "X-User-Role"
+        ));
 
-        // ✅ Thêm max age để tránh preflight requests liên tục
+        // ✅ Cache preflight response for 1 hour
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

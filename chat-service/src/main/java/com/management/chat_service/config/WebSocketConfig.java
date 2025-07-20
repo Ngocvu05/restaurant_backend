@@ -17,43 +17,38 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    @Value("${websocket.allowed-origins}")
-    private String allowedOrigins;
-
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
+        // ✅ Enable simple broker for topics
         config.enableSimpleBroker("/topic", "/queue");
+
+        // ✅ Set application destination prefix
         config.setApplicationDestinationPrefixes("/app");
-        //config.setUserDestinationPrefix("/user");
+
+        // ✅ Set user destination prefix
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // ✅ Register STOMP endpoint with SockJS support
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins.split(","))
-                .withSockJS();
-    }
+                .setAllowedOriginPatterns(
+                        "http://localhost:3000",
+                        "http://127.0.0.1:3000",
+                        "http://localhost:8080"
+                )
+                .withSockJS()
+                .setHeartbeatTime(25000) // 25 seconds
+                .setDisconnectDelay(5000) // 5 seconds
+                .setSessionCookieNeeded(false);
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new ChannelInterceptor() {
-            @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (accessor != null && accessor.getCommand() == StompCommand.CONNECT) {
-                    String userId = accessor.getFirstNativeHeader("X-User-Id");
-                    String role = accessor.getFirstNativeHeader("X-User-Role");
-                    String subject = accessor.getFirstNativeHeader("X-User-Subject");
-
-                    //Can store user information in session attributes
-                    if (userId != null) {
-                        accessor.getSessionAttributes().put("userId", userId);
-                        accessor.getSessionAttributes().put("role", role);
-                        accessor.getSessionAttributes().put("subject", subject);
-                    }
-                }
-                return message;
-            }
-        });
+        // ✅ Also register endpoint without SockJS for native WebSocket clients
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns(
+                        "http://localhost:3000",
+                        "http://127.0.0.1:3000",
+                        "http://localhost:8080"
+                );
     }
 }

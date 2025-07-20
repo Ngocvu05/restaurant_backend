@@ -1,7 +1,10 @@
 package com.management.chat_service.controller;
 
 import com.management.chat_service.dto.ChatMessageRequest;
+import com.management.chat_service.dto.GuestChatMessageDTO;
 import com.management.chat_service.service.IChatProducerService;
+import com.management.chat_service.service.IGuestChatService;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,18 +16,24 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/guest")
 public class GuestController {
-    private final IChatProducerService chatProducerService;
+    private final IGuestChatService guestChatService;
 
     @PostMapping("/send")
-    public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
-                                      @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+    public ResponseEntity<?> sendChat(@RequestBody GuestChatMessageDTO request) {
         log.info(" ChatController - Received message: {}", request);
+        try {
+            // For guest users, userId can be null or 0
+            request.setSenderType(SenderType.USER);
 
-        if (userIdHeader != null) {
-            request.setUserId(Long.parseLong(userIdHeader));
+            guestChatService.handleGuestMessage(request);
+            log.info(">>> ChatController - Guest message sent to queue successfully");
+
+            return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Guest message sent\"}");
+
+        } catch (Exception e) {
+            log.error(">>> ChatController - Error sending guest message: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\",\"message\":\"Failed to send guest message\"}");
         }
-
-        chatProducerService.sendMessageToChatQueue(request);
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 }

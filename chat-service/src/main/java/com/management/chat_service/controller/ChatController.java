@@ -6,6 +6,7 @@ import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.service.IChatMessageService;
 import com.management.chat_service.service.IChatProducerService;
 import com.management.chat_service.service.IChatRoomService;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/chat")
 public class ChatController {
+
     private final IChatProducerService chatProducerService;
     private final IChatRoomService chatRoomService;
     private final IChatMessageService chatMessageService;
@@ -27,28 +29,72 @@ public class ChatController {
     @PostMapping("/send")
     public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
                                       @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
-        log.info(" ChatController - Received message: {}", request);
+        log.info(">>> ChatController - Received message: {}", request);
+        log.info(">>> ChatController - User ID from header: {}", userIdHeader);
 
-        if (userIdHeader != null) {
-            request.setUserId(Long.parseLong(userIdHeader));
+        try {
+            if (userIdHeader != null && !userIdHeader.isEmpty()) {
+                request.setUserId(Long.parseLong(userIdHeader));
+                log.info(">>> ChatController - Set userId: {}", request.getUserId());
+            }
+
+            chatProducerService.sendMessageToChatQueue(request);
+            log.info(">>> ChatController - Message sent to queue successfully");
+
+            return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");
+
+        } catch (Exception e) {
+            log.error(">>> ChatController - Error sending message: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\",\"message\":\"Failed to send message\"}");
         }
-
-        chatProducerService.sendMessageToChatQueue(request);
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @GetMapping("/history")
-    public ResponseEntity<?> getChatHistory(@RequestHeader("X-User-Id") Long userId) {
-        List<ChatRoom> rooms = chatRoomService.getRooms(userId);
-        return ResponseEntity.ok(rooms);
+    public ResponseEntity<?> getChatHistory(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        log.info(">>> ChatController - Getting chat history for user: {}", userIdHeader);
+
+        if (userIdHeader == null || userIdHeader.isEmpty()) {
+            return ResponseEntity.badRequest().body("{\"error\":\"User ID required\"}");
+        }
+
+        try {
+            Long userId = Long.parseLong(userIdHeader);
+            List<ChatRoom> rooms = chatRoomService.getRooms(userId);
+            return ResponseEntity.ok(rooms);
+        } catch (Exception e) {
+            log.error(">>> ChatController - Error getting chat history: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"Failed to get chat history\"}");
+        }
     }
 
     @GetMapping("/{roomId}")
-    public Page<ChatMessageDTO> getMessages(
+    public ResponseEntity<?> getMessages(
             @PathVariable String roomId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return chatMessageService.getMessagesByRoomId(roomId, page, size);
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.info(">>> ChatController - Getting messages for room: {}, page: {}, size: {}", roomId, page, size);
+
+        try {
+            Page<ChatMessageDTO> messages = chatMessageService.getMessagesByRoomId(roomId, page, size);
+            return ResponseEntity.ok(messages);
+        } catch (Exception e) {
+            log.error(">>> ChatController - Error getting messages: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"Failed to get messages\"}");
+        }
+    }
+
+    // ✅ Thêm OPTIONS handler explicit
+    @RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptions() {
+        return ResponseEntity.ok()
+                .header("Access-Control-Allow-Origin", "http://localhost:3000")
+                .header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+                .header("Access-Control-Allow-Headers", "*")
+                .header("Access-Control-Allow-Credentials", "true")
+                .build();
     }
 }

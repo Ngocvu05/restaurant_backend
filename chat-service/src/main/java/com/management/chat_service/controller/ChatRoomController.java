@@ -32,14 +32,14 @@ public class ChatRoomController {
     @GetMapping("/{userId}")
     public ResponseEntity<Map<String, Object>> getChatRooms(@PathVariable Long userId) {
         Map<String, Object> response = new HashMap<>();
-        response.put("rooms", chatRoomService.getRooms(userId));
+        response.put("rooms", chatRoomService.getAllRooms(userId));
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getChatRooms_v2(@RequestHeader(value = "X-User-Id") Long userId) {
         Map<String, Object> response = new HashMap<>();
-        response.put("rooms", chatRoomService.getRooms(userId));
+        response.put("rooms", chatRoomService.getAllRooms(userId));
         return ResponseEntity.ok(response);
     }
 }
