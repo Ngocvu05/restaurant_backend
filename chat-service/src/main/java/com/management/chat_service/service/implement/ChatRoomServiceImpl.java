@@ -6,6 +6,7 @@ import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatRoomService;
 import com.management.chat_service.status.ChatRoomStatus;
 import com.management.chat_service.status.ChatRoomType;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -66,12 +67,14 @@ public class ChatRoomServiceImpl implements IChatRoomService {
     }
 
     @Override
+    @Transactional
     public void convertSessionToUser(String sessionId, Long userId) {
-        List<ChatRoom> rooms = chatRoomRepository.findBySessionIdAndUserId(sessionId, null);
+        List<ChatRoom> rooms = chatRoomRepository.findBySessionIdAndUserIdIsNull(sessionId);
         for (ChatRoom room : rooms) {
             room.setUserId(userId);
             chatRoomRepository.save(room);
         }
+        log.info("✅ convertSessionToUser - Đã gán {} room(s) từ session {} sang userId {}", rooms.size(), sessionId, userId);
     }
 
     @Override

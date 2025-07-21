@@ -9,6 +9,7 @@ import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
 import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatProducerService;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -42,8 +43,12 @@ public class WebSocketChatController {
                                        @Header(name = "X-User-Id", required = false) Optional<String> userIdHeader) {
         log.info("📨 WebSocket message received: {}", request);
         String userId = (String) sessionAttrs.get("userId");
+
         // Sync userId from header if available
         if (userId != null) {
+            if (request.getSenderType() == null) {
+                request.setSenderType(SenderType.USER); // default
+            }
             request.setUserId(Long.parseLong(userId));
         }
 

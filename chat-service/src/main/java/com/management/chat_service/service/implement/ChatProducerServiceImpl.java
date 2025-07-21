@@ -45,7 +45,7 @@ public class ChatProducerServiceImpl implements IChatProducerService {
     }
 
     @Override
-    public String handleGuestAIMessage(String sessionId, String content) {
-        return chatAIService.ask(content);
+    public void handleGuestAIMessage(String sessionId, String content) {
+        chatAIService.ask(content);
     }
 }

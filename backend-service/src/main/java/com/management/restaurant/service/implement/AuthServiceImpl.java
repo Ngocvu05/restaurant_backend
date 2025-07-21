@@ -81,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtService.generateToken(user);
-        chatEventProducer.sendSessionConversion(null, user.getId());
+        chatEventProducer.sendSessionConversion(request.getSessionId(), user.getId());
         return new AuthResponse(user.getId(),token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
     }
 

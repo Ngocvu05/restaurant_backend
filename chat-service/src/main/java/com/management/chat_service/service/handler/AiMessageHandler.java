@@ -1,5 +1,6 @@
 package com.management.chat_service.service.handler;
 
+import com.management.chat_service.config.RabbitMQConfig;
 import com.management.chat_service.model.ChatMessage;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
@@ -34,7 +35,7 @@ public class AiMessageHandler implements IChatMessageHandler {
                 "senderId", senderId,
                 "content", content
         );
-        rabbitTemplate.convertAndSend("chat.exchange", "chat.ai", payload);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, payload);
 
         // Create a placeholder message to indicate AI is processing
         ChatMessage placeholder = ChatMessage.builder()
@@ -51,3 +52,4 @@ public class AiMessageHandler implements IChatMessageHandler {
         return chatMessageRepository.save(placeholder);
     }
 }
+

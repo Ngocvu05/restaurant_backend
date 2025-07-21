@@ -55,6 +55,12 @@ public class ChatRoom {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "admin_id")
+    private Long adminId;
+
+    @Column(name = "resolved")
+    private Boolean resolved = false;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

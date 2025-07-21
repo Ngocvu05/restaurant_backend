@@ -30,12 +30,15 @@ public class ChatController {
     public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
                                       @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         log.info(">>> ChatController - Received message: {}", request);
-        log.info(">>> ChatController - User ID from header: {}", userIdHeader);
 
         try {
             if (userIdHeader != null && !userIdHeader.isEmpty()) {
                 request.setUserId(Long.parseLong(userIdHeader));
                 log.info(">>> ChatController - Set userId: {}", request.getUserId());
+            }
+
+            if (request.getSenderType() == null) {
+                request.setSenderType(SenderType.USER); // fallback
             }
 
             chatProducerService.sendMessageToChatQueue(request);
@@ -49,6 +52,7 @@ public class ChatController {
                     .body("{\"status\":\"error\",\"message\":\"Failed to send message\"}");
         }
     }
+
 
     @GetMapping("/history")
     public ResponseEntity<?> getChatHistory(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
