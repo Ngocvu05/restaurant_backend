@@ -59,6 +59,7 @@ public class ChatRoom {
     private Long adminId;
 
     @Column(name = "resolved")
+    @Builder.Default
     private Boolean resolved = false;
 
     @CreatedDate

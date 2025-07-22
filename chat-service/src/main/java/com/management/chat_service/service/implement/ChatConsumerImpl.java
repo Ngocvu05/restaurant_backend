@@ -8,11 +8,16 @@ import com.management.chat_service.repository.ChatMessageRepository;
 import com.management.chat_service.service.IChatConsumer;
 import com.management.chat_service.service.IChatProducerService;
 import com.management.chat_service.service.IChatRoomService;
+import com.management.chat_service.service.IGuestChatService;
 import com.management.chat_service.status.MessageType;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -21,13 +26,15 @@ public class ChatConsumerImpl implements IChatConsumer {
     private final IChatRoomService chatRoomService;
     private final IChatProducerService chatProducerService;
     private final ChatMessageRepository chatMessageRepository;
+    private final IGuestChatService guestChatService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     //@RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE, containerFactory = "retryContainerFactory")
     @RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE)
     public void consumeMessage(ChatMessageRequest request) {
         log.info("✅ ChatConsumer - Nhận request từ user: {}", request);
-
+        //handel for user already logged in
         if (request.getUserId() != null) {
             ChatRoom chatRoom = chatRoomService.getOrCreateRoom(request);
             log.info("🧾 Room info: id={}, roomId={}, userId={}", chatRoom.getId(), chatRoom.getRoomId(), chatRoom.getUserId());
@@ -49,9 +56,36 @@ public class ChatConsumerImpl implements IChatConsumer {
                 chatMessageRepository.save(message);
                 log.info("✅ Đã lưu message của user {} vào DB", request.getUserId());
             }
-        }else{
-            chatProducerService.handleGuestAIMessage(request.getSessionId(),request.getMessage());
+        // handel for guest user
+        }else if (request.getSenderType() == SenderType.GUEST) {
+            guestChatService.saveGuestMessageToRedis(request);
+            chatProducerService.handleGuestAIMessage(request);
             log.info("👤 Guest message - không lưu DB, chỉ gửi AI, sessionId: {}, content: {}", request.getSessionId(), request.getMessage());
+        }else {
+            log.warn("⚠️ ChatConsumer - Nhận request không hợp lệ: {}", request);
         }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.GUEST_CHAT_QUEUE)
+    public void handleGuestMessage(Map<String, Object> payload) {
+        log.info("📩 GuestChatConsumer - {}", payload);
+        String sessionId = (String) payload.get("sessionId");
+        String responseMessage = (String) payload.get("response");
+        if (sessionId == null || responseMessage == null) {
+            log.warn("⚠️ GuestChatConsumer - Invalid guest message: {}", payload);
+            return;
+        }
+
+        ChatMessageRequest request = ChatMessageRequest.builder()
+                .sessionId(sessionId)
+                .message(responseMessage)
+                .senderType(SenderType.GUEST)
+                .build();
+        // Save guest message to Redis
+        guestChatService.saveGuestMessageToRedis(request);
+
+        //Send AI response to guest
+        chatProducerService.handleGuestAIMessage(request);
+        messagingTemplate.convertAndSend("/topic/guest/" + sessionId, responseMessage);
     }
 }

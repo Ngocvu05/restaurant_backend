@@ -12,9 +12,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.management.chat_service.config.RabbitMQConfig.AI_ROUTING_KEY;
-import static com.management.chat_service.config.RabbitMQConfig.CHAT_EXCHANGE;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,11 +29,7 @@ public class ChatProducerServiceImpl implements IChatProducerService {
         log.info("🚀 ChatProducerService - Gửi message tới AI queue - roomId: {}, content: {}", roomId, content);
 
         // Send Object to RabbitMQ
-        rabbitTemplate.convertAndSend(
-                CHAT_EXCHANGE,
-                AI_ROUTING_KEY,
-                payload
-        );
+        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.CHAT_ROUTING_KEY, payload);
     }
 
     @Override
@@ -45,7 +38,8 @@ public class ChatProducerServiceImpl implements IChatProducerService {
     }
 
     @Override
-    public void handleGuestAIMessage(String sessionId, String content) {
-        chatAIService.ask(content);
+    public void handleGuestAIMessage(ChatMessageRequest request) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, request);
+        log.info("🚀 GuestChatService - Sent guest message to AI: {}", request.getMessage());
     }
 }

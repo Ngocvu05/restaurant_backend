@@ -33,7 +33,7 @@ public class ChatAIServiceImpl implements IChatAIService {
     public String sendToAI(String userInput) {
         try {
             return sendToAIAsync(userInput, false)
-                    .get(30, TimeUnit.SECONDS); // Thêm timeout 30 giây
+                    .get(30, TimeUnit.SECONDS); // set timeout to 30 seconds
         } catch (TimeoutException e) {
             log.error("❌ AI response timeout", e);
             return "Xin lỗi, AI phản hồi quá chậm. Vui lòng thử lại sau.";
@@ -44,17 +44,17 @@ public class ChatAIServiceImpl implements IChatAIService {
     }
 
     @Override
-    public void ask(String userInput) {
-        sendToAIAsync(userInput, true)
-                .thenAccept(response -> {
-                    if (response == null) {
-                        log.error("❌ Guest Chat - Không nhận được phản hồi từ AI");
-                    }
-                })
-                .exceptionally(throwable -> {
-                    log.error("❌ Guest Chat - Lỗi khi xử lý phản hồi từ AI", throwable);
-                    return null;
-                });
+    public String ask(String userInput) {
+        try {
+            return sendToAIAsync(userInput, false)
+                    .get(30, TimeUnit.SECONDS); //timeout 30 seconds
+        } catch (TimeoutException e) {
+            log.error("❌ Guest message - AI response timeout", e);
+            return "Sorry, AI response slowly. Please try later.";
+        } catch (Exception e) {
+            log.error("❌ Guest message - Error getting AI response", e);
+            return "Sorry, AI busy. Please try later.";
+        }
     }
 
     private CompletableFuture<String> sendToAIAsync(String userInput, boolean isGuestChat) {
@@ -75,12 +75,11 @@ public class ChatAIServiceImpl implements IChatAIService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 String logPrefix = isGuestChat ? "✅Guest Chat - " : "✅";
                 log.info("{} Prompt gửi AI:\n{}", logPrefix, prompt);
-                String extractedText = extractTextFromGroqResponse(response.getBody());
-                return isGuestChat ? null : extractedText;
+                return extractTextFromGroqResponse(response.getBody());
             } else {
                 String logPrefix = isGuestChat ? "❌ Guest Chat - " : "❌";
                 log.error("{} Groq API trả về lỗi: {}", logPrefix, response.getStatusCode());
-                return isGuestChat ? null : "Không thể phản hồi từ AI.";
+                return "Không thể phản hồi từ AI.";
             }
         } catch (Exception e) {
             String logPrefix = isGuestChat ? "❌ Guest Chat - " : "❌";

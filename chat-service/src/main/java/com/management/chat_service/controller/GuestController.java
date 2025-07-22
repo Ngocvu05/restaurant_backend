@@ -45,10 +45,4 @@ public class GuestController {
         guestChatService.migrateToDatabase(sessionId, userId);
         return ResponseEntity.ok().build();
     }
-
-    @GetMapping("/messages/{sessionId}")
-    public ResponseEntity<List<GuestChatMessageDTO>> getGuestMessages(@PathVariable String sessionId) {
-        List<GuestChatMessageDTO> messages = guestChatService.getMessages(sessionId);
-        return ResponseEntity.ok(messages);
-    }
 }

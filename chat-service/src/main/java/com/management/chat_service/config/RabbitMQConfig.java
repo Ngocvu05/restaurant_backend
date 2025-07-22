@@ -12,27 +12,39 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    // Exchange names
+
+    // ✅ Exchange
     public static final String CHAT_EXCHANGE = "chat.exchange";
 
-    // Queue names
-    public static final String CHAT_QUEUE = "chat-messages";
-    public static final String AI_QUEUE = "chat.ai.queue";
+    // ✅ Queues
+    public static final String CHAT_QUEUE = "chat.queue.user"; // dành cho user
+    public static final String AI_QUEUE = "chat.queue.ai";     // queue nhận cho AI xử lý
+    public static final String GUEST_CHAT_QUEUE = "chat.queue.guest"; // dành riêng cho guest chat
+    public static final String RESPONSE_QUEUE = "chat.queue.response"; // phản hồi từ AI về
+    public static final String SESSION_CONVERT_QUEUE = "chat.queue.session.convert"; // sau login
 
-    // Routing keys
-    public static final String CHAT_ROUTING_KEY = "chat.message";
-    public static final String AI_ROUTING_KEY = "chat.ai";
-    public static final String CHAT_RESPONSE_ROUTING_KEY = "chat.response";
+    // ✅ Routing keys
+    public static final String CHAT_ROUTING_KEY = "chat.routing.user";
+    public static final String GUEST_CHAT_ROUTING_KEY = "chat.routing.guest";
+    public static final String AI_ROUTING_KEY = "chat.routing.ai";
+    public static final String RESPONSE_ROUTING_KEY = "chat.response";
     public static final String CONVERT_SESSION_ROUTING_KEY = "chat.convert.session";
 
+    // Exchange
     @Bean
     public TopicExchange chatExchange() {
         return new TopicExchange(CHAT_EXCHANGE);
     }
 
+    // Queues
     @Bean
     public Queue chatQueue() {
         return new Queue(CHAT_QUEUE, true);
+    }
+
+    @Bean
+    public Queue guestChatQueue() {
+        return new Queue(GUEST_CHAT_QUEUE, true);
     }
 
     @Bean
@@ -42,19 +54,27 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue responseQueue() {
-        return new Queue(CHAT_RESPONSE_ROUTING_KEY, true);
+        return new Queue(RESPONSE_QUEUE, true);
     }
 
     @Bean
     public Queue sessionConversionQueue() {
-        return new Queue(CONVERT_SESSION_ROUTING_KEY, true);
+        return new Queue(SESSION_CONVERT_QUEUE, true);
     }
 
+    // Bindings
     @Bean
-    public Binding chatBinding() {
+    public Binding userChatBinding() {
         return BindingBuilder.bind(chatQueue())
                 .to(chatExchange())
                 .with(CHAT_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding guestChatBinding() {
+        return BindingBuilder.bind(guestChatQueue())
+                .to(chatExchange())
+                .with(GUEST_CHAT_ROUTING_KEY);
     }
 
     @Bean
@@ -68,7 +88,7 @@ public class RabbitMQConfig {
     public Binding responseBinding() {
         return BindingBuilder.bind(responseQueue())
                 .to(chatExchange())
-                .with(CHAT_RESPONSE_ROUTING_KEY);
+                .with(RESPONSE_ROUTING_KEY);
     }
 
     @Bean
@@ -78,11 +98,13 @@ public class RabbitMQConfig {
                 .with(CONVERT_SESSION_ROUTING_KEY);
     }
 
+    // Message converter
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
     }
 
+    // RabbitTemplate sử dụng converter
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -90,6 +112,7 @@ public class RabbitMQConfig {
         return template;
     }
 
+    // RabbitListener container factory
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
@@ -97,7 +120,6 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
-        // Config retry (optional)
         factory.setDefaultRequeueRejected(false);
         factory.setConcurrentConsumers(3);
         factory.setMaxConcurrentConsumers(10);

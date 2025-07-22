@@ -40,7 +40,7 @@ public class AIWorkerImpl implements IAIWorker {
                     .build();
 
             log.info("✅ AIWorker - Gửi response AI về queue chat.response: {}", response);
-            rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.CHAT_RESPONSE_ROUTING_KEY, response);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, response);
         } catch (Exception e) {
             log.error("❌ AIWorker - Lỗi khi xử lý AI message", e);
         }
