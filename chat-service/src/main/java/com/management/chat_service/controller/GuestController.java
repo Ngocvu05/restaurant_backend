@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -23,7 +21,7 @@ public class GuestController {
         log.info(" ChatController - Received message: {}", request);
         try {
             // For guest users, userId can be null or 0
-            request.setSenderType(SenderType.USER);
+            request.setSenderType(SenderType.GUEST);
 
             guestChatService.handleGuestMessage(request);
             log.info(">>> ChatController - Guest message sent to queue successfully");

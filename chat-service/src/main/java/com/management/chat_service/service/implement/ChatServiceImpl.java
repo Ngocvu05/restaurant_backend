@@ -1,11 +1,13 @@
 package com.management.chat_service.service.implement;
 
 import com.management.chat_service.dto.ChatMessageDTO;
+import com.management.chat_service.dto.ChatMessageResponse;
 import com.management.chat_service.mapper.IChatMessageMapper;
 import com.management.chat_service.model.ChatMessage;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatService;
+import com.management.chat_service.service.IChatWebSocketService;
 import com.management.chat_service.service.handler.IChatMessageHandler;
 import com.management.chat_service.status.SenderType;
 import jakarta.transaction.Transactional;
@@ -25,6 +27,7 @@ public class ChatServiceImpl implements IChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final List<IChatMessageHandler> handlers;
     private final IChatMessageMapper chatMessageMapper;
+    private final IChatWebSocketService chatWebSocketService;
 
     @Override
     public ChatMessageDTO processMessage(String roomId, Long senderId, String senderName, String content, SenderType senderType) {
@@ -35,7 +38,14 @@ public class ChatServiceImpl implements IChatService {
             if (handler.supports(senderType)) {
                 ChatMessage saved = handler.handleMessage(chatRoom, senderName, senderId, content);
                 ChatMessageDTO dto = chatMessageMapper.toDTO(saved);
-                messagingTemplate.convertAndSend("/topic/room/" + roomId, dto);
+
+                ChatMessageResponse response = ChatMessageResponse.builder()
+                        .sessionId(roomId)
+                        .response(content)
+                        .userId(senderId)
+                        .senderType(senderType)
+                        .build();
+                chatWebSocketService.sendMessageToRoom(roomId, response);
                 return dto;
             }
         }

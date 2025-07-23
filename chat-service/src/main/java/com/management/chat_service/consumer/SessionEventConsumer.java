@@ -15,11 +15,17 @@ import org.springframework.stereotype.Component;
 public class  SessionEventConsumer {
     private final IChatRoomService chatRoomService;
     private final IGuestChatService guestChatService;
-    @RabbitListener(queues = RabbitMQConfig.CONVERT_SESSION_ROUTING_KEY)
+    @RabbitListener(queues = RabbitMQConfig.SESSION_CONVERT_QUEUE)
     public void handleSessionConversion(SessionConversionEvent event) {
+        if (event == null || event.getSessionId() == null || event.getUserId() == null) {
+            log.warn("⚠️ SessionEventConsumer - Nhận event không hợp lệ: {}", event);
+            return;
+        }
+
         chatRoomService.convertSessionToUser(event.getSessionId(), event.getUserId());
-        log.info("✅ SessionEventConsumer - Converted session for ChatRoom{} to user {}", event.getSessionId(), event.getUserId());
+        log.info("✅ SessionEventConsumer - Đã convert session Room {} -> User {}", event.getSessionId(), event.getUserId());
+
         guestChatService.migrateToDatabase(event.getSessionId(), event.getUserId());
-        log.info("✅ SessionEventConsumer - Converted session for ChatMessage {} to user {}", event.getSessionId(), event.getUserId());
+        log.info("✅ SessionEventConsumer - Đã migrate message Redis -> DB cho session {}", event.getSessionId());
     }
 }

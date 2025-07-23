@@ -28,53 +28,54 @@ public class ChatResponseConsumerImpl implements IChatResponseConsumer {
     private final IChatWebSocketService webSocketService;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final IChatMessageMapper chatMessageMapper;
     private final IGuestChatService guestChatService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
-    @RabbitListener(queues = RabbitMQConfig.RESPONSE_ROUTING_KEY)
+    @RabbitListener(queues = RabbitMQConfig.RESPONSE_QUEUE)
     public void receiveAIResponse(ChatMessageResponse response) {
         try {
-            log.info("ChatResponseConsumer - Nhận phản hồi từ AI: {}", response);
-            if(response.getUserId() == null && response.getSenderType() == SenderType.GUEST) {
+            log.info("📥 ChatResponseConsumer - Nhận phản hồi từ AI: {}", response);
+
+            if (response.getUserId() == null) {
+                // process for guest user
                 guestChatService.saveGuestResponseToRedis(response);
                 webSocketService.sendMessageToRoom(response.getSessionId(), response);
-                log.info("ChatResponseConsumer = Guest user -- The response AI has been sent to room:  {}", response.getSessionId());
-                messagingTemplate.convertAndSend("/topic/room/" + response.getSessionId(), response);
-            }else{
-                Long chatRoomId = response.getChatRoomId();
-                if (chatRoomId == null) {
-                    log.error("ChatResponseConsumer - ChatRoomId trong response bị null");
-                    return;
-                }
-                ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                        .orElseThrow(() -> new IllegalArgumentException("Not found chat room with ChatRoomId: " + chatRoomId));
-
-                ChatMessage message = ChatMessage.builder()
-                        .chatRoom(chatRoom)
-                        .senderId(response.getUserId())
-                        .senderName(response.getSenderType() == SenderType.ADMIN ? "Admin" : "AI Assistant")
-                        .senderType(response.getSenderType())
-                        .type(MessageType.TEXT)
-                        .content(response.getResponse())
-                        .isAiGenerated(response.getSenderType() == SenderType.AI)
-                        .isRead(false)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build();
-                if(response.getUserId() != null) {
-                    chatMessageRepository.save(message);
-                }
-
-                ChatMessageDTO dto = chatMessageMapper.toDTO(message);
-                // 2. send response to WebSocket
-                webSocketService.sendMessageToRoom(response.getSessionId(), response);
-                log.info("ChatResponseConsumer - The response AI has been sent to room:  {}", response.getSessionId());
-                messagingTemplate.convertAndSend("/topic/room/" + response.getSessionId(), dto);
+                //messagingTemplate.convertAndSend("/topic/room/" + response.getSessionId(), response);
+                return;
             }
+
+            // process for logged-in user
+            Long chatRoomId = response.getChatRoomId();
+            if (chatRoomId == null) {
+                log.error("❌ ChatResponseConsumer - Thiếu chatRoomId trong response");
+                return;
+            }
+
+            ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("Not found chatRoomId: " + chatRoomId));
+
+            ChatMessage message = ChatMessage.builder()
+                    .chatRoom(chatRoom)
+                    .senderId(response.getUserId())
+                    .senderName(response.getSenderType() == SenderType.ADMIN ? "Admin" : "AI Assistant")
+                    .senderType(response.getSenderType())
+                    .type(MessageType.TEXT)
+                    .content(response.getResponse())
+                    .isAiGenerated(response.getSenderType() == SenderType.AI)
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            chatMessageRepository.save(message);
+
+            ChatMessageDTO dto = chatMessageMapper.toDTO(message);
+            webSocketService.sendMessageToRoom(response.getSessionId(), response);
+            //messagingTemplate.convertAndSend("/topic/room/" + response.getSessionId(), response);
         } catch (Exception e) {
-            log.error("ChatResponseConsumer - Lỗi khi xử lý phản hồi AI", e);
+            log.error("❌ ChatResponseConsumer - Lỗi xử lý phản hồi AI", e);
         }
 
     }

@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.management.chat_service.config.GroqProperties;
 import com.management.chat_service.service.IChatAIService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -46,7 +49,7 @@ public class ChatAIServiceImpl implements IChatAIService {
     @Override
     public String ask(String userInput) {
         try {
-            return sendToAIAsync(userInput, false)
+            return sendToAIAsync(userInput, true)
                     .get(30, TimeUnit.SECONDS); //timeout 30 seconds
         } catch (TimeoutException e) {
             log.error("❌ Guest message - AI response timeout", e);
@@ -79,11 +82,11 @@ public class ChatAIServiceImpl implements IChatAIService {
             } else {
                 String logPrefix = isGuestChat ? "❌ Guest Chat - " : "❌";
                 log.error("{} Groq API trả về lỗi: {}", logPrefix, response.getStatusCode());
-                return "Không thể phản hồi từ AI.";
+                return "AI Not responding.";
             }
         } catch (Exception e) {
             String logPrefix = isGuestChat ? "❌ Guest Chat - " : "❌";
-            log.error("{} Lỗi khi gọi Groq API", logPrefix, e);
+            log.error("{} Have an issue when send request to AI", logPrefix, e);
             return null;
         }
     }

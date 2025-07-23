@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,13 +34,14 @@ public class ChatRoomServiceImpl implements IChatRoomService {
                 .sessionId(sessionId)
                 .type(ChatRoomType.AI_SUPPORT)
                 .status(ChatRoomStatus.ACTIVE)
-                .description("AI assistant chat")
+                .description("AI assistant chat" + LocalDateTime.now())
                 .build();
 
         return chatRoomRepository.save(chatRoom);
     }
 
     @Override
+    @Transactional
     public ChatRoom getOrCreateRoom(ChatMessageRequest request) {
         String roomId = request.getChatRoomId();
         Long userId = request.getUserId();
@@ -54,7 +56,7 @@ public class ChatRoomServiceImpl implements IChatRoomService {
                     .roomId(roomId)
                     .name("Chat with AI")
                     .type(ChatRoomType.AI_SUPPORT)
-                    .description("AI assistant chat")
+                    .description("AI assistant chat" + LocalDateTime.now())
                     .status(ChatRoomStatus.ACTIVE)
                     .sessionId(request.getSessionId());
 

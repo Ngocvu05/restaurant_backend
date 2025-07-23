@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -53,19 +52,12 @@ public class GuestChatServiceImpl implements IGuestChatService {
                 .chatRoomId(message.getSessionId()) // sessionId dùng làm roomId
                 .sessionId(message.getSessionId())
                 .message(message.getContent())
-                .senderType(SenderType.USER)
+                .senderType(SenderType.GUEST)
                 .timestamp(message.getCreatedAt())
                 .build();
         chatProducerService.handleGuestAIMessage(request);
         rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, request);
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.CHAT_EXCHANGE,
-                RabbitMQConfig.AI_ROUTING_KEY,
-                Map.of( "sessionId", request.getSessionId(),
-                        "message", request.getMessage(),
-                        "senderType", request.getSenderType().name()
-                )
-        );
+
         redisTemplate.opsForList().rightPush(key,request);
         redisTemplate.expire(key, TTL_DAYS, TimeUnit.DAYS); //TTL: Set expiration to 1 day
     }

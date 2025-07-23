@@ -14,10 +14,7 @@ import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -27,19 +24,18 @@ public class ChatConsumerImpl implements IChatConsumer {
     private final IChatProducerService chatProducerService;
     private final ChatMessageRepository chatMessageRepository;
     private final IGuestChatService guestChatService;
-    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     //@RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE, containerFactory = "retryContainerFactory")
     @RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE)
     public void consumeMessage(ChatMessageRequest request) {
         log.info("✅ ChatConsumer - Nhận request từ user: {}", request);
-        //handel for user already logged in
+        //handle for user already logged in
         if (request.getUserId() != null) {
             ChatRoom chatRoom = chatRoomService.getOrCreateRoom(request);
             log.info("🧾 Room info: id={}, roomId={}, userId={}", chatRoom.getId(), chatRoom.getRoomId(), chatRoom.getUserId());
-            // Send message to AI
-            chatProducerService.sendToAI(chatRoom.getRoomId(), request.getMessage());
+            // Send a message to AI
+            chatProducerService.sendToAI(request);
 
             // If userid is existed, store Db
             if (request.getUserId() != null) {
@@ -67,25 +63,25 @@ public class ChatConsumerImpl implements IChatConsumer {
     }
 
     @RabbitListener(queues = RabbitMQConfig.GUEST_CHAT_QUEUE)
-    public void handleGuestMessage(Map<String, Object> payload) {
-        log.info("📩 GuestChatConsumer - {}", payload);
-        String sessionId = (String) payload.get("sessionId");
-        String responseMessage = (String) payload.get("response");
-        if (sessionId == null || responseMessage == null) {
-            log.warn("⚠️ GuestChatConsumer - Invalid guest message: {}", payload);
+    public void handleGuestMessage(ChatMessageRequest request) {
+        log.info("📩 GuestChatConsumer - {}", request);
+        // Check if the sender type is GUEST
+        if (request.getSenderType() != SenderType.GUEST) {
+            log.warn("❌ Bỏ qua message vì senderType không phải GUEST: {}", request);
             return;
         }
 
-        ChatMessageRequest request = ChatMessageRequest.builder()
-                .sessionId(sessionId)
-                .message(responseMessage)
-                .senderType(SenderType.GUEST)
-                .build();
+        String sessionId = request.getSessionId();
+        String responseMessage = request.getMessage();
+        if (sessionId == null || responseMessage == null) {
+            log.warn("⚠️ GuestChatConsumer - Invalid guest message: {}", request);
+            return;
+        }
+
         // Save guest message to Redis
         guestChatService.saveGuestMessageToRedis(request);
 
         //Send AI response to guest
         chatProducerService.handleGuestAIMessage(request);
-        messagingTemplate.convertAndSend("/topic/guest/" + sessionId, responseMessage);
     }
 }

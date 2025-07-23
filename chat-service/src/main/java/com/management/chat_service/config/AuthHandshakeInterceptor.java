@@ -2,6 +2,7 @@ package com.management.chat_service.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -13,10 +14,10 @@ import java.util.Map;
 @Slf4j
 public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request,
-                                   ServerHttpResponse  response,
-                                   WebSocketHandler wsHandler,
-                                   Map<String, Object> attributes) {
+    public boolean beforeHandshake(@NotNull ServerHttpRequest request,
+                                   @NotNull ServerHttpResponse  response,
+                                   @NotNull WebSocketHandler wsHandler,
+                                   @NotNull Map<String, Object> attributes) {
 
         if (request instanceof ServletServerHttpRequest servletRequestWrapper) {
             HttpServletRequest servletRequest = servletRequestWrapper.getServletRequest();
@@ -44,7 +45,8 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+    public void afterHandshake(@NotNull ServerHttpRequest request, @NotNull ServerHttpResponse response,
+                               @NotNull WebSocketHandler wsHandler, Exception exception) {
         // do nothing after handshake
     }
 }

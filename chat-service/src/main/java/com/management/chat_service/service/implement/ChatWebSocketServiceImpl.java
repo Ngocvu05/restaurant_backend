@@ -14,6 +14,6 @@ public class ChatWebSocketServiceImpl implements IChatWebSocketService {
     private final SimpMessagingTemplate messagingTemplate;
     @Override
     public void sendMessageToRoom(String roomId, ChatMessageResponse message) {
-        messagingTemplate.convertAndSend("/topic/chat/" + roomId, message);
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, message);
     }
 }
