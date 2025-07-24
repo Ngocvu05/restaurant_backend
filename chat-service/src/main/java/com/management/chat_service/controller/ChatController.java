@@ -90,15 +90,4 @@ public class ChatController {
                     .body("{\"error\":\"Failed to get messages\"}");
         }
     }
-
-    // ✅ Thêm OPTIONS handler explicit
-    @RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
-    public ResponseEntity<?> handleOptions() {
-        return ResponseEntity.ok()
-                .header("Access-Control-Allow-Origin", "http://localhost:3000")
-                .header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-                .header("Access-Control-Allow-Headers", "*")
-                .header("Access-Control-Allow-Credentials", "true")
-                .build();
-    }
 }

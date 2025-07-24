@@ -1,7 +1,11 @@
 package com.management.chat_service.service.implement;
 
 import com.management.chat_service.dto.ChatMessageRequest;
+import com.management.chat_service.dto.ChatRoomDTO;
+import com.management.chat_service.mapper.IChatRoomMapper;
+import com.management.chat_service.model.ChatMessage;
 import com.management.chat_service.model.ChatRoom;
+import com.management.chat_service.repository.ChatMessageRepository;
 import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatRoomService;
 import com.management.chat_service.status.ChatRoomStatus;
@@ -13,59 +17,40 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatRoomServiceImpl implements IChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
-
-    @Override
-    public ChatRoom createNewRoom(Long userId) {
-        // Create a new chat room with a unique session ID and room ID
-        String sessionId = UUID.randomUUID().toString();
-        String roomId = "room-" + System.currentTimeMillis();
-
-        ChatRoom chatRoom = ChatRoom.builder()
-                .roomId(roomId)
-                .name("Chat with AI - " + userId)
-                .userId(userId)
-                .sessionId(sessionId)
-                .type(ChatRoomType.AI_SUPPORT)
-                .status(ChatRoomStatus.ACTIVE)
-                .description("AI assistant chat" + LocalDateTime.now())
-                .build();
-
-        return chatRoomRepository.save(chatRoom);
-    }
+    private final IChatRoomMapper chatRoomMapper;
+    private final ChatMessageRepository chatMessageRepository;
 
     @Override
     @Transactional
     public ChatRoom getOrCreateRoom(ChatMessageRequest request) {
-        String roomId = request.getChatRoomId();
+        String sessionId = request.getSessionId();
         Long userId = request.getUserId();
 
-        return chatRoomRepository.findByRoomId(roomId).orElseGet(() -> {
-            // If roomId is not provided, generate a new one
-            if (roomId == null || roomId.isBlank()) {
-                throw new IllegalArgumentException("Session ID is required to create or get chat room");
-            }
+        return chatRoomRepository.findByUserIdAndSessionId(userId, sessionId)
+                .orElseGet(() -> {
+                    ChatRoom newRoom = createRoomFromRequest(request);
+                    return chatRoomRepository.save(newRoom);
+                });
+    }
 
-            ChatRoom.ChatRoomBuilder builder = ChatRoom.builder()
-                    .roomId(roomId)
-                    .name("Chat with AI")
-                    .type(ChatRoomType.AI_SUPPORT)
-                    .description("AI assistant chat" + LocalDateTime.now())
-                    .status(ChatRoomStatus.ACTIVE)
-                    .sessionId(request.getSessionId());
-
-            // If userId is provided, save to a database; otherwise, just return the built object
-            if (userId != null) {
-                builder.userId(userId);
-            }
-            return chatRoomRepository.save(builder.build());
-        });
+    private ChatRoom createRoomFromRequest (ChatMessageRequest request) {
+        return ChatRoom.builder()
+                .roomId(request.getChatRoomId())
+                .name("Chat with AI" + LocalDateTime.now())
+                .type(ChatRoomType.AI_SUPPORT)
+                .description("AI assistant chat " + LocalDateTime.now())
+                .status(ChatRoomStatus.ACTIVE)
+                .sessionId(request.getSessionId())
+                .userId(request.getUserId())
+                .build();
     }
 
     @Override
@@ -85,7 +70,29 @@ public class ChatRoomServiceImpl implements IChatRoomService {
     }
 
     @Override
-    public List<ChatRoom> getAllRooms(Long userId) {
-        return chatRoomRepository.findAllByUserId(userId);
+    public List<ChatRoomDTO> getAllRooms(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+
+        List<ChatRoom> rooms = chatRoomRepository.findAllByUserId(userId);
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+
+        return rooms.stream()
+                .map(room -> {
+                    ChatMessage lastMessage = chatMessageRepository
+                            .findTopByChatRoomIdOrderByCreatedAtDesc(room.getId())
+                            .orElse(null);
+                    if (lastMessage != null) {
+                        room.setMessages(List.of(lastMessage));
+                    } else {
+                        room.setMessages(List.of());
+                    }
+                    return chatRoomMapper.toDTO(room);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

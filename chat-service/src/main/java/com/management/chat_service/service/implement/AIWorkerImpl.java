@@ -63,7 +63,7 @@ public class AIWorkerImpl implements IAIWorker {
         if (canProcessSession(sessionId)) return;
 
         try {
-            log.info("🤖 [AIWorker] Xử lý message từ GUEST - sessionId: {}", sessionId);
+            log.info("🤖 [AIWorker] Xử lý message từ GUEST - sessionId: {} - content: {}", sessionId, content);
             String aiResponse = chatAIService.ask(content);
 
             sendAIResponse(ChatMessageResponse.builder()

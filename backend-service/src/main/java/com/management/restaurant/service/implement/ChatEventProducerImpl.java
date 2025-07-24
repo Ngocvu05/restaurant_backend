@@ -19,6 +19,6 @@ public class ChatEventProducerImpl implements ChatEventProducer {
         event.setSessionId(sessionId);
         event.setUserId(userId);
         log.info("ChatEventProducer - Sending session conversion event: {}", event);
-        rabbitTemplate.convertAndSend("chat.convert.session", event);
+        rabbitTemplate.convertAndSend("chat.exchange", "chat.routing.convert", event);
     }
 }

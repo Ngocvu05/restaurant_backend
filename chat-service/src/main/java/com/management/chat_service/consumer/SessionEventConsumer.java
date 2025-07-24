@@ -22,10 +22,7 @@ public class  SessionEventConsumer {
             return;
         }
 
-        chatRoomService.convertSessionToUser(event.getSessionId(), event.getUserId());
-        log.info("✅ SessionEventConsumer - Đã convert session Room {} -> User {}", event.getSessionId(), event.getUserId());
-
         guestChatService.migrateToDatabase(event.getSessionId(), event.getUserId());
-        log.info("✅ SessionEventConsumer - Đã migrate message Redis -> DB cho session {}", event.getSessionId());
+        log.info("✅ SessionEventConsumer - migrate message Redis -> DB cho session Room {} -> User {}", event.getSessionId(), event.getUserId());
     }
 }

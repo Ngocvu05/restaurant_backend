@@ -29,13 +29,12 @@ public class ChatConsumerImpl implements IChatConsumer {
     //@RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE, containerFactory = "retryContainerFactory")
     @RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE)
     public void consumeMessage(ChatMessageRequest request) {
-        log.info("✅ ChatConsumer - Nhận request từ user: {}", request);
+        log.info("✅ ChatConsumer - Nhận request từ CHAT USER QUEUE: {}", request);
         //handle for user already logged in
         if (request.getUserId() != null) {
             ChatRoom chatRoom = chatRoomService.getOrCreateRoom(request);
+            request.setChatRoomId(chatRoom.getRoomId());
             log.info("🧾 Room info: id={}, roomId={}, userId={}", chatRoom.getId(), chatRoom.getRoomId(), chatRoom.getUserId());
-            // Send a message to AI
-            chatProducerService.sendToAI(request);
 
             // If userid is existed, store Db
             if (request.getUserId() != null) {
@@ -50,15 +49,17 @@ public class ChatConsumerImpl implements IChatConsumer {
                         .isAiGenerated(false)
                         .build();
                 chatMessageRepository.save(message);
-                log.info("✅ Đã lưu message của user {} vào DB", request.getUserId());
+                // Send a message to AI
+                chatProducerService.sendToAI(request);
+                log.info("✅ Đã lưu message của user {} vào DB and Send to AI: {}", request.getUserId(), request);
             }
         // handel for guest user
         }else if (request.getSenderType() == SenderType.GUEST) {
             guestChatService.saveGuestMessageToRedis(request);
             chatProducerService.handleGuestAIMessage(request);
-            log.info("👤 Guest message - không lưu DB, chỉ gửi AI, sessionId: {}, content: {}", request.getSessionId(), request.getMessage());
+            log.info("⚠️⚠️⚠️ Guest message - không lưu DB, chỉ gửi AI, sessionId: {}, content: {}", request.getSessionId(), request.getMessage());
         }else {
-            log.warn("⚠️ ChatConsumer - Nhận request không hợp lệ: {}", request);
+            log.warn("❌❌❌ ChatConsumer - Nhận request không hợp lệ: {}", request);
         }
     }
 

@@ -4,14 +4,11 @@ import com.management.chat_service.dto.ChatMessageRequest;
 import com.management.chat_service.dto.GuestChatMessageDTO;
 import com.management.chat_service.service.IChatProducerService;
 import com.management.chat_service.service.IGuestChatService;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
-
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Controller
@@ -21,25 +18,26 @@ public class WebSocketChatController {
     private final IGuestChatService guestChatService;
 
     @MessageMapping("/chat.send")
-    public void handleWebSocketMessage(ChatMessageRequest request,
-                                       @Header("simpSessionAttributes") Map<String, Object> sessionAttrs,
-                                       @Header(name = "X-User-Id", required = false) Optional<String> userIdHeader) {
+    public void handleWebSocketMessage(ChatMessageRequest request) {
         log.info("📨 WebSocket message received: {}", request);
-        String userId = (String) sessionAttrs.get("userId");
+        Long userId = request.getUserId();
+        SenderType senderType = request.getSenderType();
 
-        // Sync userId from header if available
-        if (userId != null) {
-            request.setUserId(Long.parseLong(userId));
-            chatProducerService.sendMessageToChatQueue(request);
+        if (senderType == null) {
+            senderType = userId != null ? SenderType.USER : SenderType.GUEST;
+            request.setSenderType(senderType);
+        }
+        if (userId != null && senderType != SenderType.GUEST) {
             log.info("📨 WebSocketController - Send request via Websocket - Login message received: {}", request);
+            chatProducerService.sendMessageToChatQueue(request);
         }else{
             GuestChatMessageDTO message = GuestChatMessageDTO.builder()
                     .content(request.getMessage())
                     .sessionId(request.getSessionId())
                     .senderType(request.getSenderType())
                     .build();
+            log.info("📨 WebSocketController - Send request via Websocket - Guest message request: {} - message: {}", request, message);
             guestChatService.handleGuestMessage(message);
-            log.info("📨 WebSocketController - Send request via Websocket - Guest message received: {}", request);
         }
     }
 }

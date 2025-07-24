@@ -13,7 +13,6 @@ import com.management.chat_service.status.SenderType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,7 +23,6 @@ import java.util.List;
 @Transactional
 public class ChatServiceImpl implements IChatService {
     private final ChatRoomRepository chatRoomRepository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final List<IChatMessageHandler> handlers;
     private final IChatMessageMapper chatMessageMapper;
     private final IChatWebSocketService chatWebSocketService;

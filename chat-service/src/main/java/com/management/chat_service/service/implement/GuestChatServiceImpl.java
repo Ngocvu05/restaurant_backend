@@ -9,15 +9,17 @@ import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
 import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatProducerService;
+import com.management.chat_service.service.IChatWebSocketService;
 import com.management.chat_service.service.IGuestChatService;
 import com.management.chat_service.status.ChatRoomStatus;
 import com.management.chat_service.status.ChatRoomType;
 import com.management.chat_service.status.MessageType;
 import com.management.chat_service.status.SenderType;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GuestChatServiceImpl implements IGuestChatService {
@@ -35,13 +38,12 @@ public class GuestChatServiceImpl implements IGuestChatService {
 
     private final IChatProducerService chatProducerService;
     private final RedisTemplate<String, Object> redisTemplate;
-    private ChatMessageRepository chatMessageRepository;
-    private ChatRoomRepository chatRoomRepository;
-    private final RabbitTemplate rabbitTemplate;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final IChatWebSocketService webSocketService;
 
     private String getRedisKey(String sessionId) {
-        return "guest:chat:" + sessionId;
+        return REDIS_PREFIX + sessionId;
     }
 
     @Override
@@ -56,20 +58,19 @@ public class GuestChatServiceImpl implements IGuestChatService {
                 .timestamp(message.getCreatedAt())
                 .build();
         chatProducerService.handleGuestAIMessage(request);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, request);
-
+        // Push request to Redis
         redisTemplate.opsForList().rightPush(key,request);
         redisTemplate.expire(key, TTL_DAYS, TimeUnit.DAYS); //TTL: Set expiration to 1 day
     }
 
     @Override
     public void handleAIResponse(ChatMessageResponse response) {
-        // 1. Push response to Redis (optional)
+        // Push response to Redis (optional)
         saveGuestResponseToRedis(response);
 
-        // 2. Send via WebSocket
-        messagingTemplate.convertAndSend("/topic/messages/" + response.getSessionId(), response);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, response);
+        // Send response to Response Queue -> this process run on class AIWorkerImpl
+        //rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, response);
+        webSocketService.sendMessageToRoom(response.getSessionId(), response);
     }
 
     @Override
@@ -78,10 +79,11 @@ public class GuestChatServiceImpl implements IGuestChatService {
     }
 
     @Override
+    @Transactional
     public void migrateToDatabase(String sessionId, Long userId) {
         String key = REDIS_PREFIX + sessionId;
-        List<Object> messages = redisTemplate.opsForList().range(key, 0, -1);
-
+        List<Object> messages = getGuestMessages(sessionId);
+        log.info("Migrating guest chat messages from Redis to database for session: {}, message: {}", sessionId, messages);
         if (messages == null || messages.isEmpty()) return;
 
         // Create or find chat room
@@ -96,6 +98,7 @@ public class GuestChatServiceImpl implements IGuestChatService {
                         .description("Chat room created for session " + sessionId)
                         .createdAt(LocalDateTime.now())
                         .build()));
+        log.info("Chat room for session {}: {}", sessionId, room);
 
         for (Object raw : messages) {
             if (raw instanceof ChatMessageRequest request) {
@@ -110,11 +113,12 @@ public class GuestChatServiceImpl implements IGuestChatService {
                         .isRead(false)
                         .build();
                 chatMessageRepository.save(msg);
+            log.info("Saved user Chat message request to database: {}", msg);
 
             } else if (raw instanceof ChatMessageResponse response) {
                 ChatMessage msg = ChatMessage.builder()
                         .chatRoom(room)
-                        .senderId(null)
+                        .senderId(userId)
                         .senderName("AI")
                         .content(response.getResponse())
                         .senderType(SenderType.AI)
@@ -123,6 +127,7 @@ public class GuestChatServiceImpl implements IGuestChatService {
                         .isRead(true)
                         .build();
                 chatMessageRepository.save(msg);
+                log.info("Saved user Chat message response to database: {}", msg);
             }
         }
         // Clean up Redis
