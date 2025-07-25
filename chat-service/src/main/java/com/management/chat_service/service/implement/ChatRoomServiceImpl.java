@@ -95,4 +95,27 @@ public class ChatRoomServiceImpl implements IChatRoomService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<ChatRoomDTO> getAllRoomsForAdmin() {
+        List<ChatRoom> rooms = chatRoomRepository.findAll();
+        if (rooms.isEmpty()) {
+            return List.of();
+        }
+        log.info(">>> getAllRoomsForAdmin - Fetching all chat rooms for admin");
+        return rooms.stream()
+                .map(room -> {
+                    ChatMessage lastMessage = chatMessageRepository
+                            .findTopByChatRoomIdOrderByCreatedAtDesc(room.getId())
+                            .orElse(null);
+                    if (lastMessage != null) {
+                        room.setMessages(List.of(lastMessage));
+                    } else {
+                        room.setMessages(List.of());
+                    }
+                    return chatRoomMapper.toDTO(room);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
 }

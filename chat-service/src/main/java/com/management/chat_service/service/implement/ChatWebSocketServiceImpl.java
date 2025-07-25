@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 public class ChatWebSocketServiceImpl implements IChatWebSocketService {
     private final SimpMessagingTemplate messagingTemplate;
     @Override
-    public void sendMessageToRoom(String roomId, ChatMessageResponse message) {
-        messagingTemplate.convertAndSend("/topic/room/" + roomId, message);
+    public void sendMessageToRoom(String sessionId, ChatMessageResponse message) {
+        messagingTemplate.convertAndSend("/topic/room/" + sessionId, message);
     }
 }

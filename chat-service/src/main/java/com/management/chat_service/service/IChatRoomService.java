@@ -11,4 +11,5 @@ public interface IChatRoomService {
     void convertSessionToUser(String sessionId, Long userId);
     List<ChatRoom> getRooms(Long userId);
     List<ChatRoomDTO> getAllRooms(Long userId);
+    List<ChatRoomDTO> getAllRoomsForAdmin();
 }

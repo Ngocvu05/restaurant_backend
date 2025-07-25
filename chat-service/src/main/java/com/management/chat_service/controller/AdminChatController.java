@@ -2,6 +2,7 @@ package com.management.chat_service.controller;
 
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatRoomRepository;
+import com.management.chat_service.service.IChatRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final IChatRoomService chatRoomService;
 
     @PostMapping("/join/{roomId}")
     public ResponseEntity<?> joinRoom(@PathVariable String roomId,
@@ -64,5 +66,11 @@ public class AdminChatController {
                 "Phòng " + roomId + " đã được xử lý hoàn tất bởi Admin " + adminId);
 
         return ResponseEntity.ok("Phòng đã được đánh dấu là đã xử lý");
+    }
+
+    @GetMapping("/rooms/all")
+    public ResponseEntity<?> getAllChatRooms() {
+        log.info("📥 Fetching all chat rooms for admin");
+        return ResponseEntity.ok(chatRoomService.getAllRoomsForAdmin());
     }
 }

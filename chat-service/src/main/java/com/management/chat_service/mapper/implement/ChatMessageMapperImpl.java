@@ -18,6 +18,7 @@ public class ChatMessageMapperImpl implements IChatMessageMapper {
         return ChatMessageDTO.builder()
                 .id(message.getId())
                 .roomId(message.getChatRoom().getRoomId())
+                .sessionId(message.getChatRoom().getSessionId())
                 .senderId(message.getSenderId())
                 .senderName(message.getSenderName())
                 .content(message.getContent())
