@@ -18,7 +18,12 @@ public class ChatRoomDTO {
     private String roomId;
     private String roomName;
     private Long userId;
+    private String userName;
+    private String email;
+    private String avatarUrl;
     private String description;
+    private Long adminId;
+    private Boolean resolved;
     private ChatRoomType roomType;
     private ChatRoomStatus isActive;
     private Long unreadCount;

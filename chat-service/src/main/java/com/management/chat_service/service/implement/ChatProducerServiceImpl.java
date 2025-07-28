@@ -32,4 +32,9 @@ public class ChatProducerServiceImpl implements IChatProducerService {
         rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, request);
         log.info("🚀 GuestChatService - Sent guest message to AI: {}", request.getMessage());
     }
+
+    @Override
+    public void sendMessageToUser(ChatMessageRequest request) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.USER_TO_USER_ROUTING_KEY, request);
+    }
 }

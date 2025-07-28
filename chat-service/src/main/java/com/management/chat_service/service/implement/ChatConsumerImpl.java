@@ -5,10 +5,7 @@ import com.management.chat_service.dto.ChatMessageRequest;
 import com.management.chat_service.model.ChatMessage;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
-import com.management.chat_service.service.IChatConsumer;
-import com.management.chat_service.service.IChatProducerService;
-import com.management.chat_service.service.IChatRoomService;
-import com.management.chat_service.service.IGuestChatService;
+import com.management.chat_service.service.*;
 import com.management.chat_service.status.MessageType;
 import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
@@ -20,69 +17,89 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ChatConsumerImpl implements IChatConsumer {
+
     private final IChatRoomService chatRoomService;
     private final IChatProducerService chatProducerService;
     private final ChatMessageRepository chatMessageRepository;
     private final IGuestChatService guestChatService;
+    private final IChatWebSocketService chatWebSocketService;
 
     @Override
-    //@RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE, containerFactory = "retryContainerFactory")
     @RabbitListener(queues = RabbitMQConfig.CHAT_QUEUE)
     public void consumeMessage(ChatMessageRequest request) {
-        log.info("✅ ChatConsumer - Nhận request từ CHAT USER QUEUE: {}", request);
-        //handle for user already logged in
-        if (request.getUserId() != null) {
-            ChatRoom chatRoom = chatRoomService.getOrCreateRoom(request);
-            request.setChatRoomId(chatRoom.getRoomId());
-            log.info("🧾 Room info: id={}, roomId={}, userId={}", chatRoom.getId(), chatRoom.getRoomId(), chatRoom.getUserId());
+        log.info("📨 CHAT_QUEUE - Nhận request: {}", request);
 
-            // If userid is existed, store Db
-            if (request.getUserId() != null) {
-                ChatMessage message = ChatMessage.builder()
-                        .chatRoom(chatRoom)
-                        .senderId(request.getUserId())
-                        .senderName("User " + request.getUserId())
-                        .content(request.getMessage())
-                        .senderType(request.getSenderType())
-                        .type(MessageType.TEXT)
-                        .isRead(false)
-                        .isAiGenerated(false)
-                        .build();
-                chatMessageRepository.save(message);
-                // Send a message to AI
-                chatProducerService.sendToAI(request);
-                log.info("✅ Đã lưu message của user {} vào DB and Send to AI: {}", request.getUserId(), request);
-            }
-        // handel for guest user
-        }else if (request.getSenderType() == SenderType.GUEST) {
-            guestChatService.saveGuestMessageToRedis(request);
-            chatProducerService.handleGuestAIMessage(request);
-            log.info("⚠️⚠️⚠️ Guest message - không lưu DB, chỉ gửi AI, sessionId: {}, content: {}", request.getSessionId(), request.getMessage());
-        }else {
-            log.warn("❌❌❌ ChatConsumer - Nhận request không hợp lệ: {}", request);
+        if (request.getUserId() != null) {
+            handleLoggedInUserChat(request, true); // Send it to Ai
+        } else if (request.getSenderType() == SenderType.GUEST) {
+            handleGuestChat(request);
+        } else {
+            log.warn("❌Can not process CHAT_QUEUE invalid: {}", request);
         }
     }
 
+    @Override
     @RabbitListener(queues = RabbitMQConfig.GUEST_CHAT_QUEUE)
     public void handleGuestMessage(ChatMessageRequest request) {
-        log.info("📩 GuestChatConsumer - {}", request);
-        // Check if the sender type is GUEST
+        log.info("📩 GUEST_CHAT_QUEUE - Nhận request: {}", request);
+
         if (request.getSenderType() != SenderType.GUEST) {
             log.warn("❌ Bỏ qua message vì senderType không phải GUEST: {}", request);
             return;
         }
+        handleGuestChat(request);
+    }
 
-        String sessionId = request.getSessionId();
-        String responseMessage = request.getMessage();
-        if (sessionId == null || responseMessage == null) {
-            log.warn("⚠️ GuestChatConsumer - Invalid guest message: {}", request);
+    @Override
+    @RabbitListener(queues = RabbitMQConfig.USER_TO_USER_QUEUE)
+    public void handleUserToUserMessage(ChatMessageRequest request) {
+        log.info("🤝 USER_TO_USER_QUEUE - Nhận request: {}", request);
+
+        if (request.getUserId() != null) {
+            handleLoggedInUserChat(request, false); // Không gửi AI
+        } else {
+            log.warn("❌ USER_TO_USER_QUEUE - Không có userId trong request: {}", request);
+        }
+    }
+
+    // Shared logic: handle chat của user đã login
+    private void handleLoggedInUserChat(ChatMessageRequest request, boolean sendToAI) {
+        ChatRoom chatRoom = chatRoomService.getOrCreateRoom(request);
+        if (chatRoom.getRoomId() != null) {
+            request.setChatRoomId(chatRoom.getRoomId());
+        }
+
+        ChatMessage message = ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .senderId(request.getUserId())
+                .senderName("User " + request.getUserId())
+                .content(request.getMessage())
+                .senderType(request.getSenderType())
+                .type(MessageType.TEXT)
+                .isRead(false)
+                .isAiGenerated(false)
+                .build();
+
+        chatMessageRepository.save(message);
+        log.info("✅ Đã lưu message userId={} vào DB: {}", request.getUserId(), request);
+
+        if (sendToAI) {
+            chatProducerService.sendToAI(request);
+            log.info("🧠 Gửi message tới AI: {}", request.getMessage());
+        } else {
+            log.info("📤 Admin chat -  request content: {}",request);
+        }
+    }
+
+    // Shared logic: handle guest chat
+    private void handleGuestChat(ChatMessageRequest request) {
+        if (request.getSessionId() == null || request.getMessage() == null) {
+            log.warn("⚠️ GUEST_CHAT_QUEUE - Invalid request: {}", request);
             return;
         }
 
-        // Save guest message to Redis
         guestChatService.saveGuestMessageToRedis(request);
-
-        //Send AI response to guest
         chatProducerService.handleGuestAIMessage(request);
+        log.info("✅ GuestChat - Gửi AI và lưu Redis (sessionId={}): {}", request.getSessionId(), request.getMessage());
     }
 }

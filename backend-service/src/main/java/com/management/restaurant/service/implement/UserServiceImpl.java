@@ -1,7 +1,9 @@
 package com.management.restaurant.service.implement;
 
 import com.management.restaurant.dto.UserDTO;
+import com.management.restaurant.dto.UserInfoDTO;
 import com.management.restaurant.exception.NotFoundException;
+import com.management.restaurant.mapper.IUserInfoMapper;
 import com.management.restaurant.mapper.UserMapper;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
@@ -26,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final UserRoleRepository userRoleRepository;
     private final ImageRepository imageRepository;
+    private final IUserInfoMapper userInfoMapper;
 
     @Override
     public List<UserDTO> getAllUsers() {
@@ -91,6 +94,19 @@ public class UserServiceImpl implements UserService {
 
         // Set các ảnh khác không phải avatar
         imageRepository.unsetAllOtherAvatars(userId, imageId);
+    }
+
+    /**
+     * find Users by id.
+     * @param userIds list ids of user.
+     * @return list users' information.
+     */
+    @Override
+    public List<UserInfoDTO> findUsersByIds(List<Long> userIds) {
+        return userRepository.findAllById(userIds)
+                .stream()
+                .map(userInfoMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.management.chat_service.dto;
 
+import com.management.chat_service.status.MessageType;
 import com.management.chat_service.status.SenderType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,4 +17,5 @@ public class ChatMessageResponse {
     private Long userId;
     private Long chatRoomId;
     private SenderType senderType;
+    private MessageType messageType;
 }

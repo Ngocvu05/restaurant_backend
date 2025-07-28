@@ -6,4 +6,5 @@ public interface IChatProducerService {
     void sendToAI(ChatMessageRequest request);
     void sendMessageToChatQueue(ChatMessageRequest request);
     void handleGuestAIMessage(ChatMessageRequest request);
+    void sendMessageToUser(ChatMessageRequest request);
 }

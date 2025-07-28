@@ -23,6 +23,7 @@ public class RabbitMQConfig {
     public static final String AI_QUEUE = "chat.queue.ai";
     public static final String RESPONSE_QUEUE = "chat.queue.response";
     public static final String SESSION_CONVERT_QUEUE = "chat.queue.session.convert";
+    public static final String USER_TO_USER_QUEUE = "chat.queue.user2user";
 
     // ✅ Routing keys
     public static final String CHAT_ROUTING_KEY = "chat.routing.user";
@@ -30,6 +31,7 @@ public class RabbitMQConfig {
     public static final String AI_ROUTING_KEY = "chat.routing.ai";
     public static final String RESPONSE_ROUTING_KEY = "chat.routing.response";
     public static final String CONVERT_SESSION_ROUTING_KEY = "chat.routing.convert";
+    public static final String USER_TO_USER_ROUTING_KEY = "chat.routing.user2user";
 
     @Bean
     public TopicExchange chatExchange() {
@@ -98,6 +100,18 @@ public class RabbitMQConfig {
     @Bean
     public Binding convertSessionBinding() {
         return BindingBuilder.bind(sessionConversionQueue()).to(chatExchange()).with(CONVERT_SESSION_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue userToUserQueue() {
+        return QueueBuilder.durable(USER_TO_USER_QUEUE)
+                .withArgument("x-single-active-consumer", true)
+                .build();
+    }
+
+    @Bean
+    public Binding userToUserBinding() {
+        return BindingBuilder.bind(userToUserQueue()).to(chatExchange()).with(USER_TO_USER_ROUTING_KEY);
     }
 
     @Bean

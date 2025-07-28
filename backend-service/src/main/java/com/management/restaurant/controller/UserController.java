@@ -1,12 +1,14 @@
 package com.management.restaurant.controller;
 
 import com.management.restaurant.dto.UserDTO;
+import com.management.restaurant.dto.UserInfoDTO;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.model.User;
 import com.management.restaurant.security.UserPrincipal;
 import com.management.restaurant.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -68,5 +71,26 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * API to get a list of users by their IDs.
+     * @param ids list of user IDs to retrieve.
+     *           IDs should be passed as a comma-separated string in the request parameter.
+     *           If the list is empty or null, it returns a 400 Bad Request response
+     * Example: /batch?ids=1,2,3
+     * @return ResponseEntity list UserDTO.
+     */
+    @GetMapping("/batch")
+    public ResponseEntity<List<UserInfoDTO>> getUsersByIds(
+            @RequestParam("ids") List<Long> ids) {
+
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<UserInfoDTO> users = userService.findUsersByIds(ids);
+        log.info(">>> getUsersByIds - Fetched {} users for IDs: {}", users.size(), users);
+        return ResponseEntity.ok(users);
     }
 }

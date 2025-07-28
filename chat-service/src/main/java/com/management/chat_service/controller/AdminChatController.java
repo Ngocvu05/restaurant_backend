@@ -1,10 +1,16 @@
 package com.management.chat_service.controller;
 
+import com.management.chat_service.dto.ChatMessageDTO;
+import com.management.chat_service.dto.ChatMessageRequest;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatRoomRepository;
+import com.management.chat_service.service.IChatMessageService;
+import com.management.chat_service.service.IChatProducerService;
 import com.management.chat_service.service.IChatRoomService;
+import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,10 +24,15 @@ public class AdminChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final IChatRoomService chatRoomService;
+    private final IChatMessageService chatMessageService;
+    private final IChatProducerService chatProducerService;
 
     @PostMapping("/join/{roomId}")
     public ResponseEntity<?> joinRoom(@PathVariable String roomId,
-                                      @RequestHeader("X-User-Id") Long adminId) {
+                                      @RequestHeader("X-User-Id") Long adminId,
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "10") int size) {
+        log.info("📥 Admin {} joining the chat room {}", adminId, roomId);
         ChatRoom room = chatRoomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
 
@@ -32,6 +43,7 @@ public class AdminChatController {
 
         room.setAdminId(adminId);
         chatRoomRepository.save(room);
+        Page<ChatMessageDTO> messages = chatMessageService.getMessagesByRoomId(roomId, page, size);
 
         // ✅ send private notification to the admin joining the room
         messagingTemplate.convertAndSendToUser(
@@ -44,7 +56,7 @@ public class AdminChatController {
         messagingTemplate.convertAndSend("/topic/admin/notify",
                 "Phòng " + roomId + " đã được nhận xử lý bởi Admin " + adminId);
 
-        return ResponseEntity.ok("Bạn đã nhận xử lý phòng " + roomId);
+        return ResponseEntity.ok(messages);
     }
 
     @PutMapping("/resolve/{roomId}")
@@ -73,4 +85,32 @@ public class AdminChatController {
         log.info("📥 Fetching all chat rooms for admin");
         return ResponseEntity.ok(chatRoomService.getAllRoomsForAdmin());
     }
+
+    @PostMapping("/send")
+    public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
+                                      @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        log.info(">>> AdminChatController - Received message: {}", request);
+
+        try {
+            if (userIdHeader != null && !userIdHeader.isEmpty()) {
+                request.setUserId(Long.parseLong(userIdHeader));
+                log.info(">>> AdminChatController - Set userId: {}", request.getUserId());
+            }
+
+            if (request.getSenderType() == null) {
+                request.setSenderType(SenderType.USER); // fallback
+            }
+
+            chatProducerService.sendMessageToUser(request);
+            log.info(">>> AdminChatController - Message sent to queue successfully");
+
+            return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");
+
+        } catch (Exception e) {
+            log.error(">>> AdminChatController - Error sending message: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\",\"message\":\"Failed to send message\"}");
+        }
+    }
+
 }
