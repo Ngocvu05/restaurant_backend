@@ -27,4 +27,16 @@
         <appender-ref ref="FILE"/>
     </root>
 
+    <logger name="com.management.api_gateway" level="DEBUG" additivity="false">
+        <appender-ref ref="DEBUG_FILE"/>
+    </logger>
+
+    <logger name="com.management.api_gateway" level="DEBUG" />
+    <logger name="org.springframework" level="WARN" />
+    <logger name="org.springframework.web" level="INFO" />
+    <logger name="org.hibernate" level="WARN" />
+    <logger name="org.elasticsearch" level="ERROR" />
+    <logger name="org.springframework.cloud" level="ERROR" />
+    <logger name="org.springframework.amqp" level="ERROR" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
 </configuration>

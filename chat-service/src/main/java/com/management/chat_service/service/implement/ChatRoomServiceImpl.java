@@ -6,12 +6,14 @@ import com.management.chat_service.dto.UserDTO;
 import com.management.chat_service.mapper.IChatMessageMapper;
 import com.management.chat_service.mapper.IChatRoomMapper;
 import com.management.chat_service.model.ChatMessage;
+import com.management.chat_service.model.ChatParticipant;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
 import com.management.chat_service.repository.ChatRoomRepository;
 import com.management.chat_service.service.IChatRoomService;
 import com.management.chat_service.status.ChatRoomStatus;
 import com.management.chat_service.status.ChatRoomType;
+import com.management.chat_service.status.ParticipantRole;
 import com.management.chat_service.status.SenderType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -139,77 +141,102 @@ public class ChatRoomServiceImpl implements IChatRoomService {
     @Override
     public List<ChatRoomDTO> getAllRoomsForAdmin() {
         List<ChatRoom> rooms = chatRoomRepository.findAll();
-        if (rooms.isEmpty()) {
-            return Collections.emptyList();
-        }
+        if (rooms.isEmpty()) return Collections.emptyList();
 
-        // Collect a set of unique user IDs
         Set<Long> userIds = rooms.stream()
                 .map(ChatRoom::getUserId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        log.info(">>> getAllRoomsForAdmin - List user IDs : {}", userIds);
-        Map<Long, String> userIdToUsernameMap = Collections.emptyMap();
+
+        Map<Long, UserDTO> userInfoMap = fetchUsersInfo(userIds);
+
+        return rooms.stream().map(room -> {
+            ChatRoomDTO dto = chatRoomMapper.toDTO(room);
+
+            UserDTO user = userInfoMap.get(room.getUserId());
+            if (user != null) {
+                dto.setUserName(user.getUsername());
+                dto.setEmail(user.getEmail());
+                dto.setAvatarUrl(user.getAvatarUrl());
+            } else {
+                dto.setUserName("Anonymous");
+            }
+
+            chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(room.getId())
+                    .ifPresent(m -> dto.setLastMessage(chatMessageMapper.toDTO(m)));
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+
+    @Override
+    @Transactional
+    public ChatRoom getOrCreatePrivateRoom(Long userId1, Long userId2) {
+        if (userId1.equals(userId2)) {
+            throw new IllegalArgumentException("Cannot create a chat room with yourself.");
+        }
+
+        List<Long> userIds = Arrays.asList(userId1, userId2);
+        return chatRoomRepository.findPrivateRoomByParticipants(userIds)
+                .orElseGet(() -> {
+                    Map<Long, UserDTO> userMap = fetchUsersInfo(new HashSet<>(userIds));
+
+                    String name1 = Optional.ofNullable(userMap.get(userId1)).map(UserDTO::getUsername).orElse("User " + userId1);
+                    String name2 = Optional.ofNullable(userMap.get(userId2)).map(UserDTO::getUsername).orElse("User " + userId2);
+
+                    String roomName = String.format("Private Chat: %s & %s", name1, name2);
+
+                    ChatRoom newRoom = ChatRoom.builder()
+                            .roomId(UUID.randomUUID().toString())
+                            .name(roomName)
+                            .type(ChatRoomType.PRIVATE)
+                            .status(ChatRoomStatus.ACTIVE)
+                            .build();
+
+                    ChatParticipant p1 = ChatParticipant.builder()
+                            .chatRoom(newRoom)
+                            .userId(userId1)
+                            .userName(name1)
+                            .role(ParticipantRole.MEMBER)
+                            .build();
+
+                    ChatParticipant p2 = ChatParticipant.builder()
+                            .chatRoom(newRoom)
+                            .userId(userId2)
+                            .userName(name2)
+                            .role(ParticipantRole.MEMBER)
+                            .build();
+
+                    newRoom.setParticipants(Arrays.asList(p1, p2));
+                    return chatRoomRepository.save(newRoom);
+                });
+    }
+
+    private Map<Long, UserDTO> fetchUsersInfo(Set<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return Collections.emptyMap();
 
         HttpHeaders headers = new HttpHeaders();
         String jwt = httpServletRequest.getHeader("Authorization");
-        if (jwt != null) {
-            headers.set("Authorization", jwt);
-        }
-        log.info(">>> getAllRoomsForAdmin - JWT Token: {}", jwt);
+        if (jwt != null) headers.set("Authorization", jwt);
+
         HttpEntity<String> entity = new HttpEntity<>(headers);
-        if (!userIds.isEmpty()) {
-            try {
-                // Replace with the actual URL or a configuration variable
-                // e.g., using Service Discovery: "http://user-service/api/v1/users/batch?ids={ids}"
-                String userServiceUrl = "http://user-service:8081/api/v1/users/batch?ids="
-                        + userIds.stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(","));
+        String url = "http://user-service:8081/api/v1/users/batch?ids=" +
+                userIds.stream().map(String::valueOf).collect(Collectors.joining(","));
 
-                ResponseEntity<List<UserDTO>> response = restTemplate.exchange(
-                        userServiceUrl,
-                        HttpMethod.GET,
-                        entity,
-                        new ParameterizedTypeReference<List<UserDTO>>() {}
-                );
+        try {
+            ResponseEntity<List<UserDTO>> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity,
+                    new ParameterizedTypeReference<List<UserDTO>>() {}
+            );
 
-                List<UserDTO> users = response.getBody();
-                if (users != null && !users.isEmpty()) {
-                    userIdToUsernameMap = users.stream()
-                            .collect(Collectors.toMap(UserDTO::getId, UserDTO::getUsername));
-                }
-            } catch (Exception e) {
-                log.error(">>> Error calling User-Service: {}", e.getMessage());
-                // Can proceed without usernames or throw an exception, depending on requirements
+            List<UserDTO> users = response.getBody();
+            if (users != null && !users.isEmpty()) {
+                return users.stream().collect(Collectors.toMap(UserDTO::getId, u -> u));
             }
+        } catch (Exception e) {
+            log.error("❌ Failed to call user-service: {}", e.getMessage());
         }
-
-        // Final variable to be used inside a lambda expression
-        final Map<Long, String> finalUserIdToUsernameMap = userIdToUsernameMap;
-
-        log.info(">>> getAllRoomsForAdmin - Fetching all chat rooms for admin {}", finalUserIdToUsernameMap);
-        return rooms.stream()
-                .map(room -> {
-                    // 1. Convert the ChatRoom entity to a basic DTO
-                    ChatRoomDTO dto = chatRoomMapper.toDTO(room);
-                    log.info(">>> getAllRoomsForAdmin - Converting ChatRoom to DTO: {}", dto);
-
-                    // 2. Attach the username to the DTO
-                    String username = finalUserIdToUsernameMap.getOrDefault(room.getUserId(), "Anonymous User");
-                    dto.setUserName(username);
-
-                    // 3. Fetch and attach the last message to the DTO
-                    // This approach is more efficient than modifying the `room` entity
-                    chatMessageRepository.findTopByChatRoomIdOrderByCreatedAtDesc(room.getId())
-                            .ifPresent(lastMessage -> {
-                                // Assuming ChatRoomDTO has a lastMessage field of type ChatMessageDTO
-                                // and you have a chatMessageMapper
-                                dto.setLastMessage(chatMessageMapper.toDTO(lastMessage));
-                            });
-                    log.info(">>> getAllRoomsForAdmin - Final ChatRoomDTO: {}", dto);
-                    return dto;
-                })
-                .filter(obj -> true)
-                .collect(Collectors.toList());
+        return Collections.emptyMap();
     }
 }

@@ -38,10 +38,10 @@ public class ChatController {
             }
 
             if (request.getSenderType() == null) {
-                request.setSenderType(SenderType.USER); // fallback
+                request.setSenderType(SenderType.USER);
             }
 
-            chatProducerService.sendMessageToChatQueue(request);
+            chatProducerService.sendMessageToChatQueue_v2(request);
             log.info(">>> ChatController - Message sent to queue successfully");
 
             return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");

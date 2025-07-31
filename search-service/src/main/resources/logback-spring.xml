@@ -2,7 +2,7 @@
 <configuration>
 
     <property name="SERVICE_NAME" value="search-service" />
-    <property name="LOG_FOLDER" value="../logs" />
+    <property name="LOG_FOLDER" value="/logs" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -13,9 +13,11 @@
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FOLDER}/${SERVICE_NAME}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_FOLDER}/${SERVICE_NAME}-%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FOLDER}/${SERVICE_NAME}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
@@ -26,5 +28,16 @@
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
+
+    <logger name="com.management.search_service" level="DEBUG" />
+
+    <!-- Limit spam logs -->
+    <logger name="org.springframework" level="WARN" />
+    <logger name="org.springframework.web" level="INFO" />
+    <logger name="org.hibernate" level="WARN" />
+    <logger name="org.elasticsearch" level="ERROR" />
+    <logger name="org.springframework.cloud" level="ERROR" />
+    <logger name="org.springframework.amqp" level="ERROR" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
 
 </configuration>

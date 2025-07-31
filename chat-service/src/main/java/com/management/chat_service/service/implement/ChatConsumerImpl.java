@@ -2,6 +2,7 @@ package com.management.chat_service.service.implement;
 
 import com.management.chat_service.config.RabbitMQConfig;
 import com.management.chat_service.dto.ChatMessageRequest;
+import com.management.chat_service.dto.ChatMessageResponse;
 import com.management.chat_service.model.ChatMessage;
 import com.management.chat_service.model.ChatRoom;
 import com.management.chat_service.repository.ChatMessageRepository;
@@ -58,6 +59,13 @@ public class ChatConsumerImpl implements IChatConsumer {
         if (request.getUserId() != null) {
             handleLoggedInUserChat(request, false); // Không gửi AI
         } else {
+            ChatMessageResponse response = ChatMessageResponse.builder()
+                    .messageType(MessageType.TEXT)
+                    .sessionId(request.getSessionId())
+                    .userId(request.getUserId())
+                    .response(request.getMessage())
+                    .build();
+            chatWebSocketService.sendMessageToPrivateRoom(request.getChatRoomId(), response);
             log.warn("❌ USER_TO_USER_QUEUE - Không có userId trong request: {}", request);
         }
     }
@@ -87,6 +95,14 @@ public class ChatConsumerImpl implements IChatConsumer {
             chatProducerService.sendToAI(request);
             log.info("🧠 Gửi message tới AI: {}", request.getMessage());
         } else {
+            ChatMessageResponse response = ChatMessageResponse.builder()
+                    .messageType(MessageType.TEXT)
+                    .sessionId(request.getSessionId())
+                    .userId(request.getUserId())
+                    .response(request.getMessage())
+                    .senderType(request.getSenderType())
+                    .build();
+            chatWebSocketService.sendMessageToPrivateRoom(request.getSessionId(), response);
             log.info("📤 Admin chat -  request content: {}",request);
         }
     }

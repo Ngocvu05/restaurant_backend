@@ -90,7 +90,6 @@ public class AdminChatController {
     public ResponseEntity<?> sendChat(@RequestBody ChatMessageRequest request,
                                       @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         log.info(">>> AdminChatController - Received message: {}", request);
-
         try {
             if (userIdHeader != null && !userIdHeader.isEmpty()) {
                 request.setUserId(Long.parseLong(userIdHeader));
@@ -98,14 +97,13 @@ public class AdminChatController {
             }
 
             if (request.getSenderType() == null) {
-                request.setSenderType(SenderType.USER); // fallback
+                request.setSenderType(SenderType.ADMIN);
             }
 
-            chatProducerService.sendMessageToUser(request);
+            chatProducerService.sendMessageToChatQueue_v2(request);
             log.info(">>> AdminChatController - Message sent to queue successfully");
 
             return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");
-
         } catch (Exception e) {
             log.error(">>> AdminChatController - Error sending message: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

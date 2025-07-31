@@ -29,7 +29,7 @@ public class WebSocketChatController {
         }
         if (userId != null && senderType != SenderType.GUEST) {
             log.info("📨 WebSocketController - Send request via Websocket - Login message received: {}", request);
-            chatProducerService.sendMessageToChatQueue(request);
+            chatProducerService.sendMessageToChatQueue_v2(request);
         }else{
             GuestChatMessageDTO message = GuestChatMessageDTO.builder()
                     .content(request.getMessage())

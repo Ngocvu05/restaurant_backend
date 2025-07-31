@@ -12,4 +12,6 @@ public interface IChatRoomService {
     List<ChatRoom> getRooms(Long userId);
     List<ChatRoomDTO> getAllRooms(Long userId);
     List<ChatRoomDTO> getAllRoomsForAdmin();
+
+    ChatRoom getOrCreatePrivateRoom(Long userId1, Long userId2);
 }

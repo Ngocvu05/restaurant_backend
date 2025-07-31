@@ -108,11 +108,12 @@ logging:
     root: INFO
     com.restaurant.management: ${LOG_LEVEL_APP:DEBUG}
     org.springframework.ai: ${LOG_LEVEL_SPRING_AI:DEBUG}
-    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:DEBUG}
     org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
-    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    #org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_PARAMS:TRACE}
-    org.springframework.amqp: ${LOG_LEVEL_AMQP:INFO}
+    org.springframework.amqp: ${LOG_LEVEL_AMQP:DEBUG}
+    org.springframework.data.redis: ${LOG_LEVEL_REDIS:DEBUG}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

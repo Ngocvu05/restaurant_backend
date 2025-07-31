@@ -56,7 +56,7 @@ public class ChatMessage {
     private String content;
 
     @Column(name = "parent_message_id")
-    private String parentMessageId; // For reply functionality
+    private String parentMessageId;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -72,7 +72,7 @@ public class ChatMessage {
     private SenderType senderType = SenderType.USER;
 
     @Column(columnDefinition = "TEXT")
-    private String metadata; // JSON string for additional data
+    private String metadata;
 
     @Column(nullable = false)
     @Builder.Default
@@ -88,7 +88,7 @@ public class ChatMessage {
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean deleted = false; // soft delete support
+    private Boolean deleted = false;
 
     @PrePersist
     private void prePersist() {

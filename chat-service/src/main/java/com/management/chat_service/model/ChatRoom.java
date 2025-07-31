@@ -62,6 +62,15 @@ public class ChatRoom {
     @Builder.Default
     private Boolean resolved = false;
 
+    @OneToMany(
+            mappedBy = "chatRoom",                // 'chatRoom' is a field name entity ChatParticipant
+            cascade = CascadeType.ALL,            // Khi lưu/xóa ChatRoom, các participant liên quan cũng sẽ được xử lý
+            fetch = FetchType.LAZY,               // Chỉ tải danh sách này khi cần, để tối ưu hiệu năng
+            orphanRemoval = true                  // Tự động xóa participant mồ côi (không còn thuộc room nào)
+    )
+    @Builder.Default
+    private List<ChatParticipant> participants = new ArrayList<>();
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
