@@ -1,11 +1,14 @@
 package com.management.restaurant.mapper.implement;
 
+import com.management.restaurant.common.UserRoleCache;
 import com.management.restaurant.dto.ImageDTO;
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.mapper.UserMapper;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
 import com.management.restaurant.model.UserRole;
+import com.management.restaurant.repository.UserRoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -13,6 +16,9 @@ import java.util.List;
 
 @Component
 public class UserMapperImpl implements UserMapper {
+    @Autowired
+    private UserRoleCache userRoleCache;
+
     @Override
     public UserDTO toDTO(User user) {
         if (user == null) {
@@ -38,6 +44,7 @@ public class UserMapperImpl implements UserMapper {
                 .createdAt(user.getCreatedAt())
                 .roleType(user.getRole().getName())
                 .images(images)
+                .status(user.getStatus())
                 .build();
     }
 
@@ -47,6 +54,10 @@ public class UserMapperImpl implements UserMapper {
             return null;
         }
         User user = new User();
+        if (userDTO.getRoleType() != null) {
+            user.setRole(userRoleCache.getByRoleName(userDTO.getRoleType()));
+        }
+
         user.setId(userDTO.getId());
         userDTO.setRoleType(userDTO.getRoleType());
         user.setUsername(userDTO.getUsername());
@@ -56,6 +67,7 @@ public class UserMapperImpl implements UserMapper {
         user.setAddress(userDTO.getAddress());
         user.setCreatedAt(userDTO.getCreatedAt());
         user.setPhone_number(userDTO.getPhone_number());
+        user.setStatus(userDTO.getStatus());
 
         // Convert ImageDTOs to Image entities
         if (userDTO.getImages() != null) {

@@ -30,6 +30,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> PUBLIC_URLS = List.of(
             "/users/api/v1/auth/login",
             "/users/api/v1/auth/register",
+            "/users/api/v1/auth/oauth2/login",
             "/users/api/v1/home",
             "/api/v1/auth/login",
             "/api/v1/auth/register",

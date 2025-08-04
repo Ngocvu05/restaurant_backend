@@ -1,4 +1,4 @@
-package com.management.chat_service.config;
+package com.management.restaurant.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Configuration;

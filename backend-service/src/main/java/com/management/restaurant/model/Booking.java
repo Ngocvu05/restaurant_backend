@@ -37,7 +37,6 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
-    private int numberOfPeople;
 
     @Builder.Default
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)

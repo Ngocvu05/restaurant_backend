@@ -1,6 +1,7 @@
 package com.management.restaurant.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.management.restaurant.common.UserStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,13 +32,20 @@ public class User {
     private String fullName;
     private String email;
     private String phone_number;
-    private String address; // ✅ Added field
+    private String address;
 
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference

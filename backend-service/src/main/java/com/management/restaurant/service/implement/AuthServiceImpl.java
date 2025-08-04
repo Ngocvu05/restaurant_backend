@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
-            String url = fileStorageService.save(avatarFile); // /uploads/uuid_filename.jpg
+            String url = fileStorageService.saveAvatar(avatarFile); // /uploads/uuid_filename.jpg
 
             Image avatar = new Image();
             avatar.setUrl(url);

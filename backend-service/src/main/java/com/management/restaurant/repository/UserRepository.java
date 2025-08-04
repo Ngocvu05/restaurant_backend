@@ -20,4 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u JOIN u.images i WHERE i.id = :imageId")
     Optional<User> findUserByImageId(@Param("imageId") Long imageId);
+
+    List<User> findAllByEmail(String email);
 }

@@ -3,9 +3,11 @@ package com.management.restaurant.controller;
 import com.management.restaurant.admin.service.NotificationService;
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.LoginRequest;
+import com.management.restaurant.dto.OAuth2LoginRequest;
 import com.management.restaurant.dto.RegisterRequest;
 import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.service.AuthService;
+import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.implement.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
+    private final OAuth2Service oAuth2Service;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(
@@ -87,5 +90,23 @@ public class AuthController {
     public ResponseEntity<Boolean> checkUsername(@RequestParam String username) {
         boolean exists = userRepository.existsByUsername(username);
         return ResponseEntity.ok(exists);
+    }
+
+    @PostMapping("/oauth2/login")
+    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request) {
+        try {
+            log.info("📥 OAuth2 login attempt: provider={}, email={}", request.getProvider(), request.getEmail());
+            AuthResponse response = oAuth2Service.authenticateOAuth2User(request);
+
+            // Send notification to admin for new OAuth2 users
+            notificationService.notifyAllAdmins("New OAuth2 Login",
+                    "Người dùng đã đăng nhập bằng " + request.getProvider() + ": " + request.getEmail());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("OAuth2 login failed", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponse(null, null, null, null, null, null, null, null));
+        }
     }
 }

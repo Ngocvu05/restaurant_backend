@@ -30,12 +30,11 @@ public class BookingMapperImpl implements BookingMapper {
                 .numberOfGuests(booking.getNumberOfGuests())
                 .note(booking.getNote())
                 .status(booking.getStatus() != null ? booking.getStatus().name() : null)
-                .numberOfPeople(booking.getNumberOfPeople())
                 .preOrderDishes(booking.getPreOrders() != null
                         ? booking.getPreOrders().stream()
                         .map(pre -> PreOrderDTO.builder()
-                                .id(pre.getId()) // 🆗 thêm dòng này
-                                .bookingId(pre.getBooking() != null ? pre.getBooking().getId() : null) // 🆗 thêm dòng này
+                                .id(pre.getId())
+                                .bookingId(pre.getBooking() != null ? pre.getBooking().getId() : null)
                                 .dishId(pre.getDish().getId())
                                 .quantity(pre.getQuantity())
                                 .note(pre.getNote())
@@ -64,7 +63,7 @@ public class BookingMapperImpl implements BookingMapper {
         }
 
         if (dto.getTableId() != null) {
-            TableEntity table = new TableEntity(); // Đúng tên entity
+            TableEntity table = new TableEntity();
             table.setId(dto.getTableId());
             booking.setTable(table);
         }
@@ -72,7 +71,6 @@ public class BookingMapperImpl implements BookingMapper {
         booking.setBookingTime(dto.getBookingTime());
         booking.setNumberOfGuests(dto.getNumberOfGuests());
         booking.setNote(dto.getNote());
-        booking.setNumberOfPeople(dto.getNumberOfPeople());
 
         if (dto.getStatus() != null) {
             booking.setStatus(BookingStatus.valueOf(dto.getStatus()));
@@ -86,7 +84,7 @@ public class BookingMapperImpl implements BookingMapper {
                         preorder.setNote(p.getNote());
                         Dish dish = dishRepository.findById(p.getDishId()).orElse(null);
                         preorder.setDish(dish);
-                        preorder.setBooking(booking); // Quan trọng
+                        preorder.setBooking(booking);
                         return preorder;
                     })
                     .collect(Collectors.toList());

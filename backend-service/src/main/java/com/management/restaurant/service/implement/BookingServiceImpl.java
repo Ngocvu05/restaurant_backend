@@ -152,7 +152,6 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setBookingTime(dto.getBookingTime());
         booking.setNumberOfGuests(dto.getNumberOfGuests());
-        booking.setNumberOfPeople(dto.getNumberOfPeople());
         booking.setNote(dto.getNote());
         booking.setStatus(BookingStatus.valueOf(dto.getStatus()));
         User user = dto.getUserId() != null

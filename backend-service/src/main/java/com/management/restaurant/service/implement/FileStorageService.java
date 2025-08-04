@@ -29,9 +29,36 @@ public class FileStorageService {
             String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
 
             Map<String, Object> uploadOptions = ObjectUtils.asMap(
-                    "folder", "restaurant/upload/images", // 👈 Đặt folder Cloudinary
+                    "folder", "restaurant/upload/images",
                     "public_id", filename, // 👈 Tên file không chứa extension
                     "resource_type", "image" // đảm bảo là ảnh
+            );
+
+            // ✅ Fix: Sử dụng generic type chính xác
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = (Map<String, Object>) cloudinary.uploader()
+                    .upload(file.getBytes(), uploadOptions);
+
+            String imageUrl = (String) uploadResult.get("secure_url");
+
+            ImageDTO imageDTO = new ImageDTO();
+            imageDTO.setUrl(imageUrl);
+            imageService.createImage(imageDTO);
+
+            return imageUrl;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
+        }
+    }
+
+    public String saveAvatar(MultipartFile file) {
+        try {
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+            Map<String, Object> uploadOptions = ObjectUtils.asMap(
+                    "folder", "restaurant/avatars",
+                    "public_id", filename, // file name, excludes extensions name
+                    "resource_type", "image" // file is image
             );
 
             // ✅ Fix: Sử dụng generic type chính xác

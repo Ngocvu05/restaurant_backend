@@ -19,9 +19,6 @@ public class DisableCorsFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
 
-        // Không set bất kỳ CORS header nào
-        // Chỉ để request đi qua mà không thêm CORS headers
-
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
         } else {

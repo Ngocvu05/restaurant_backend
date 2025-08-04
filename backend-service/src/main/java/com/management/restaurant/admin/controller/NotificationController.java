@@ -40,7 +40,7 @@ public class NotificationController {
             List<NotificationDTO> dtoList = topN.stream()
                     .map(notificationMapper::toDTO)
                     .toList();
-            Page<NotificationDTO> dtoPage = new PageImpl<>(dtoList); // ✅ wrap List to Page
+            Page<NotificationDTO> dtoPage = new PageImpl<>(dtoList);
             return ResponseEntity.ok(dtoPage);
         }
 
@@ -61,18 +61,18 @@ public class NotificationController {
         return ResponseEntity.ok("Marked as read");
     }
 
-    // Gửi broadcast đến tất cả user đang subscribe
+    // send notification to all-users subscribe
     @PostMapping("/notify/broadcast")
     public ResponseEntity<String> broadcast(@RequestBody String message) {
         messagingTemplate.convertAndSend("/topic/notifications", message);
-        return ResponseEntity.ok("Đã gửi broadcast");
+        return ResponseEntity.ok("Successfully");
     }
 
-    // Gửi thông báo riêng đến 1 user (ví dụ: username = "admin")
+    // send notification to user
     @PostMapping("/notify/private/{username}")
     public ResponseEntity<String> sendToUser(@PathVariable String username, @RequestBody String message) {
         messagingTemplate.convertAndSendToUser(username, "/queue/private", message);
-        return ResponseEntity.ok("Đã gửi riêng");
+        return ResponseEntity.ok("Successfully");
     }
 
     @PutMapping("/mark-all-read")
@@ -85,16 +85,13 @@ public class NotificationController {
     public ResponseEntity<?> testNotification(@RequestParam String username, @RequestParam String title, @RequestParam String message) {
         log.info("🚀 [testNotification] Request to send test notification to: {} | message: {}", username, message);
 
-        // Kiểm tra user tồn tại
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("❌ User not found with username: " + username));
         log.info("👤 Found user ID: {}", user.getId());
         log.info("📤 Sending message to WebSocket user '{}'", username);
-        // Gọi service tạo notification và tự gửi WebSocket trong đó
+
         notificationService.createNotification(user.getUsername(), title, message);
 
-        // Trả về phản hồi
         return ResponseEntity.ok("✅ Test notification sent to user '" + username + "'");
     }
-
 }
