@@ -3,13 +3,19 @@ package com.management.restaurant.service.implement;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.management.restaurant.dto.ImageDTO;
+import com.management.restaurant.model.Image;
+import com.management.restaurant.model.User;
+import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.service.ImageService;
+import com.management.restaurant.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,11 +24,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileStorageService {
     private final Cloudinary cloudinary;
     private final ImageService imageService;
+    private final ImageRepository imageRepository;
 
     public String save(MultipartFile file) {
         try {
@@ -110,5 +118,31 @@ public class FileStorageService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public void saveAvatarFromUrl(User user, String imageUrl) throws IOException {
+        URL url = new URL(imageUrl);
+        byte[] imageBytes = url.openStream().readAllBytes();
+
+        String fileName = "avatar_" + user.getId() + "_" + UUID.randomUUID().toString();
+        Map<String, Object> uploadOptions = ObjectUtils.asMap(
+                "folder", "restaurant/avatars",
+                "public_id", fileName,
+                "resource_type", "image"
+        );
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> uploadResult = (Map<String, Object>) cloudinary.uploader()
+                .upload(imageBytes, uploadOptions);
+
+        String cloudinaryUrl = (String) uploadResult.get("secure_url");
+
+        Image avatar = new Image();
+        avatar.setUrl(cloudinaryUrl);
+        avatar.setAvatar(true);
+        avatar.setUser(user);
+        imageRepository.save(avatar);
+
+        log.info("Saved avatar to Cloudinary for user: {}", user.getUsername());
     }
 }

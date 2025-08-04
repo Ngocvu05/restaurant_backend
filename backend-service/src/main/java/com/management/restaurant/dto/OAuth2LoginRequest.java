@@ -15,4 +15,6 @@ public class OAuth2LoginRequest {
     private String name;
     private String picture;
     private String providerId;
+    private String userAgent;
+    private String clientIp;
 }

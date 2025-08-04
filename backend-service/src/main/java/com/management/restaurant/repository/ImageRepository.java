@@ -24,4 +24,5 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     @Modifying
     @Query("UPDATE Image i SET i.isAvatar = false WHERE i.user.id = :userId AND i.id <> :avatarId")
     void unsetAllOtherAvatars(@Param("userId") Long userId, @Param("avatarId") Long avatarId);
+
 }
