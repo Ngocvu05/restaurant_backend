@@ -9,6 +9,7 @@ import com.management.restaurant.dto.OAuth2LoginRequest;
 import com.management.restaurant.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -25,6 +26,7 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
     private final ValidationService validationService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final AuditService auditService;
 
     // Required Facebook permissions
     private static final List<String> REQUIRED_PERMISSIONS = Arrays.asList("email", "public_profile");
@@ -47,6 +49,7 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
             validateUserInfo(userInfo, request.getProviderId());
 
             log.info("Facebook authentication successful for user: {}", userInfo.getId());
+            auditService.logOAuth2Success("facebook", userInfo.getEmail());
 
             return userService.findOrCreateUser(
                     userInfo.getEmail(),
@@ -56,9 +59,15 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
 
         } catch (IllegalArgumentException e) {
             log.error("Facebook authentication validation failed: {}", e.getMessage());
+            auditService.logOAuth2Failure("facebook",
+                    request.getEmail() != null ? request.getEmail() : "unknown",
+                    e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Facebook authentication failed with unexpected error", e);
+            auditService.logOAuth2Failure("facebook",
+                    request.getEmail() != null ? request.getEmail() : "unknown",
+                    "Unexpected error: " + e.getMessage());
             throw new RuntimeException("Facebook authentication failed: " + e.getMessage(), e);
         }
     }
@@ -90,12 +99,35 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
             );
 
             log.debug("Validating Facebook token with Facebook API");
+            // Create headers with proper User-Agent
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "RestaurantApp/1.0");
+            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> responseEntity = restTemplate.exchange(
+                    validationUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
             String response = restTemplate.getForObject(validationUrl, String.class);
             JsonNode validationNode = objectMapper.readTree(response);
 
             if (validationNode.has("error")) {
                 JsonNode error = validationNode.get("error");
-                throw new IllegalArgumentException("Facebook token validation error: " + error.get("message").asText());
+                String errorMessage = error.get("message").asText();
+                String errorType = error.has("type") ? error.get("type").asText() : "unknown";
+
+                log.error("Facebook token validation error - Type: {}, Message: {}", errorType, errorMessage);
+
+                // Handle specific error types
+                if ("OAuthException".equals(errorType)) {
+                    throw new IllegalArgumentException("Facebook access token is invalid or expired");
+                } else {
+                    throw new IllegalArgumentException("Facebook token validation error: " + errorMessage);
+                }
             }
 
             JsonNode data = validationNode.get("data");
@@ -120,7 +152,9 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
         }
 
         String appId = data.get("app_id").asText();
-        if (!EnvConfig.get("FACEBOOK_APP_ID").equals(appId)) {
+        String expectedAppId = EnvConfig.get("FACEBOOK_APP_ID");
+        if (!expectedAppId.equals(appId)) {
+            log.error("Token app ID mismatch - Expected: {}, Actual: {}", expectedAppId, appId);
             throw new IllegalArgumentException("Token was not issued for this application");
         }
 
@@ -141,6 +175,23 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
             throw new IllegalArgumentException("Invalid Facebook token type: " + tokenType);
         }
 
+        // Check scopes
+        if (data.has("scopes")) {
+            JsonNode scopes = data.get("scopes");
+            boolean hasEmailScope = false;
+            if (scopes.isArray()) {
+                for (JsonNode scope : scopes) {
+                    if ("email".equals(scope.asText())) {
+                        hasEmailScope = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasEmailScope) {
+                log.warn("Facebook token does not have email scope");
+            }
+        }
+
         log.debug("Facebook token validation successful for user: {}", userId);
         return new FacebookTokenInfo(userId, appId, expiresAt, true);
     }
@@ -152,7 +203,19 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
         try {
             String permissionsUrl = String.format("%s?access_token=%s", PERMISSIONS_URL, accessToken);
 
-            String response = restTemplate.getForObject(permissionsUrl, String.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "RestaurantApp/1.0");
+            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> responseEntity = restTemplate.exchange(
+                    permissionsUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            String response = responseEntity.getBody();
             JsonNode permissionsNode = objectMapper.readTree(response);
 
             if (permissionsNode.has("error")) {
@@ -193,7 +256,7 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
     }
 
     /**
-     * Get user information from Facebook Graph API
+     * Parse user information from Facebook Graph API response
      */
     private FacebookUserInfo getUserInfo(String accessToken) throws IOException {
         try {
@@ -204,23 +267,45 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
             );
 
             log.debug("Fetching user info from Facebook API");
-            String response = restTemplate.getForObject(userInfoUrl, String.class);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "RestaurantApp/1.0");
+            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> responseEntity = restTemplate.exchange(
+                    userInfoUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            String response = responseEntity.getBody();
             JsonNode userInfo = objectMapper.readTree(response);
 
             if (userInfo.has("error")) {
                 JsonNode error = userInfo.get("error");
                 String errorMessage = error.get("message").asText();
                 String errorCode = error.has("code") ? error.get("code").asText() : "unknown";
+                String errorType = error.has("type") ? error.get("type").asText() : "unknown";
 
-                log.error("Facebook API error - Code: {}, Message: {}", errorCode, errorMessage);
-                throw new IllegalArgumentException("Facebook API error: " + errorMessage);
+                log.error("Facebook API error - Code: {}, Type: {}, Message: {}", errorCode, errorType, errorMessage);
+
+                // Handle specific errors
+                if ("190".equals(errorCode)) { // Invalid OAuth access token
+                    throw new IllegalArgumentException("Facebook access token is invalid or expired");
+                } else if ("200".equals(errorCode)) { // Permissions error
+                    throw new IllegalArgumentException("Insufficient permissions to access user data");
+                } else {
+                    throw new IllegalArgumentException("Facebook API error: " + errorMessage);
+                }
             }
 
             return parseFacebookUserInfo(userInfo);
 
         } catch (RestClientException e) {
             log.error("Failed to connect to Facebook API for user info", e);
-            throw new RuntimeException("Failed to get user information from Facebook", e);
+            throw new RuntimeException("Failed to get user information from Facebook - service may be temporarily unavailable", e);
         }
     }
 
@@ -288,7 +373,6 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
     private String getAppAccessToken() {
         String appId = EnvConfig.get("FACEBOOK_APP_ID");
         String appSecret = EnvConfig.get("FACEBOOK_APP_SECRET");
-        log.info("Facebook app ID: {}, app secret: {}", appId, appSecret);
 
         if (appId == null || appId.isEmpty()) {
             throw new IllegalStateException("FACEBOOK_APP_ID not configured");
@@ -300,7 +384,6 @@ public class FacebookOAuth2Provider implements  OAuth2Provider {
 
         return appId + "|" + appSecret;
     }
-
     @Override
     public String getProviderName() {
         return "facebook";
