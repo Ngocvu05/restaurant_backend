@@ -1,7 +1,7 @@
-package com.management.restaurant.service.implement;
+package com.management.restaurant.event.implement;
 
 import com.management.restaurant.dto.SessionConversionEvent;
-import com.management.restaurant.service.ChatEventProducer;
+import com.management.restaurant.event.ChatEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

@@ -1,9 +1,14 @@
 package com.management.search_service.service;
 
+import com.management.search_service.document.DishDocument;
+import com.management.search_service.events.implement.DishEvent;
 import com.management.search_service.model.Dish;
+import com.management.search_service.repository.DishDocumentRepository;
 import com.management.search_service.repository.DishSearchRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
@@ -11,59 +16,40 @@ import org.springframework.data.elasticsearch.core.query.StringQuery;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DishSearchService {
-
     private final DishSearchRepository dishSearchRepository;
     private final ElasticsearchTemplate elasticsearchTemplate;
+    private final DishDocumentRepository dishDocumentRepository;
 
-    @Autowired
-    public DishSearchService(DishSearchRepository dishSearchRepository,
-                             ElasticsearchTemplate elasticsearchTemplate) {
-        this.dishSearchRepository = dishSearchRepository;
-        this.elasticsearchTemplate = elasticsearchTemplate;
-    }
-
-    /**
-     * Tìm kiếm đơn giản theo tên
-     */
     public List<Dish> searchByName(String keyword) {
         log.info("Searching dishes by name: {}", keyword);
         return dishSearchRepository.findByNameContainingIgnoreCase(keyword);
     }
 
-    /**
-     * Tìm kiếm theo category
-     */
     public List<Dish> searchByCategory(String category) {
         log.info("Searching dishes by category: {}", category);
         return dishSearchRepository.findByCategory(category);
     }
 
-    /**
-     * Tìm kiếm theo khoảng giá
-     */
     public List<Dish> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         log.info("Searching dishes by price range: {} - {}", minPrice, maxPrice);
         return dishSearchRepository.findByPriceBetween(minPrice, maxPrice);
     }
 
-    /**
-     * Tìm kiếm trong tên hoặc description
-     */
     public List<Dish> searchByNameOrDescription(String keyword) {
         log.info("Searching dishes by name or description: {}", keyword);
         return dishSearchRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
                 keyword, keyword);
     }
 
-    /**
-     * Tìm kiếm nâng cao với multi-match và fuzziness
-     */
     public List<Dish> searchAdvanced(String keyword) {
         log.info("Advanced search for: {}", keyword);
 
@@ -88,7 +74,7 @@ public class DishSearchService {
     }
 
     /**
-     * Tìm kiếm phức tạp với filter theo category và price range
+     * Search with filter by keyword and category
      */
     public List<Dish> searchWithFilters(String keyword, String category,
                                         BigDecimal minPrice, BigDecimal maxPrice) {
@@ -132,7 +118,7 @@ public class DishSearchService {
     }
 
     /**
-     * Tìm kiếm với auto-suggest (gợi ý)
+     * Search with auto suggest
      */
     public List<Dish> searchSuggestions(String keyword) {
         log.info("Getting search suggestions for: {}", keyword);
@@ -168,10 +154,71 @@ public class DishSearchService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy tất cả dishes
-     */
     public List<Dish> getAllDishes() {
         return (List<Dish>) dishSearchRepository.findAll();
+    }
+
+    public void indexDish(DishEvent event) {
+        try {
+            DishDocument document = DishDocument.builder()
+                    .id(event.getDishId().toString())
+                    .dishId(event.getDishId())
+                    .name(event.getName())
+                    .description(event.getDescription())
+                    .price(event.getPrice())
+                    .isAvailable(event.getIsAvailable())
+                    .category(event.getCategory())
+                    .imageUrls(event.getImageUrls())
+                    .averageRating(event.getAverageRating())
+                    .totalReviews(event.getTotalReviews())
+                    .orderCount(event.getOrderCount())
+                    .createdAt(event.getCreatedAt())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            dishDocumentRepository.save(document);
+            log.info("Indexed dish document: {}", event.getDishId());
+        } catch (Exception e) {
+            log.error("Failed to index dish: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    public void deleteDish(Long dishId) {
+        try {
+            dishDocumentRepository.deleteByDishId(dishId);
+            log.info("Deleted dish document: {}", dishId);
+        } catch (Exception e) {
+            log.error("Failed to delete dish: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    public Page<DishDocument> searchDishes(String query, Pageable pageable) {
+        if (query == null || query.trim().isEmpty()) {
+            return dishDocumentRepository.findAll(pageable);
+        }
+        return dishDocumentRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                query, query, pageable);
+    }
+
+    public Page<DishDocument> findByCategory(String category, Pageable pageable) {
+        return dishDocumentRepository.findByCategory(category, pageable);
+    }
+
+    public Page<DishDocument> findAvailableDishes(Pageable pageable) {
+        return dishDocumentRepository.findByIsAvailable(true, pageable);
+    }
+
+    public Page<DishDocument> findByPriceRange(BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        return dishDocumentRepository.findByPriceBetween(minPrice, maxPrice, pageable);
+    }
+
+    public List<DishDocument> findHighRatedDishes(BigDecimal minRating) {
+        return dishDocumentRepository.findByAverageRatingGreaterThanEqual(minRating);
+    }
+
+    public Optional<DishDocument> findById(Long dishId) {
+        return dishDocumentRepository.findByDishId(dishId);
     }
 }

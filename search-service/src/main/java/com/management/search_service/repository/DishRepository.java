@@ -9,12 +9,9 @@ import java.util.List;
 
 @Repository
 public interface DishRepository extends JpaRepository<DishEntity, Long> {
-    // Tìm kiếm theo category
     List<DishEntity> findByCategory(String category);
 
-    // Tìm kiếm theo khoảng giá
     List<DishEntity> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
 
-    // Tìm kiếm theo tên (contains)
     List<DishEntity> findByNameContainingIgnoreCase(String name);
 }

@@ -14,7 +14,7 @@ import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.repository.UserRoleRepository;
 import com.management.restaurant.service.AuthService;
 import com.management.restaurant.security.JwtService;
-import com.management.restaurant.service.ChatEventProducer;
+import com.management.restaurant.event.ChatEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

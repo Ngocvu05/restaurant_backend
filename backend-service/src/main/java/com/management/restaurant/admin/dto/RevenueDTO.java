@@ -13,6 +13,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RevenueDTO {
-    private LocalDate date;
+    private String date;
     private BigDecimal totalRevenue;
 }

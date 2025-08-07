@@ -7,7 +7,7 @@ import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.oauth2.*;
 
 import com.management.restaurant.security.JwtService;
-import com.management.restaurant.service.ChatEventProducer;
+import com.management.restaurant.event.ChatEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

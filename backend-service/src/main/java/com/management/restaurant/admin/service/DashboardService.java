@@ -1,6 +1,7 @@
 package com.management.restaurant.admin.service;
 
 import com.management.restaurant.admin.dto.DashboardDTO;
+import com.management.restaurant.admin.dto.RevenueDTO;
 import com.management.restaurant.model.Booking;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,8 @@ public interface DashboardService {
     DashboardDTO getDashboardSummary();
 
     List<Booking> getRevenueByDate(LocalDateTime startDate, LocalDateTime endDate);
+
+    List<RevenueDTO> getRevenueGroupedByDate(LocalDateTime start, LocalDateTime end);
 
     Map<String, Long> getBookingStatusStats();
 }

@@ -1,11 +1,10 @@
 package com.management.restaurant.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.management.restaurant.common.BookingStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,17 +17,21 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(name = "bookings")
+@EqualsAndHashCode(exclude = {"preOrders", "user", "table"})
+@ToString(exclude = {"preOrders"})
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, insertable = false)
+    @JsonIgnoreProperties({"bookings", "hibernateLazyInitializer", "handler"})
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "table_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"bookings", "hibernateLazyInitializer", "handler"})
+    @JoinColumn(name = "table_id", nullable = false, insertable = false)
     private TableEntity table;
 
     private LocalDateTime bookingTime;
@@ -39,7 +42,8 @@ public class Booking {
     private BookingStatus status;
 
     @Builder.Default
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("booking-preorders")
     private List<PreOrder> preOrders = new ArrayList<>();
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)

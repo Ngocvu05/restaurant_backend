@@ -2,6 +2,8 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.dto.UserInfoDTO;
+import com.management.restaurant.event.EventPublisherService;
+import com.management.restaurant.event.implement.UserEvent;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.IUserInfoMapper;
 import com.management.restaurant.mapper.UserMapper;
@@ -12,6 +14,7 @@ import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.repository.UserRoleRepository;
 import com.management.restaurant.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
@@ -29,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final UserRoleRepository userRoleRepository;
     private final ImageRepository imageRepository;
     private final IUserInfoMapper userInfoMapper;
+    private final EventPublisherService eventPublisher;
 
     @Override
     public List<UserDTO> getAllUsers() {
@@ -53,11 +57,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserDTO createUser(UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         UserRole role = userRoleRepository.findByName(userDTO.getRoleType())
                 .orElseThrow(() -> new NotFoundException("Role not found"));
         user.setRole(role);
+
+        // Publish event
+        UserEvent event = createUserEvent(user, UserEvent.Type.USER_CREATED);
+        eventPublisher.publishUserEvent("user.created", event);
+
         return userMapper.toDTO(userRepository.save(user));
     }
 
@@ -70,12 +80,21 @@ public class UserServiceImpl implements UserService {
         existing.setEmail(userDTO.getEmail());
         existing.setPhone_number(userDTO.getPhone_number());
         existing.setAddress(userDTO.getAddress());
+        // Publish event
+        UserEvent event = createUserEvent(existing, UserEvent.Type.USER_UPDATED);
+        eventPublisher.publishUserEvent("user.updated", event);
+
         return userMapper.toDTO(userRepository.save(existing));
     }
 
     @Override
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        userRepository.delete(user);
+        // Publish event
+        UserEvent event = createUserEvent(user, UserEvent.Type.USER_DELETED);
+        eventPublisher.publishUserEvent("user.deleted", event);
     }
 
     @Override
@@ -109,4 +128,24 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    private UserEvent createUserEvent(User user, UserEvent.Type eventType) {
+        return UserEvent.builder()
+                .eventType(eventType.name())
+                .userId(user.getId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhone_number())
+                .address(user.getAddress())
+                .roleName(user.getRole() != null ? user.getRole().getName().name() : null)
+                .status(user.getStatus().name())
+                .avatarUrl(user.getImages() != null && !user.getImages().isEmpty() ?
+                        user.getImages().stream()
+                                .filter(img -> img.isAvatar())
+                                .findFirst()
+                                .map(img -> img.getUrl())
+                                .orElse(null) : null)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
 }

@@ -9,16 +9,14 @@ import java.util.List;
 
 @Repository
 public interface DishSearchRepository extends ElasticsearchRepository<Dish, String> {
-    // Tìm kiếm theo tên
+
     List<Dish> findByNameContainingIgnoreCase(String name);
 
-    // Tìm kiếm theo category
     List<Dish> findByCategory(String category);
 
-    // Tìm kiếm theo khoảng giá
     List<Dish> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
 
-    // Tìm kiếm theo tên hoặc description
+    // Find by Name or Description
     List<Dish> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
             String name, String description);
 }

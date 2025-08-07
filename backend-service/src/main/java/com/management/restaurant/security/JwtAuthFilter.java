@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,24 +29,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         log.info(">>> JWT Filter - Checking path: {}", path);
 
         // Skip JWT validation cho auth endpoints
-        boolean shouldSkip = path.startsWith("/api/v1/auth/") ||
+        return path.startsWith("/api/v1/auth/") ||
                 path.equals("/error") ||
                 path.startsWith("/api/v1/home/") ||
                 path.startsWith("/uploads/") ||
                 path.startsWith("/ws/") ||
                 path.startsWith("/actuator/");
-
-        if (shouldSkip) {
-            log.info(">>> Skipping JWT validation for path: {}", path);
-        }
-
-        return shouldSkip;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    @NotNull HttpServletResponse response,
+                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
         log.info("Authorization Header: {}",  request.getHeader("Authorization"));
