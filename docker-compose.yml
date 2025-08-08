@@ -148,6 +148,10 @@ services:
       - microservices-network
     volumes:
       - ./logs:/logs
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
 
   search-service:
     image: search-service:latest
@@ -190,7 +194,7 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
-      - APP_USER_SERVICE_BASE_URL=http://user-service:8081
+      - APP_USER_SERVICE_BASE_URL=http://user-service:8081/api/v1/sync
     ports:
       - "8082:8082"
     restart: unless-stopped

@@ -1,5 +1,6 @@
 package com.management.search_service.service;
 
+import com.management.search_service.config.SystemTokenManager;
 import com.management.search_service.document.DishDocument;
 import com.management.search_service.document.ReviewDocument;
 import com.management.search_service.document.UserDocument;
@@ -15,9 +16,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -32,8 +36,9 @@ public class DataSyncService {
     private final UserDocumentRepository userDocumentRepository;
     private final ReviewDocumentRepository reviewDocumentRepository;
     private final RestTemplate restTemplate;
+    private final SystemTokenManager systemTokenManager;
 
-    @Value("${app.user-service.base-url:http://user-service:8081}")
+    @Value("${app.user-service.base-url:http://user-service:8081/api/v1/sync}")
     private String userServiceBaseUrl;
 
     @Bean
@@ -58,10 +63,13 @@ public class DataSyncService {
     private void syncDishes() {
         try {
             log.info("Syncing dishes from user-service...");
-            String url = userServiceBaseUrl + "/api/dishes/all";
+            String url = userServiceBaseUrl + "/dishes/all";
+
+            HttpHeaders headers = createAuthHeaders();
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<DishSyncDto>> response = restTemplate.exchange(
-                    url, HttpMethod.GET, null,
+                    url, HttpMethod.GET, entity,
                     new ParameterizedTypeReference<List<DishSyncDto>>() {}
             );
 
@@ -74,6 +82,9 @@ public class DataSyncService {
                 dishDocumentRepository.saveAll(dishDocuments);
                 log.info("Synced {} dishes to Elasticsearch", dishDocuments.size());
             }
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for dishes sync. Token might be invalid or expired: {}", e.getMessage());
+            handleAuthError("dishes", e);
         } catch (Exception e) {
             log.error("Failed to sync dishes: {}", e.getMessage(), e);
         }
@@ -82,10 +93,13 @@ public class DataSyncService {
     private void syncUsers() {
         try {
             log.info("Syncing users from user-service...");
-            String url = userServiceBaseUrl + "/api/users/all";
+            String url = userServiceBaseUrl + "/users/all";
+
+            HttpHeaders headers = createAuthHeaders();
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<UserSyncDto>> response = restTemplate.exchange(
-                    url, HttpMethod.GET, null,
+                    url, HttpMethod.GET, entity,
                     new ParameterizedTypeReference<List<UserSyncDto>>() {}
             );
 
@@ -98,6 +112,9 @@ public class DataSyncService {
                 userDocumentRepository.saveAll(userDocuments);
                 log.info("Synced {} users to Elasticsearch", userDocuments.size());
             }
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for users sync. Token might be invalid or expired: {}", e.getMessage());
+            handleAuthError("users", e);
         } catch (Exception e) {
             log.error("Failed to sync users: {}", e.getMessage(), e);
         }
@@ -106,10 +123,13 @@ public class DataSyncService {
     private void syncReviews() {
         try {
             log.info("Syncing reviews from user-service...");
-            String url = userServiceBaseUrl + "/api/reviews/all";
+            String url = userServiceBaseUrl + "/reviews/all";
+
+            HttpHeaders headers = createAuthHeaders();
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<ReviewSyncDto>> response = restTemplate.exchange(
-                    url, HttpMethod.GET, null,
+                    url, HttpMethod.GET, entity,
                     new ParameterizedTypeReference<List<ReviewSyncDto>>() {}
             );
 
@@ -122,8 +142,48 @@ public class DataSyncService {
                 reviewDocumentRepository.saveAll(reviewDocuments);
                 log.info("Synced {} reviews to Elasticsearch", reviewDocuments.size());
             }
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for reviews sync. Token might be invalid or expired: {}", e.getMessage());
+            handleAuthError("reviews", e);
         } catch (Exception e) {
             log.error("Failed to sync reviews: {}", e.getMessage(), e);
+        }
+    }
+
+    private HttpHeaders createAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        String token = systemTokenManager.getToken();
+
+        // Log token info for debugging (without exposing actual token)
+        log.debug("Using token for authentication - Token length: {}, Starts with 'Bearer': {}",
+                token != null ? token.length() : 0,
+                token != null && token.startsWith("Bearer"));
+
+        // Ensure Bearer prefix is present
+        if (token != null && !token.startsWith("Bearer ")) {
+            token = "Bearer " + token;
+        }
+
+        headers.set("Authorization", token);
+        headers.set("Content-Type", "application/json");
+        headers.set("Accept", "application/json");
+
+        return headers;
+    }
+
+    private void handleAuthError(String dataType, HttpClientErrorException.Unauthorized e) {
+        // Log detailed error for debugging
+        log.error("Authorization failed for {} sync:", dataType);
+        log.error("  - Response status: {}", e.getStatusCode());
+        log.error("  - Response headers: {}", e.getResponseHeaders());
+        log.error("  - Token manager class: {}", systemTokenManager.getClass().getSimpleName());
+
+        // Check if token is null or empty
+        String token = systemTokenManager.getToken();
+        if (token == null || token.trim().isEmpty()) {
+            log.error("  - Token is null or empty!");
+        } else {
+            log.debug("  - Token format appears valid (length: {})", token.length());
         }
     }
 
