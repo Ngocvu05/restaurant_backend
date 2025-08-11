@@ -18,7 +18,7 @@ public class PaymentDTO {
     private Long id;
     private Long bookingId;
     private BigDecimal amount;
-    private PaymentMethod paymentMethod;// CASH, CARD, BANK_TRANSFER
+    private PaymentMethod paymentMethod;
     private LocalDateTime paymentTime;
     private PaymentStatus status;
 }

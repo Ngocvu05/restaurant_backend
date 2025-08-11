@@ -29,17 +29,10 @@ public class JwtService {
     private long jwtExpirationMs;
 
     private Key getSignKey() {
-        // ✅ Debug secret key
-        log.info(">>> DEBUG - JWT Secret: '{}'", jwtSecret);
-        log.info(">>> DEBUG - JWT Secret length: {}", jwtSecret.length());
-        log.info(">>> DEBUG - JWT Secret bytes: {}", Arrays.toString(jwtSecret.getBytes(StandardCharsets.UTF_8)));
-
-        // Kiểm tra xem secret có phải là Base64 không
+        // Checking type of secret key is Base64 or not
         try {
             byte[] decoded = Base64.getDecoder().decode(jwtSecret);
-            log.info(">>> DEBUG - Secret appears to be Base64 encoded");
-            log.info(">>> DEBUG - Decoded bytes: {}", Arrays.toString(decoded));
-            // Nếu secret là Base64, decode trước khi dùng
+            // If secret is Base64, decoded before use
             return Keys.hmacShaKeyFor(decoded);
         } catch (Exception e) {
             log.info(">>> DEBUG - Secret is NOT Base64, using raw string");
@@ -53,8 +46,6 @@ public class JwtService {
 
         // ✅ Debug key creation
         Key key = getSignKey();
-        log.info(">>> DEBUG - Signing key algorithm: {}", key.getAlgorithm());
-        log.info(">>> DEBUG - Signing key format: {}", key.getFormat());
 
         String token = Jwts.builder()
                 .setSubject(user.getUsername())
@@ -67,7 +58,7 @@ public class JwtService {
 
         log.info(">>> DEBUG - Generated token: {}", token);
 
-        // ✅ Test ngay việc parse token
+        // ✅ Check token parse session
         try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)

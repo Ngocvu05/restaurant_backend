@@ -35,4 +35,24 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
+
+    @Column(name = "transaction_reference", length = 100)
+    private String transactionReference;
+
+    @Column(name = "customer_note", columnDefinition = "TEXT")
+    private String customerNote;
+
+    @Column(name = "admin_note", columnDefinition = "TEXT")
+    private String adminNote;
+
+    @Column(name = "created_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "processed_at")
+    @Builder.Default
+    private LocalDateTime processedAt = LocalDateTime.now();
+
+    @Column(name = "processed_by")
+    private String processedBy; // Admin username who processed this
 }

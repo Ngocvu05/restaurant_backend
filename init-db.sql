@@ -47,7 +47,7 @@ INSERT INTO `bookings` VALUES (3, '2025-06-30 08:43:40.464000', 'kakak', 2, 0, '
 INSERT INTO `bookings` VALUES (4, '2025-06-30 08:52:04.727000', 'test qr code', 2, 0, 'RESERVED', 743000.00, 1, 2);
 INSERT INTO `bookings` VALUES (5, '2025-07-01 09:15:01.543000', 'aaa', 2, 0, 'PENDING', 60000.00, 1, 2);
 
--- ----------------------------
+/*-- ----------------------------
 -- Table structure for chat_messages
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_messages`;
@@ -111,7 +111,7 @@ CREATE TABLE `chat_rooms`  (
 -- Records of chat_rooms
 -- ----------------------------
 INSERT INTO `chat_rooms` VALUES (1, 1, 'default_session', 'Default Chat Room', 1, '2025-07-16 08:30:46', '2025-07-16 08:30:46');
-
+*/
 -- ----------------------------
 -- Table structure for dishes
 -- ----------------------------
@@ -355,9 +355,9 @@ DROP TABLE IF EXISTS `payments`;
 CREATE TABLE `payments`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `amount` decimal(38, 2) NULL DEFAULT NULL,
-  `payment_method` enum('BANK_TRANSFER','CARD','CASH') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `payment_method` enum('BANK_TRANSFER','CARD','CASH','MOMO','VNPAY') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `payment_time` datetime(6) NULL DEFAULT NULL,
-  `status` enum('CANCELLED','PAID','UNPAID') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `status` enum('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `booking_id` bigint NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `FKc52o2b1jkxttngufqp3t7jr3h`(`booking_id` ASC) USING BTREE,
@@ -499,6 +499,12 @@ INSERT INTO `users` VALUES (3, 'Thu Duc', '2025-06-26 09:00:10.484677', 'dinhngo
 INSERT INTO `users` VALUES (4, 'Thu Duc', '2025-07-01 15:18:11.825185', 'ngocvu.ngoc06@gmail.com', 'Push', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654332', 'testpush', 3);
 INSERT INTO `users` VALUES (5, 'Thu Duc', '2025-07-01 16:08:41.616760', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '231231', 'testpush1', 3);
 INSERT INTO `users` VALUES (6, 'Thu Duc', '2025-07-02 15:33:53.182822', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654321', 'newuser', 3);
+
+-- ----------------------------------
+ALTER TABLE payments
+    MODIFY COLUMN payment_method
+        ENUM('CASH','CARD','BANK_TRANSFER','MOMO','VNPAY')
+        NOT NULL;
 
 -- ----------------------------
 -- Procedure structure for generate_dishes
