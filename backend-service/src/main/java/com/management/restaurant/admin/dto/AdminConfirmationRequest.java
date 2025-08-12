@@ -16,5 +16,5 @@ public class AdminConfirmationRequest {
     @Size(max = 500, message = "Ghi chú không được quá 500 ký tự")
     private String adminNote;
 
-    private String processedBy; // Username của admin xử lý
+    private String processedBy;
 }

@@ -4,6 +4,7 @@ import com.management.restaurant.admin.dto.AdminConfirmationRequest;
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
 import com.management.restaurant.admin.dto.PaymentConfirmationRequest;
 import com.management.restaurant.admin.service.AdminPaymentService;
+import com.management.restaurant.common.PaymentStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,18 +38,18 @@ public class AdminPaymentController {
     public ResponseEntity<List<PaymentConfirmationDTO>> getConfirmationsByStatus(
             @RequestParam(defaultValue = "PENDING") String status) {
         log.info("Getting payment confirmations by status: {}", status);
-        List<PaymentConfirmationDTO> confirmations = paymentConfirmationService.getConfirmationsByStatus(status);
+        List<PaymentConfirmationDTO> confirmations = paymentConfirmationService.getConfirmationsByStatus(PaymentStatus.valueOf(status));
         return ResponseEntity.ok(confirmations);
     }
 
     /**
-     * Lấy yêu cầu xác nhận theo booking ID
+     * Lấy DANH SÁCH yêu cầu xác nhận theo booking ID - ĐÃ SỬA
      */
     @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<PaymentConfirmationDTO> getByBookingId(@PathVariable Long bookingId) {
-        log.info("Getting payment confirmation for booking: {}", bookingId);
-        PaymentConfirmationDTO confirmation = paymentConfirmationService.getByBookingId(bookingId);
-        return ResponseEntity.ok(confirmation);
+    public ResponseEntity<List<PaymentConfirmationDTO>> getByBookingId(@PathVariable Long bookingId) {
+        log.info("Getting payment confirmations for booking: {}", bookingId);
+        List<PaymentConfirmationDTO> confirmations = paymentConfirmationService.getConfirmationsByBookingId(bookingId);
+        return ResponseEntity.ok(confirmations);
     }
 
     /**
@@ -81,7 +82,7 @@ public class AdminPaymentController {
             @Valid @RequestBody AdminConfirmationRequest request) {
         log.info("Admin confirming payment: {} with note: {}", id, request.getAdminNote());
 
-        PaymentConfirmationDTO confirmed = paymentConfirmationService.confirmPayment(id, request.getAdminNote());
+        PaymentConfirmationDTO confirmed = paymentConfirmationService.confirmPayment(id, request);
         return ResponseEntity.ok(confirmed);
     }
 
@@ -105,9 +106,9 @@ public class AdminPaymentController {
     public ResponseEntity<Map<String, Object>> getConfirmationStats() {
         log.info("Getting payment confirmation statistics");
 
-        List<PaymentConfirmationDTO> pending = paymentConfirmationService.getConfirmationsByStatus("PENDING");
-        List<PaymentConfirmationDTO> confirmed = paymentConfirmationService.getConfirmationsByStatus("CONFIRMED");
-        List<PaymentConfirmationDTO> rejected = paymentConfirmationService.getConfirmationsByStatus("REJECTED");
+        List<PaymentConfirmationDTO> pending = paymentConfirmationService.getConfirmationsByStatus(PaymentStatus.PENDING);
+        List<PaymentConfirmationDTO> confirmed = paymentConfirmationService.getConfirmationsByStatus(PaymentStatus.PENDING);
+        List<PaymentConfirmationDTO> rejected = paymentConfirmationService.getConfirmationsByStatus(PaymentStatus.PENDING);
 
         Map<String, Object> stats = Map.of(
                 "pending", pending.size(),

@@ -2,7 +2,9 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.OAuth2LoginRequest;
+import com.management.restaurant.model.RefreshToken;
 import com.management.restaurant.model.User;
+import com.management.restaurant.repository.RefreshTokenRepository;
 import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.oauth2.*;
 
@@ -13,9 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class OAuth2ServiceImpl implements OAuth2Service {
 
     private final OAuth2ProviderFactory providerFactory;
@@ -24,9 +30,9 @@ public class OAuth2ServiceImpl implements OAuth2Service {
     private final ChatEventProducer chatEventProducer;
     private final RateLimitService rateLimitService;
     private final AuditService auditService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
-    @Transactional
     public AuthResponse authenticateOAuth2User(OAuth2LoginRequest request) {
         String provider = request.getProvider();
         String email = null;
@@ -43,8 +49,9 @@ public class OAuth2ServiceImpl implements OAuth2Service {
             email = user.getEmail();
 
             String token = jwtService.generateToken(user);
+            //convert chat message data
             handleChatSessionConversion(request, user);
-
+            //build response
             AuthResponse response = buildAuthResponse(user, token);
 
             auditService.logOAuth2Success(provider, email);
@@ -80,7 +87,6 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                     request.getSessionId(), user.getId());
         } catch (Exception e) {
             log.error("Failed to send chat session conversion", e);
-            // Don't fail the login process for this
         }
     }
 
@@ -93,7 +99,24 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                 userService.getAvatarUrl(user),
                 user.getEmail(),
                 user.getFullName(),
-                null // refreshToken if needed
+                issueRefreshToken(user) // refreshToken
         );
+    }
+
+    private String issueRefreshToken(User user) {
+        RefreshToken rt = refreshTokenRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> {
+                    RefreshToken n = new RefreshToken();
+                    n.setUser(user);
+                    return n;            // sẽ INSERT nếu chưa có
+                });
+
+        String token = UUID.randomUUID() + "." + UUID.randomUUID();
+
+        rt.setToken(token);
+        rt.setExpiryDate(LocalDateTime.now().plusDays(7));
+        refreshTokenRepository.save(rt);
+
+        return token;
     }
 }

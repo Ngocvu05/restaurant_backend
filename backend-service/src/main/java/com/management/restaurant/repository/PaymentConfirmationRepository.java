@@ -1,4 +1,4 @@
-package com.management.restaurant.admin.repository;
+package com.management.restaurant.repository;
 
 import com.management.restaurant.common.PaymentStatus;
 import com.management.restaurant.model.Payment;
@@ -16,7 +16,7 @@ public interface PaymentConfirmationRepository extends JpaRepository<Payment, Lo
     /**
      * Tìm theo booking ID và trạng thái
      */
-    Optional<Payment> findByBookingIdAndStatus(Long bookingId, String status);
+    Optional<Payment> findByBooking_IdAndStatus(Long bookingId, PaymentStatus status);
 
     /**
      * Kiểm tra xem có yêu cầu nào đang pending cho booking này không
@@ -56,4 +56,6 @@ public interface PaymentConfirmationRepository extends JpaRepository<Payment, Lo
             "ORDER BY pc.createdAt DESC")
     List<Payment> findByDateRange(@Param("startDate") LocalDateTime startDate,
                                               @Param("endDate") LocalDateTime endDate);
+
+    List<Payment> findByBooking_IdOrderByCreatedAtDesc(Long bookingId);
 }

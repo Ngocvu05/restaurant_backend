@@ -15,17 +15,23 @@ import com.management.restaurant.repository.UserRoleRepository;
 import com.management.restaurant.service.AuthService;
 import com.management.restaurant.security.JwtService;
 import com.management.restaurant.event.ChatEventProducer;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AuthServiceImpl implements AuthService {
+    private static final Long REFRESH_TTL_DAYS = 7L;
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -62,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
 
             Image avatar = new Image();
             avatar.setUrl(url);
-            avatar.setAvatar(true); // ✅ cờ avatar
+            avatar.setAvatar(true); // set avatar
             avatar.setUser(user);
             imageRepository.save(avatar);
         }
@@ -80,9 +86,13 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Invalid credentials");
         }
 
+        // access token
         String token = jwtService.generateToken(user);
+        // refresh token (storage on DB)
+        String refreshToken = issueRefreshToken(user);
+
         chatEventProducer.sendSessionConversion(request.getSessionId(), user.getId());
-        return new AuthResponse(user.getId(),token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
+        return new AuthResponse(user.getId(),token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), refreshToken);
     }
 
     @Override
@@ -97,7 +107,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = tokenEntity.getUser();
         String newAccessToken = jwtService.generateToken(user);
-        return new AuthResponse(null,newAccessToken, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), refreshToken);
+        return new AuthResponse(user.getId(), newAccessToken, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), refreshToken);
     }
 
 
@@ -113,5 +123,22 @@ public class AuthServiceImpl implements AuthService {
     private UserRole getRole(RoleName roleName) {
         return userRoleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+    }
+
+    protected String issueRefreshToken(User user) {
+        RefreshToken rt = refreshTokenRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> {
+                    RefreshToken n = new RefreshToken();
+                    n.setUser(user);
+                    return n;            // sẽ INSERT nếu chưa có
+                });
+
+        String token = UUID.randomUUID() + "." + UUID.randomUUID();
+
+        rt.setToken(token);
+        rt.setExpiryDate(LocalDateTime.now().plusDays(7));
+        refreshTokenRepository.save(rt);
+
+        return token;
     }
 }

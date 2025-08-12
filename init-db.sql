@@ -357,7 +357,7 @@ CREATE TABLE `payments`  (
   `amount` decimal(38, 2) NULL DEFAULT NULL,
   `payment_method` enum('BANK_TRANSFER','CARD','CASH','MOMO','VNPAY') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `payment_time` datetime(6) NULL DEFAULT NULL,
-  `status` enum('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `status` enum('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REJECTED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `booking_id` bigint NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `FKc52o2b1jkxttngufqp3t7jr3h`(`booking_id` ASC) USING BTREE,
@@ -421,7 +421,7 @@ DROP TABLE IF EXISTS `refresh_token`;
 CREATE TABLE `refresh_token`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `expiry_date` datetime(6) NULL DEFAULT NULL,
-  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `token` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `user_id` bigint NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `UKr4k4edos30bx9neoq81mdvwph`(`token` ASC) USING BTREE,

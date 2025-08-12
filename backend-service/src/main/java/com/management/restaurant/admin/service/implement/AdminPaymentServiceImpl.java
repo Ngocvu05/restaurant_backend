@@ -1,8 +1,10 @@
 package com.management.restaurant.admin.service.implement;
 
+import com.management.restaurant.admin.dto.AdminConfirmationRequest;
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
 import com.management.restaurant.admin.mapper.AdminPaymentMapper;
-import com.management.restaurant.admin.repository.PaymentConfirmationRepository;
+import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.repository.PaymentConfirmationRepository;
 import com.management.restaurant.admin.service.AdminPaymentService;
 import com.management.restaurant.common.PaymentStatus;
 import com.management.restaurant.exception.NotFoundException;
@@ -36,10 +38,28 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     @Override
     public PaymentConfirmationDTO getByBookingId(Long bookingId) {
         Payment confirmation = paymentConfirmationRepository
-                .findByBookingIdAndStatus(bookingId, "PENDING")
+                .findByBooking_IdAndStatus(bookingId, PaymentStatus.PENDING)
                 .orElseThrow(() -> new NotFoundException("Payment confirmation not found for booking: " + bookingId));
 
         return paymentConfirmationMapper.toDTO(confirmation);
+    }
+
+    /**
+     * THÊM METHOD MỚI - Lấy danh sách payment confirmations theo booking ID
+     */
+    @Override
+    public List<PaymentConfirmationDTO> getConfirmationsByBookingId(Long bookingId) {
+        // Kiểm tra booking có tồn tại không
+        if (!bookingRepository.existsById(bookingId)) {
+            throw new NotFoundException("Booking not found: " + bookingId);
+        }
+
+        // Lấy tất cả payment confirmations cho booking này (không chỉ PENDING)
+        List<Payment> confirmations = paymentConfirmationRepository.findByBooking_IdOrderByCreatedAtDesc(bookingId);
+
+        return confirmations.stream()
+                .map(paymentConfirmationMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -59,7 +79,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
         confirmation.setStatus(PaymentStatus.PENDING);
         confirmation.setCreatedAt(LocalDateTime.now());
 
-        // Auto-generate transaction reference nếu chưa có
+        // Auto-generate transaction reference
         if (confirmation.getTransactionReference() == null || confirmation.getTransactionReference().isEmpty()) {
             confirmation.setTransactionReference("MANUAL_" + booking.getId() + "_" + System.currentTimeMillis());
         }
@@ -69,22 +89,24 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     }
 
     @Override
-    public PaymentConfirmationDTO confirmPayment(Long id, String adminNote) {
+    public PaymentConfirmationDTO confirmPayment(Long id, AdminConfirmationRequest request) {
         Payment confirmation = paymentConfirmationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Payment confirmation not found: " + id));
 
-        if (!"PENDING".equals(confirmation.getStatus())) {
+        if (!PaymentStatus.PENDING.equals(confirmation.getStatus())) {
             throw new IllegalStateException("Chỉ có thể xác nhận các thanh toán đang ở trạng thái PENDING");
         }
 
         confirmation.setStatus(PaymentStatus.SUCCESS);
-        confirmation.setAdminNote(adminNote);
+        confirmation.setAdminNote(request.getAdminNote());
+        confirmation.setCreatedAt(LocalDateTime.now());
+        confirmation.setProcessedBy(request.getProcessedBy());
         confirmation.setProcessedAt(LocalDateTime.now());
 
-        // Cập nhật trạng thái booking nếu cần
+        // update booking status
         Booking booking = confirmation.getBooking();
         if (booking != null && "PENDING".equals(booking.getStatus().toString())) {
-            booking.setStatus(com.management.restaurant.common.BookingStatus.CONFIRMED);
+            booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
         }
 
@@ -97,7 +119,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
         Payment confirmation = paymentConfirmationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Payment confirmation not found: " + id));
 
-        if (!"PENDING".equals(confirmation.getStatus())) {
+        if (!PaymentStatus.PENDING.equals(confirmation.getStatus())) {
             throw new IllegalStateException("Chỉ có thể từ chối các thanh toán đang ở trạng thái PENDING");
         }
 
@@ -110,7 +132,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     }
 
     @Override
-    public List<PaymentConfirmationDTO> getConfirmationsByStatus(String status) {
+    public List<PaymentConfirmationDTO> getConfirmationsByStatus(PaymentStatus status) {
         return paymentConfirmationRepository.findByStatusOrderByCreatedAtDesc(PaymentStatus.PENDING)
                 .stream()
                 .map(paymentConfirmationMapper::toDTO)

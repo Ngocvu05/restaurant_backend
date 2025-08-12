@@ -1,6 +1,8 @@
 package com.management.restaurant.admin.service;
 
+import com.management.restaurant.admin.dto.AdminConfirmationRequest;
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
+import com.management.restaurant.common.PaymentStatus;
 
 import java.util.List;
 
@@ -23,7 +25,7 @@ public interface AdminPaymentService {
     /**
      * Admin xác nhận thanh toán thành công
      */
-    PaymentConfirmationDTO confirmPayment(Long id, String adminNote);
+    PaymentConfirmationDTO confirmPayment(Long id, AdminConfirmationRequest request);
 
     /**
      * Admin từ chối thanh toán
@@ -33,5 +35,7 @@ public interface AdminPaymentService {
     /**
      * Lấy lịch sử xác nhận theo trạng thái
      */
-    List<PaymentConfirmationDTO> getConfirmationsByStatus(String status);
+    List<PaymentConfirmationDTO> getConfirmationsByStatus(PaymentStatus status);
+
+    List<PaymentConfirmationDTO> getConfirmationsByBookingId(Long bookingId);
 }

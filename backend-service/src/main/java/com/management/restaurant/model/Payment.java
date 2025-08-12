@@ -45,7 +45,7 @@ public class Payment {
     @Column(name = "admin_note", columnDefinition = "TEXT")
     private String adminNote;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
