@@ -50,7 +50,7 @@ public class HomeController {
                 .build();
     }
 
-    // 🆕 Món mới nhất
+    // get newest dish
     @GetMapping("/latest-dishes")
     public ResponseEntity<List<DishDTO>> getLatestDishes() {
         List<Dish> dishes = dishRepository.findTop6ByOrderByCreatedAtDesc();

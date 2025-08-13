@@ -42,17 +42,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             String username = jwtUtils.extractUsername(token);
             log.info("🔗 Handshake as {}", username);
             Principal principal = () -> username;
-            attributes.put("principal", principal); // quan trọng!
+            attributes.put("principal", principal);
             return true;
         }
-
-        // Nếu không hợp lệ → từ chối handshake
         return false;
     }
 
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {
-        // Không cần xử lý gì thêm
     }
 }

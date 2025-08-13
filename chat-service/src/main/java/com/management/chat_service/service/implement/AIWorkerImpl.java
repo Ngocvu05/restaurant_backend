@@ -38,9 +38,9 @@ public class AIWorkerImpl implements IAIWorker {
 
         try {
             ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy roomId: " + roomId));
+                    .orElseThrow(() -> new RuntimeException("Not found room ID: " + roomId));
 
-            log.info("🤖 AIWorker - Gửi nội dung tới Groq API cho room: {}", roomId);
+            log.info("🤖 AIWorker - Send the message content to the Groq API for this room.: {}", roomId);
             String aiResponse = chatAIService.sendToAI(content);
 
             sendAIResponse(ChatMessageResponse.builder()
@@ -51,7 +51,7 @@ public class AIWorkerImpl implements IAIWorker {
                     .senderType(SenderType.AI)
                     .build());
         } catch (Exception e) {
-            handleError("AIWorker - Lỗi khi xử lý AI message", e);
+            handleError("AIWorker - An error occurred while processing the AI message.", e);
         } finally {
             completeProcessing(roomId, "room");
         }
@@ -63,7 +63,7 @@ public class AIWorkerImpl implements IAIWorker {
         if (canProcessSession(sessionId)) return;
 
         try {
-            log.info("🤖 [AIWorker] Xử lý message từ GUEST - sessionId: {} - content: {}", sessionId, content);
+            log.info("🤖 [AIWorker] Process message from GUEST - sessionId: {} - content: {}", sessionId, content);
             String aiResponse = chatAIService.ask(content);
 
             sendAIResponse(ChatMessageResponse.builder()
@@ -72,7 +72,7 @@ public class AIWorkerImpl implements IAIWorker {
                     .senderType(SenderType.AI)
                     .build());
         } catch (Exception e) {
-            handleError("[AIWorker] Lỗi khi xử lý message của guest", e);
+            handleError("[AIWorker] An error occurred while processing the Guest message.", e);
         } finally {
             completeProcessing(sessionId, "guest");
         }
@@ -80,14 +80,14 @@ public class AIWorkerImpl implements IAIWorker {
 
     private boolean canProcessSession(String sessionId) {
         if (!processingSessionIds.add(sessionId)) {
-            log.warn("⚠️ AIWorker - Đã xử lý session này rồi: {}", sessionId);
+            log.warn("⚠️ AIWorker - This session has already been processed.: {}", sessionId);
             return true;
         }
         return false;
     }
 
     private void sendAIResponse(ChatMessageResponse response) {
-        log.info("✅ AIWorker - Gửi response AI về queue chat.response: {}", response);
+        log.info("✅ AIWorker - Send response AI to queue chat.response: {}", response);
         rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, response);
     }
 
@@ -97,6 +97,6 @@ public class AIWorkerImpl implements IAIWorker {
 
     private void completeProcessing(String id, String type) {
         processingSessionIds.remove(id);
-        log.info("🤖 AIWorker - Đã hoàn thành xử lý message cho {}: {}", type, id);
+        log.info("🤖 AIWorker - Message processing completed for {}: {}", type, id);
     }
 }

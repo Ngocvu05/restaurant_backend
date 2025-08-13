@@ -49,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request, MultipartFile avatarFile) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Tài khoản đã tồn tại");
+            throw new RuntimeException("Username is already in use");
         }
 
         User user = new User();
@@ -74,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtService.generateToken(user);
-        return new AuthResponse(null,token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), null);
+        return new AuthResponse(user.getId(), token, user.getUsername(), user.getRole().getName().name(), getAvatarUrl(user), user.getEmail(), user.getFullName(), issueRefreshToken(user));
     }
 
     @Override
@@ -98,11 +98,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse refreshToken(String refreshToken) {
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token không hợp lệ"));
+                .orElseThrow(() -> new RuntimeException("invalid refresh token"));
 
         if (tokenEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
             refreshTokenRepository.delete(tokenEntity);
-            throw new RuntimeException("Refresh token đã hết hạn");
+            throw new RuntimeException("Refresh token expired");
         }
 
         User user = tokenEntity.getUser();
@@ -130,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> {
                     RefreshToken n = new RefreshToken();
                     n.setUser(user);
-                    return n;            // sẽ INSERT nếu chưa có
+                    return n;
                 });
 
         String token = UUID.randomUUID() + "." + UUID.randomUUID();

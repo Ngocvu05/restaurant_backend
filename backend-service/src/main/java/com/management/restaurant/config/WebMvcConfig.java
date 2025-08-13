@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Đường dẫn thật tới thư mục trên máy
         Path uploadDir = Paths.get(System.getProperty("user.dir"), "uploads", "images");
         String uploadPath = uploadDir.toUri().toString();
         registry.addResourceHandler("/uploads/images/**")

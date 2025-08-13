@@ -20,5 +20,4 @@ public class MoMoPaymentException extends RuntimeException {
         super(message, cause);
         this.errorCode = "MOMO_ERROR";
     }
-
 }

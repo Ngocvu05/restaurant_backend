@@ -1,6 +1,5 @@
 package com.management.restaurant.dto;
 
-import com.management.restaurant.common.TableStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

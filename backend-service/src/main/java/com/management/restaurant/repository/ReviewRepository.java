@@ -19,19 +19,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     Page<Review> findByDishIdAndIsActiveTrue(Long dishId, Pageable pageable);
 
-    // Find reviews by dish ID with specific rating
-    List<Review> findByDishIdAndRatingAndIsActiveTrue(Long dishId, Integer rating);
-
     Page<Review> findByDishIdAndRatingAndIsActiveTrue(Long dishId, Integer rating, Pageable pageable);
-
-    // Find reviews by dish ID and verified status
-    Page<Review> findByDishIdAndIsActiveTrueAndIsVerified(Long dishId, Boolean isVerified, Pageable pageable);
 
     // Count reviews by dish ID
     long countByDishIdAndIsActiveTrue(Long dishId);
-
-    // Count reviews by dish ID and rating
-    long countByDishIdAndRatingAndIsActiveTrue(Long dishId, Integer rating);
 
     // Calculate average rating for a dish
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.dishId = :dishId AND r.isActive = true")

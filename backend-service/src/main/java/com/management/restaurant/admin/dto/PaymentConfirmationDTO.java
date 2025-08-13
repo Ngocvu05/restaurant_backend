@@ -20,11 +20,11 @@ public class PaymentConfirmationDTO {
     private String transactionReference;
     private String customerNote;
     private String adminNote;
-    private String status; // PENDING, CONFIRMED, REJECTED
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
     private String processedBy;
-    // Thông tin booking liên quan (để hiển thị)
+    // Related booking information (for display)
     private String customerName;
     private Integer tableNumber;
     private LocalDateTime bookingTime;

@@ -108,7 +108,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void notifyAllAdmins(String title, String content) {
-        List<User> admins = userRepository.findAllByRole_Name(RoleName.ADMIN); // bạn cần method này
+        List<User> admins = userRepository.findAllByRole_Name(RoleName.ADMIN);
         log.info("🔔 Notify {} admins: {}", admins.size(), content);
         for (User admin : admins) {
             Notification notification = new Notification();
@@ -135,11 +135,10 @@ public class NotificationServiceImpl implements NotificationService {
 
     public List<Notification> getTopNNotificationsByUser(Long userId, int limit) {
         Pageable topN = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        return notificationRepository.findByToUser_Id(userId, topN).getContent(); // ✅ Trả về List
+        return notificationRepository.findByToUser_Id(userId, topN).getContent();
     }
 
     public void markAllAsRead(Long userId) {
         notificationRepository.markAllAsReadByUserId(userId);
     }
-
 }

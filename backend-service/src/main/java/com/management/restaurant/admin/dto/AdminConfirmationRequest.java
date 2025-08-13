@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AdminConfirmationRequest {
-    @NotBlank(message = "Ghi chú admin không được để trống")
-    @Size(max = 500, message = "Ghi chú không được quá 500 ký tự")
+    @NotBlank(message = "Admin note must not be empty.")
+    @Size(max = 500, message = "The note must not exceed 500 characters.")
     private String adminNote;
 
     private String processedBy;

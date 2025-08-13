@@ -112,32 +112,32 @@ public class ImageServiceImpl implements ImageService {
             throw new IllegalArgumentException("File must not be null or empty");
         }
         try {
-            // Tạo tên file duy nhất
+            // Generate a unique file name.
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            // Đường dẫn tuyệt đối đến thư mục images bên trong resources
+            // Absolute path to the images folder within the resources directory.
             String uploadDir = System.getProperty("user.dir") + "/uploads/images";
             File dir = new File(uploadDir);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
-            // Lưu file vào thư mục
+            // Store the file in the directory.
             Path filePath = Paths.get(uploadDir, fileName);
             file.transferTo(filePath.toFile());
 
-            // Tạo đối tượng Image entity
+            // Create an Image entity object.
             Image image = new Image();
             image.setUrl("uploads/images/" + fileName); // dùng đường dẫn public
             image.setUploadedAt(LocalDateTime.now());
 
-            // Gán user nếu có
+            // Assign user if available.
             if (dto.getUserId() != null) {
                 User user = userRepository.findById(dto.getUserId())
                         .orElseThrow(() -> new NotFoundException("User not found with ID: " + dto.getUserId()));
                 image.setUser(user);
             }
 
-            // Gán dish nếu có
+            // Assign dish if available
             if (dto.getDishId() != null) {
                 Dish dish = dishRepository.findById(dto.getDishId())
                         .orElseThrow(() -> new NotFoundException("Dish not found with ID: " + dto.getDishId()));
@@ -167,5 +167,4 @@ public class ImageServiceImpl implements ImageService {
 
         return "/images/" + filename; // relative URL
     }
-
 }

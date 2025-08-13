@@ -28,7 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         log.info(">>> JWT Filter - Checking path: {}", path);
 
-        // Skip JWT validation cho auth endpoints
+        // Skip JWT validation for auth endpoints
         return path.startsWith("/api/v1/auth/") ||
                 path.equals("/error") ||
                 path.startsWith("/api/v1/home/") ||

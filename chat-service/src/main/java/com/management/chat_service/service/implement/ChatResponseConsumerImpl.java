@@ -31,7 +31,7 @@ public class ChatResponseConsumerImpl implements IChatResponseConsumer {
     @RabbitListener(queues = RabbitMQConfig.RESPONSE_QUEUE)
     public void receiveAIResponse(ChatMessageResponse response) {
         try {
-            log.info("📥 ChatResponseConsumer - Nhận phản hồi từ AI: {}", response);
+            log.info("📥 ChatResponseConsumer - Receive a response from AI: {}", response);
 
             if (response.getSessionId() != null && response.getUserId() == null) {
                 log.info("📥 ChatResponseConsumer - Store response message to Redis: {}", response);
@@ -44,7 +44,7 @@ public class ChatResponseConsumerImpl implements IChatResponseConsumer {
             if (response.getUserId() != null) {
                 Long chatRoomId = response.getChatRoomId();
                 if (chatRoomId == null) {
-                    log.error("❌ ChatResponseConsumer - Thiếu chatRoomId trong response");
+                    log.error("❌ ChatResponseConsumer - The response is missing chatRoomId.");
                     return;
                 }
                 log.info("📥 ChatResponseConsumer - Store response message to DB: {}", response);
@@ -68,7 +68,7 @@ public class ChatResponseConsumerImpl implements IChatResponseConsumer {
                 webSocketService.sendMessageToRoom(response.getSessionId(), response);
             }
         } catch (Exception e) {
-            log.error("❌ ChatResponseConsumer - Lỗi xử lý phản hồi AI", e);
+            log.error("❌ ChatResponseConsumer - An error occurred while processing the AI message.", e);
         }
 
     }

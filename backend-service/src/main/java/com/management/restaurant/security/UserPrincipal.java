@@ -23,7 +23,7 @@ public class UserPrincipal implements UserDetails {
     public static UserPrincipal build(User user) {
         GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().getName().name());
         return new UserPrincipal(
-                user.getId(), // 👈 Truyền id
+                user.getId(),
                 user.getUsername(),
                 user.getPassword(),
                 List.of(authority)

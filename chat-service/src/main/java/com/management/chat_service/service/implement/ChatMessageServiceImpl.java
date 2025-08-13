@@ -25,5 +25,4 @@ public class ChatMessageServiceImpl implements IChatMessageService {
 
         return pageResult.map(chatMessageMapper::toDTO);
     }
-
 }

@@ -26,12 +26,12 @@ public class DishImportService {
     }
 
     /**
-     * Đồng bộ tất cả data từ database sang Elasticsearch
+     * Synchronize all data from the database to Elasticsearch.
      */
     public void syncAllDishes() {
         log.info("Starting full sync of dishes to Elasticsearch");
 
-        // Lấy tất cả dishes từ database
+        // Fetch all dishes từ database
         List<DishEntity> dishEntities = dishJpaRepository.findAll();
 
         // Convert sang Elasticsearch documents
@@ -39,17 +39,17 @@ public class DishImportService {
                 .map(Dish::fromEntity)
                 .collect(Collectors.toList());
 
-        // Xóa toàn bộ index cũ và tạo lại
+        // Delete all old indexes and recreate them.
         dishSearchRepository.deleteAll();
 
-        // Lưu vào Elasticsearch
+        // Storage Elasticsearch
         dishSearchRepository.saveAll(dishes);
 
         log.info("Synced {} dishes to Elasticsearch", dishes.size());
     }
 
     /**
-     * Đồng bộ một dish cụ thể
+     * Synchronize a specific dish.
      */
     public void syncDish(Long dishId) {
         log.info("Syncing dish with ID: {}", dishId);
@@ -62,7 +62,7 @@ public class DishImportService {
                             log.info("Synced dish: {}", dish.getName());
                         },
                         () -> {
-                            // Nếu không tìm thấy trong DB, xóa khỏi Elasticsearch
+                            // If not found in the database, delete it from Elasticsearch.
                             dishSearchRepository.deleteById(String.valueOf(dishId));
                             log.info("Deleted dish with ID: {} from Elasticsearch", dishId);
                         }
@@ -70,7 +70,7 @@ public class DishImportService {
     }
 
     /**
-     * Đồng bộ theo category
+     * Synchronize by category.
      */
     public void syncDishesByCategory(String category) {
         log.info("Syncing dishes by category: {}", category);
@@ -86,7 +86,7 @@ public class DishImportService {
     }
 
     /**
-     * Xóa một dish khỏi Elasticsearch
+     * Delete a dish from Elasticsearch.
      */
     public void deleteDishFromIndex(Long dishId) {
         dishSearchRepository.deleteById(String.valueOf(dishId));

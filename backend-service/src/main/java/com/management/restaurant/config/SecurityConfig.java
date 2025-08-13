@@ -40,18 +40,18 @@ public class SecurityConfig {
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable) // Disable CORS trong Spring Security
+                .cors(AbstractHttpConfigurer::disable) // Disable CORS on Spring Security
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - permitAll
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()          // ← Bỏ HttpMethod.OPTIONS ở đây
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/home/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/error").permitAll()                   // ← THÊM DÒNG NÀY
-                        .requestMatchers("/actuator/**").permitAll()             // ← THÊM DÒNG NÀY (nếu có)
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
                         // Admin endpoints
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")

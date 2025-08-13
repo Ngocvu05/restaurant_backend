@@ -39,10 +39,10 @@ public class ChatAIServiceImpl implements IChatAIService {
                     .get(30, TimeUnit.SECONDS); // set timeout to 30 seconds
         } catch (TimeoutException e) {
             log.error("❌ AI response timeout", e);
-            return "Xin lỗi, AI phản hồi quá chậm. Vui lòng thử lại sau.";
+            return "Sorry, the AI responded too slowly. Please try again later.";
         } catch (Exception e) {
             log.error("❌ Error getting AI response", e);
-            return "Xin lỗi, AI đang bận. Vui lòng thử lại sau.";
+            return "Sorry, the AI is busy. Please try again later.";
         }
     }
 
@@ -77,11 +77,11 @@ public class ChatAIServiceImpl implements IChatAIService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 String logPrefix = isGuestChat ? "✅Guest Chat - " : "✅";
-                log.info("{} Prompt gửi AI:\n{}", logPrefix, prompt);
+                log.info("{} Prompt send to AI:\n{}", logPrefix, prompt);
                 return extractTextFromGroqResponse(response.getBody());
             } else {
                 String logPrefix = isGuestChat ? "❌ Guest Chat - " : "❌";
-                log.error("{} Groq API trả về lỗi: {}", logPrefix, response.getStatusCode());
+                log.error("{} Groq API returned an error.: {}", logPrefix, response.getStatusCode());
                 return "AI Not responding.";
             }
         } catch (Exception e) {
@@ -130,8 +130,8 @@ public class ChatAIServiceImpl implements IChatAIService {
                     .path("content")
                     .asText();
         } catch (Exception e) {
-            log.error("❌ Lỗi khi parse phản hồi từ Groq API", e);
-            return "Không thể hiểu câu trả lời từ AI.";
+            log.error("❌ Error parsing response from Groq API.", e);
+            return "Unable to understand the AI's response.";
         }
     }
 }

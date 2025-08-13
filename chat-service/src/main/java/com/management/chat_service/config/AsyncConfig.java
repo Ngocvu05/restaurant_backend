@@ -28,7 +28,7 @@ public class AsyncConfig {
     @Bean("aiWorkerExecutor")
     public TaskExecutor aiWorkerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1); // Chỉ 1 thread để tránh race condition
+        executor.setCorePoolSize(1);
         executor.setMaxPoolSize(1);
         executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("AIWorker-");

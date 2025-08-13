@@ -6,8 +6,6 @@ import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.mapper.UserMapper;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
-import com.management.restaurant.model.UserRole;
-import com.management.restaurant.repository.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

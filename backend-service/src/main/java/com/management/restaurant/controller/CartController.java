@@ -152,5 +152,4 @@ public class CartController {
         String message = isValid ? "Cart is valid" : "Cart validation failed";
         return ResponseEntity.ok(DataResponses.success(message, isValid));
     }
-
 }

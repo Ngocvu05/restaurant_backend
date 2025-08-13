@@ -17,7 +17,7 @@ import org.springframework.retry.support.RetryTemplate;
 @Configuration
 @EnableRabbit
 public class RabbitMQConfig {
-    // Exchange names (phải giống với user-service)
+    // Exchange names
     public static final String DISH_EXCHANGE = "dish.exchange";
     public static final String USER_EXCHANGE = "user.exchange";
     public static final String REVIEW_EXCHANGE = "review.exchange";

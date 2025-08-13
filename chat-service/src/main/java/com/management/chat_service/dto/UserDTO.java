@@ -14,8 +14,7 @@ public class UserDTO {
     private String username;
     private String email;
     private String fullName;
-    private String avatarUrl; // URL to the user's avatar image
-    private String phone_number; // User's phone number
-    private String role; // e.g., "USER", "ADMIN"
-    //private boolean isActive; // Indicates if the user is active or not
+    private String avatarUrl;
+    private String phone_number;
+    private String role;
 }

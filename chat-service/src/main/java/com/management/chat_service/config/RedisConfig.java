@@ -27,7 +27,7 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
 
-        // Tuỳ chọn: thiết lập serializer để lưu object (rất quan trọng nếu bạn lưu ChatMessage hoặc custom class)
+        // Optional: set up a serializer for storing objects (critical if you store ChatMessage or any custom class).
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 

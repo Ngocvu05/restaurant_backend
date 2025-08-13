@@ -39,14 +39,14 @@ public class AuthController {
             @RequestPart("address") String address,
             @RequestPart(value = "avatar", required = false) MultipartFile avatarFile
     ) {
-        log.info("📥 Đang xử lý đăng ký: {}", username);
-        // 1. Lưu avatar nếu có
+        log.info("📥 Process register: {}", username);
+        // Storage avatar images
         String avatarUrl = null;
         if (avatarFile != null && !avatarFile.isEmpty()) {
-            avatarUrl = fileStorageService.save(avatarFile); // 🟡 bạn đã có service lưu file
+            avatarUrl = fileStorageService.save(avatarFile);
         }
 
-        // 2. Tạo request DTO
+        // 2. Create DTO
         RegisterRequest request = RegisterRequest.builder()
                 .username(username)
                 .password(password)
@@ -57,7 +57,7 @@ public class AuthController {
                 .avatarUrl(avatarUrl)
                 .build();
 
-        // 3. Gọi service đăng ký
+        // 3. Call service to register
         AuthResponse response = authService.register(request, avatarFile);
         // Send notification to admin
         notificationService.notifyAllAdmins("New Account", "Người dùng mới đã tạo tài khoản: " + request.getUsername());

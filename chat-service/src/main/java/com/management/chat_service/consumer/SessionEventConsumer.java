@@ -18,11 +18,11 @@ public class  SessionEventConsumer {
     @RabbitListener(queues = RabbitMQConfig.SESSION_CONVERT_QUEUE)
     public void handleSessionConversion(SessionConversionEvent event) {
         if (event == null || event.getSessionId() == null || event.getUserId() == null) {
-            log.warn("⚠️ SessionEventConsumer - Nhận event không hợp lệ: {}", event);
+            log.warn("⚠️ SessionEventConsumer - Invalid event: {}", event);
             return;
         }
 
         guestChatService.migrateToDatabase(event.getSessionId(), event.getUserId());
-        log.info("✅ SessionEventConsumer - migrate message Redis -> DB cho session Room {} -> User {}", event.getSessionId(), event.getUserId());
+        log.info("✅ SessionEventConsumer - migrate message Redis -> DB for session Room {} -> User {}", event.getSessionId(), event.getUserId());
     }
 }

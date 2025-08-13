@@ -11,19 +11,19 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // ✅ Enable simple broker for topics
+        // Enable simple broker for topics
         config.enableSimpleBroker("/topic", "/queue", "/user"); //user = for private messages
 
-        // ✅ Set application destination prefix
+        // Set application destination prefix
         config.setApplicationDestinationPrefixes("/app");
 
-        // ✅ Set user destination prefix
+        // Set user destination prefix
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // ✅ Register STOMP endpoint with SockJS support
+        // Register STOMP endpoint with SockJS support
         registry.addEndpoint("/ws")
                 .addInterceptors(new AuthHandshakeInterceptor()) // Use custom handshake interceptor
                 .setAllowedOriginPatterns(
@@ -36,7 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setDisconnectDelay(5000) // 5 seconds
                 .setSessionCookieNeeded(false);
 
-        // ✅ Also register endpoint without SockJS for native WebSocket clients
+        // Also register endpoint without SockJS for native WebSocket clients
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(
                         "http://localhost:3000",

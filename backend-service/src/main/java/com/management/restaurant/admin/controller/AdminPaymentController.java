@@ -22,7 +22,7 @@ public class AdminPaymentController {
     private final AdminPaymentService paymentConfirmationService;
 
     /**
-     * Lấy tất cả yêu cầu xác nhận đang chờ
+     * get all payment request status are pending
      */
     @GetMapping("/pending")
     public ResponseEntity<List<PaymentConfirmationDTO>> getPendingConfirmations() {
@@ -32,7 +32,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Lấy yêu cầu xác nhận theo trạng thái
+     * filter request by status
      */
     @GetMapping
     public ResponseEntity<List<PaymentConfirmationDTO>> getConfirmationsByStatus(
@@ -43,7 +43,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Lấy DANH SÁCH yêu cầu xác nhận theo booking ID - ĐÃ SỬA
+     * get request payment status by booking id
      */
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<List<PaymentConfirmationDTO>> getByBookingId(@PathVariable Long bookingId) {
@@ -53,7 +53,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Tạo yêu cầu xác nhận thanh toán (từ phía user)
+     * create payment request from user
      */
     @PostMapping
     public ResponseEntity<PaymentConfirmationDTO> createConfirmationRequest(
@@ -74,7 +74,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Admin xác nhận thanh toán
+     * Admin confirm payment
      */
     @PutMapping("/{id}/confirm")
     public ResponseEntity<PaymentConfirmationDTO> confirmPayment(
@@ -87,7 +87,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Admin từ chối thanh toán
+     * Admin reject payment
      */
     @PutMapping("/{id}/reject")
     public ResponseEntity<PaymentConfirmationDTO> rejectPayment(
@@ -100,7 +100,7 @@ public class AdminPaymentController {
     }
 
     /**
-     * Thống kê trạng thái xác nhận
+     * Statistics of payment confirmation status
      */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getConfirmationStats() {

@@ -6,7 +6,6 @@ import com.management.restaurant.model.Cart;
 import com.management.restaurant.model.Dish;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 

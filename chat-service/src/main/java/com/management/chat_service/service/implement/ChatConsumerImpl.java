@@ -31,7 +31,7 @@ public class ChatConsumerImpl implements IChatConsumer {
         log.info("📨 CHAT_QUEUE - Nhận request: {}", request);
 
         if (request.getUserId() != null) {
-            handleLoggedInUserChat(request, true); // Send it to Ai
+            handleLoggedInUserChat(request, true);
         } else if (request.getSenderType() == SenderType.GUEST) {
             handleGuestChat(request);
         } else {
@@ -42,10 +42,10 @@ public class ChatConsumerImpl implements IChatConsumer {
     @Override
     @RabbitListener(queues = RabbitMQConfig.GUEST_CHAT_QUEUE)
     public void handleGuestMessage(ChatMessageRequest request) {
-        log.info("📩 GUEST_CHAT_QUEUE - Nhận request: {}", request);
+        log.info("📩 GUEST_CHAT_QUEUE - Receive request: {}", request);
 
         if (request.getSenderType() != SenderType.GUEST) {
-            log.warn("❌ Bỏ qua message vì senderType không phải GUEST: {}", request);
+            log.warn("❌ Skipping message because senderType is not GUEST: {}", request);
             return;
         }
         handleGuestChat(request);
@@ -54,10 +54,10 @@ public class ChatConsumerImpl implements IChatConsumer {
     @Override
     @RabbitListener(queues = RabbitMQConfig.USER_TO_USER_QUEUE)
     public void handleUserToUserMessage(ChatMessageRequest request) {
-        log.info("🤝 USER_TO_USER_QUEUE - Nhận request: {}", request);
+        log.info("🤝 USER_TO_USER_QUEUE - Receive request: {}", request);
 
         if (request.getUserId() != null) {
-            handleLoggedInUserChat(request, false); // Không gửi AI
+            handleLoggedInUserChat(request, false);
         } else {
             ChatMessageResponse response = ChatMessageResponse.builder()
                     .messageType(MessageType.TEXT)
@@ -66,7 +66,7 @@ public class ChatConsumerImpl implements IChatConsumer {
                     .response(request.getMessage())
                     .build();
             chatWebSocketService.sendMessageToPrivateRoom(request.getChatRoomId(), response);
-            log.warn("❌ USER_TO_USER_QUEUE - Không có userId trong request: {}", request);
+            log.warn("❌ USER_TO_USER_QUEUE - No userId found in the request: {}", request);
         }
     }
 
@@ -89,11 +89,11 @@ public class ChatConsumerImpl implements IChatConsumer {
                 .build();
 
         chatMessageRepository.save(message);
-        log.info("✅ Đã lưu message userId={} vào DB: {}", request.getUserId(), request);
+        log.info("✅ Saved message with userId={} to the DB.: {}", request.getUserId(), request);
 
         if (sendToAI) {
             chatProducerService.sendToAI(request);
-            log.info("🧠 Gửi message tới AI: {}", request.getMessage());
+            log.info("🧠 Send message to AI: {}", request.getMessage());
         } else {
             ChatMessageResponse response = ChatMessageResponse.builder()
                     .messageType(MessageType.TEXT)
@@ -116,6 +116,6 @@ public class ChatConsumerImpl implements IChatConsumer {
 
         guestChatService.saveGuestMessageToRedis(request);
         chatProducerService.handleGuestAIMessage(request);
-        log.info("✅ GuestChat - Gửi AI và lưu Redis (sessionId={}): {}", request.getSessionId(), request.getMessage());
+        log.info("✅ GuestChat - Send to  AI and Storage Redis (sessionId={}): {}", request.getSessionId(), request.getMessage());
     }
 }

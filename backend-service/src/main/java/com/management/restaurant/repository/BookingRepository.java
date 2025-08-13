@@ -24,5 +24,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                           @Param("end") LocalDateTime end);
 
     List<Booking> findByUserIdOrderByBookingTimeDesc(Long userId);
-
 }

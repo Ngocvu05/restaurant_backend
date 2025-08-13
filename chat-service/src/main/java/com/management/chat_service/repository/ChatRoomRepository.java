@@ -1,6 +1,5 @@
 package com.management.chat_service.repository;
 
-import com.management.chat_service.dto.ChatRoomDTO;
 import com.management.chat_service.model.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

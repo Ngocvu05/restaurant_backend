@@ -36,9 +36,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/actuator/health",
-            "/chat/ws",           // ✅ WebSocket endpoint
-            "/chat/ws/**",        // ✅ WebSocket với SockJS
-            "/chat/api/v1/guest", // ✅ Guest endpoints
+            "/chat/ws",
+            "/chat/ws/**",
+            "/chat/api/v1/guest", // Guest user chat endpoints
             "/chat/api/v1/guest/**"
     );
 
@@ -54,13 +54,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.info(">>> JWT Filter - Path: {}, Method: {}", path, method);
 
-        // ✅ Always allow OPTIONS requests (CORS preflight)
+        // Always allow OPTIONS requests (CORS preflight)
         if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
             log.info(">>> OPTIONS request detected, allowing without JWT validation");
             return chain.filter(exchange);
         }
 
-        // ✅ Check if the path is a public endpoint
+        // Check if the path is a public endpoint
         boolean isPublicEndpoint = PUBLIC_URLS.stream()
                 .anyMatch(publicUrl -> {
                     boolean matches = path.equals(publicUrl) || path.startsWith(publicUrl);
@@ -153,7 +153,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
 
-        // ✅ Add CORS headers to error response
+        // Add CORS headers to error response
         response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
         response.getHeaders().add("Access-Control-Allow-Credentials", "true");
         response.getHeaders().add("Content-Type", "application/json");
@@ -167,7 +167,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
 
-        // ✅ Add CORS headers to error response
+        // Add CORS headers to error response
         response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
         response.getHeaders().add("Access-Control-Allow-Credentials", "true");
         response.getHeaders().add("Content-Type", "application/json");

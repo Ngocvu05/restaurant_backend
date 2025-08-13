@@ -3,14 +3,12 @@ package com.management.restaurant.controller;
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.dto.UserInfoDTO;
 import com.management.restaurant.exception.NotFoundException;
-import com.management.restaurant.model.User;
 import com.management.restaurant.security.UserPrincipal;
 import com.management.restaurant.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,7 +62,7 @@ public class UserController {
     @PutMapping("/avatar/{imageId}")
     public ResponseEntity<String> setAvatar(@PathVariable Long imageId, @AuthenticationPrincipal UserPrincipal principal) throws BadRequestException {
         userService.setAvatarImage(principal.getId(), imageId);
-        return ResponseEntity.ok("Đã cập nhật avatar thành công");
+        return ResponseEntity.ok("Avatar updated successfully.");
     }
 
     @DeleteMapping("/delete{id}")

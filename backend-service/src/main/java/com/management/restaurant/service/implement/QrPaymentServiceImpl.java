@@ -14,12 +14,12 @@ import java.nio.charset.StandardCharsets;
 public class QrPaymentServiceImpl implements QrPaymentService {
     @Override
     public String generateQrPaymentUrl(BookingDTO booking, PaymentDTO payment) {
-        // ⚠️ Mẫu QR thật có thể phụ thuộc vào ngân hàng cụ thể, đây là ví dụ với VNPAY:
-        String accountNumber = "123456789"; // hoặc Mã Merchant của bạn
-        String bankCode = "970422"; // Mã ngân hàng (Agribank, Vietcombank,...)
+        // The actual QR code format may depend on the specific bank; here is an example with VNPAY:
+        String accountNumber = "123456789";
+        String bankCode = "970422";
         String content = "Thanh toan don dat ban #" + booking.getId();
 
-        // Ví dụ dùng VNPAY QR static (hoặc chuyển sang dynamic nếu có server trung gian)
+        // Example using VNPAY static QR (or switch to dynamic if an intermediate server is available).
         return "https://img.vietqr.io/image/" + bankCode + "-" + accountNumber + "-print.png?amount="
                 + payment.getAmount() + "&addInfo=" + URLEncoder.encode(content, StandardCharsets.UTF_8);
     }

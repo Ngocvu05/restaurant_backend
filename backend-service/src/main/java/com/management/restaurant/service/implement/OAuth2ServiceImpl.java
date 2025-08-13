@@ -108,7 +108,7 @@ public class OAuth2ServiceImpl implements OAuth2Service {
                 .orElseGet(() -> {
                     RefreshToken n = new RefreshToken();
                     n.setUser(user);
-                    return n;            // sẽ INSERT nếu chưa có
+                    return n;
                 });
 
         String token = UUID.randomUUID() + "." + UUID.randomUUID();

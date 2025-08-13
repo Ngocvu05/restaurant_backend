@@ -4,7 +4,6 @@ import com.management.restaurant.common.TableStatus;
 import com.management.restaurant.dto.TableDTO;
 import com.management.restaurant.mapper.TableMapper;
 import com.management.restaurant.model.TableEntity;
-import com.management.restaurant.service.TableService;
 import org.springframework.stereotype.Component;
 
 @Component

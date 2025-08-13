@@ -45,7 +45,7 @@ public class AdminUploadController {
                 Image image = imageOpt.get();
                 // Optional: Xóa file khỏi hệ thống nếu bạn lưu nội bộ
                 fileStorageService.deleteByUrl(url);
-                // Xóa record trong database
+                // Delete record on database
                 imageRepository.delete(image);
                 return ResponseEntity.ok("Xoá ảnh thành công");
             } else {
@@ -55,5 +55,4 @@ public class AdminUploadController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Xoá ảnh thất bại");
         }
     }
-
 }

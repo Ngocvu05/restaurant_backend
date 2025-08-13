@@ -44,7 +44,7 @@ public class JwtService {
         Date now = new Date();
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationMs);
 
-        // ✅ Debug key creation
+        //  Debug key creation
         Key key = getSignKey();
 
         String token = Jwts.builder()
@@ -58,7 +58,7 @@ public class JwtService {
 
         log.info(">>> DEBUG - Generated token: {}", token);
 
-        // ✅ Check token parse session
+        //  Check token parse session
         try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
@@ -74,14 +74,14 @@ public class JwtService {
     }
 
     /**
-     * ✅ Extract username from token
+     *  Extract username from token
      */
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
     /**
-     * ✅ Validate token with user details
+     *  Validate token with user details
      */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         try {
@@ -94,7 +94,7 @@ public class JwtService {
     }
 
     /**
-     * ✅ Check if token is expired
+     *  Check if token is expired
      */
     private boolean isTokenExpired(String token) {
         try {
@@ -106,7 +106,7 @@ public class JwtService {
     }
 
     /**
-     * ✅ Extract all claims (payload) from xa token
+     *  Extract all claims (payload) from xa token
      */
     private Claims getClaims(String token) {
         try {
@@ -122,14 +122,14 @@ public class JwtService {
     }
 
     /**
-     * ✅ Safe way to extract claims with error handling
+     *  Safe way to extract claims with error handling
      */
     public Claims getClaimsFromToken(String token) {
         return getClaims(token);
     }
 
     /**
-     * ✅ Check if token is valid (syntax + signature + expiration)
+     *  Check if token is valid (syntax + signature + expiration)
      */
     public boolean validateToken(String token) {
         try {
@@ -142,7 +142,7 @@ public class JwtService {
     }
 
     /**
-     * ✅ Build UserPrincipal from token claims
+     *  Build UserPrincipal from token claims
      */
     public UserPrincipal getUserFromToken(String token) {
         Claims claims = getClaimsFromToken(token);

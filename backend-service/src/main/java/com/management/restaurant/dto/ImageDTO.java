@@ -16,6 +16,6 @@ public class ImageDTO {
     private String url;
     private LocalDateTime uploadedAt;
     private boolean isAvatar;
-    private Long userId;  // nếu ảnh thuộc về người dùng
-    private Long dishId;  // nếu ảnh thuộc về món ăn
+    private Long userId;
+    private Long dishId;
 }

@@ -20,7 +20,7 @@ public class DishAdminDTO {
     private BigDecimal price;
     private Boolean isAvailable;
     private String category;
-    private List<String> imageUrls; // từ entity Image
+    private List<String> imageUrls;
     private int orderCount;
     private LocalDateTime createdAt;
 }

@@ -73,14 +73,14 @@ public class DishServiceImpl implements DishService {
         Dish existingDish = dishRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Dish not found"));
 
-        // Cập nhật các trường cơ bản
+        // update data
         existingDish.setName(dishDTO.getName());
         existingDish.setDescription(dishDTO.getDescription());
         existingDish.setPrice(dishDTO.getPrice());
         existingDish.setIsAvailable(dishDTO.isAvailable());
         existingDish.setCategory(dishDTO.getCategory());
 
-        // Cập nhật lại danh sách ảnh
+        // update image list
         imageRepository.deleteAll(existingDish.getImages()); // xoá ảnh cũ
 
         if (dishDTO.getImageUrls() != null) {

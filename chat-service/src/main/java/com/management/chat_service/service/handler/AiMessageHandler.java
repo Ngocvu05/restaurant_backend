@@ -52,4 +52,3 @@ public class AiMessageHandler implements IChatMessageHandler {
         return chatMessageRepository.save(placeholder);
     }
 }
-

@@ -40,14 +40,14 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDTO createBooking(BookingDTO dto) {
-        // 1. Tìm user và table
+        // 1. Find user and tables
         User user = userRepository.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         TableEntity table = tableRepository.findById(dto.getTableId())
                 .orElseThrow(() -> new RuntimeException("Table not found"));
 
-        // 2. Chuyển DTO thành entity
+        // 2. Convert dto to entity
         Booking booking = bookingMapper.toEntity(dto);
         booking.setStatus(BookingStatus.PENDING);
         booking.setUser(user);
@@ -56,7 +56,7 @@ public class BookingServiceImpl implements BookingService {
         List<PreOrder> preOrders = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
         if (dto.getPreOrderDishes() != null && !dto.getPreOrderDishes().isEmpty()) {
-            // 3. Lấy tất cả Dish 1 lần duy nhất
+            // 3. fetch all dish
             List<Long> dishIds = dto.getPreOrderDishes().stream()
                     .map(PreOrderDTO::getDishId)
                     .distinct()
@@ -69,32 +69,32 @@ public class BookingServiceImpl implements BookingService {
                 Dish dish = dishMap.get(preDto.getDishId());
                 if (dish == null) continue;
 
-                // Tạo PreOrder
+                // Create PreOrder
                 PreOrder preOrder = new PreOrder();
                 preOrder.setDish(dish);
                 preOrder.setBooking(booking);
                 preOrder.setQuantity(preDto.getQuantity());
                 preOrder.setNote(preDto.getNote());
                 preOrders.add(preOrder);
-                // Tính tổng tiền
+                // Sum total amount
                 totalAmount = totalAmount.add(
                         dish.getPrice().multiply(BigDecimal.valueOf(preDto.getQuantity()))
                 );
 
-                // Tăng orderCount
+                // Increase orderCount
                 dish.setOrderCount(dish.getOrderCount() + preDto.getQuantity());
             }
             booking.setPreOrders(preOrders);
         }
         booking.setTotalAmount(totalAmount);
-        // 4. Lưu booking + update dish
+        // 4. Storage booking + update dish
         Booking savedBooking = bookingRepository.save(booking);
         dishRepository.saveAll(preOrders.stream()
                 .map(PreOrder::getDish)
                 .distinct()
                 .toList());
 
-        // 5. Gửi email xác nhận nếu có
+        // 5. Send email to confirm
         if (user.getEmail() != null) {
             emailService.sendBookingConfirmation(
                     user.getEmail(),

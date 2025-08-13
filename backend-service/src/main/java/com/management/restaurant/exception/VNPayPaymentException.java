@@ -20,5 +20,4 @@ public class VNPayPaymentException extends RuntimeException {
         super(message, cause);
         this.errorCode = "VNPAY_ERROR";
     }
-
 }

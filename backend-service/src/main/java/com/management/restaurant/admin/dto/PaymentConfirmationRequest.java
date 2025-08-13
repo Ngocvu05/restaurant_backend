@@ -16,20 +16,20 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class PaymentConfirmationRequest {
-    @NotNull(message = "Booking ID không được để trống")
+    @NotNull(message = "Booking ID must not be empty")
     private Long bookingId;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @Positive(message = "Số tiền phải lớn hơn 0")
+    @NotNull(message = "Amount must not be empty")
+    @Positive(message = "Amount must be greater than 0")
     private BigDecimal amount;
 
-    @Size(max = 50, message = "Phương thức thanh toán không được quá 50 ký tự")
+    @Size(max = 50, message = "Payment method must not exceed 50 characters")
     @Builder.Default
     private String paymentMethod = String.valueOf(PaymentMethod.CASH);
 
-    @Size(max = 100, message = "Mã giao dịch không được quá 100 ký tự")
+    @Size(max = 100, message = "Transaction code must not exceed 100 characters")
     private String transactionReference;
 
-    @Size(max = 500, message = "Ghi chú không được quá 500 ký tự")
+    @Size(max = 500, message = "Note must not exceed 500 characters")
     private String customerNote;
 }

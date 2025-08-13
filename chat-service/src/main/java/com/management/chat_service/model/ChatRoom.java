@@ -64,9 +64,9 @@ public class ChatRoom {
 
     @OneToMany(
             mappedBy = "chatRoom",                // 'chatRoom' is a field name entity ChatParticipant
-            cascade = CascadeType.ALL,            // Khi lưu/xóa ChatRoom, các participant liên quan cũng sẽ được xử lý
-            fetch = FetchType.LAZY,               // Chỉ tải danh sách này khi cần, để tối ưu hiệu năng
-            orphanRemoval = true                  // Tự động xóa participant mồ côi (không còn thuộc room nào)
+            cascade = CascadeType.ALL,            // Participant records related to the ChatRoom will be handled automatically on save or delete.
+            fetch = FetchType.LAZY,               // Fetch this list only when necessary for better performance.
+            orphanRemoval = true                  // Automatically delete orphan participants (no longer belonging to any room).
     )
     @Builder.Default
     private List<ChatParticipant> participants = new ArrayList<>();

@@ -30,5 +30,4 @@ public class DataResponses<T> {
     public static <T> DataResponses<T> error(String message) {
         return new DataResponses<>(false, message, null);
     }
-
 }

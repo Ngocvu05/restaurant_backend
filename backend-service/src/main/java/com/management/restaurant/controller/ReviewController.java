@@ -25,8 +25,6 @@ import java.util.Map;
 public class ReviewController {
     private final ReviewService reviewService;
 
-    // ====== Public Endpoints for Customer Reviews ======
-
     /**
      * Create a new review for a dish
      */
@@ -116,8 +114,6 @@ public class ReviewController {
 
         return ResponseEntity.ok(response);
     }
-
-    // ====== Admin Endpoints for Review Management ======
 
     /**
      * Get all reviews with advanced filtering (Admin only)
@@ -341,7 +337,6 @@ public class ReviewController {
     }
 
     // ====== Helper Methods ======
-
     private String getClientIpAddress(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {

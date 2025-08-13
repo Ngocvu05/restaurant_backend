@@ -34,22 +34,22 @@ public class AdminChatController {
                                       @RequestParam(defaultValue = "10") int size) {
         log.info("📥 Admin {} joining the chat room {}", adminId, roomId);
         ChatRoom room = chatRoomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
+                .orElseThrow(() -> new RuntimeException("Not found room"));
 
         if (room.getAdminId() != null && !room.getAdminId().equals(adminId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Phòng này đang được xử lý bởi admin khác");
+                    .body("This room is being handled by another admin.");
         }
 
         room.setAdminId(adminId);
         chatRoomRepository.save(room);
         Page<ChatMessageDTO> messages = chatMessageService.getMessagesByRoomId(roomId, page, size);
 
-        // ✅ send private notification to the admin joining the room
+        // send private notification to the admin joining the room
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(adminId),
                 "/queue/alerts",
-                "✅ Bạn vừa nhận xử lý phòng " + roomId
+                "✅ You have just taken over handling the room " + roomId
         );
 
         // send notification to all admins
@@ -63,11 +63,11 @@ public class AdminChatController {
     public ResponseEntity<?> resolveRoom(@PathVariable String roomId,
                                          @RequestHeader("X-User-Id") Long adminId) {
         ChatRoom room = chatRoomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
+                .orElseThrow(() -> new RuntimeException("Not found room"));
 
         if (!adminId.equals(room.getAdminId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Bạn không có quyền đánh dấu phòng này");
+                    .body("You do not have permission to mark this room.");
         }
 
         room.setResolved(true);
@@ -77,7 +77,7 @@ public class AdminChatController {
         messagingTemplate.convertAndSend("/topic/admin/notify",
                 "Phòng " + roomId + " đã được xử lý hoàn tất bởi Admin " + adminId);
 
-        return ResponseEntity.ok("Phòng đã được đánh dấu là đã xử lý");
+        return ResponseEntity.ok("The room has been marked as resolved.");
     }
 
     @GetMapping("/rooms/all")
@@ -110,5 +110,4 @@ public class AdminChatController {
                     .body("{\"status\":\"error\",\"message\":\"Failed to send message\"}");
         }
     }
-
 }

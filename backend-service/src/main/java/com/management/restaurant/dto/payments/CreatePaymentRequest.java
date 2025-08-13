@@ -15,7 +15,7 @@ public class CreatePaymentRequest {
     private Long bookingId;
     private BigDecimal amount;
     private String orderInfo;
-    private String paymentMethod; // "MOMO", "VNPAY", "CASH", "CARD"
+    private String paymentMethod;
     private String customerEmail;
     private String customerPhone;
 }

@@ -14,10 +14,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    // ✅ Exchange
+    // Exchange
     public static final String CHAT_EXCHANGE = "chat.exchange";
 
-    // ✅ Queues
+    // Queues
     public static final String CHAT_QUEUE = "chat.queue.user";
     public static final String GUEST_CHAT_QUEUE = "chat.queue.guest";
     public static final String AI_QUEUE = "chat.queue.ai";
@@ -25,7 +25,7 @@ public class RabbitMQConfig {
     public static final String SESSION_CONVERT_QUEUE = "chat.queue.session.convert";
     public static final String USER_TO_USER_QUEUE = "chat.queue.user2user";
 
-    // ✅ Routing keys
+    // Routing keys
     public static final String CHAT_ROUTING_KEY = "chat.routing.user";
     public static final String GUEST_CHAT_ROUTING_KEY = "chat.routing.guest";
     public static final String AI_ROUTING_KEY = "chat.routing.ai";
@@ -55,7 +55,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue aiQueue() {
-        //return new Queue(AI_QUEUE, true);
         return  QueueBuilder.durable(AI_QUEUE)
                 .withArgument("x-single-active-consumer", true)
                 .build();
@@ -63,7 +62,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue responseQueue() {
-        //return new Queue(RESPONSE_QUEUE, true);
         return QueueBuilder.durable(RESPONSE_QUEUE)
                 .withArgument("x-single-active-consumer", true)
                 .build();
@@ -71,7 +69,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue sessionConversionQueue() {
-        //return new Queue(SESSION_CONVERT_QUEUE, true);
         return QueueBuilder.durable(SESSION_CONVERT_QUEUE)
                 .withArgument("x-single-active-consumer", true)
                 .build();
@@ -117,7 +114,7 @@ public class RabbitMQConfig {
     @Bean
     public MessageConverter jsonMessageConverter() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.findAndRegisterModules(); // support Java 8 DateTime etc.
+        mapper.findAndRegisterModules();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         return new Jackson2JsonMessageConverter(mapper);
@@ -129,7 +126,6 @@ public class RabbitMQConfig {
         template.setMessageConverter(messageConverter);
         return template;
     }
-
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory,

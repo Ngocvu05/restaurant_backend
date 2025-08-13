@@ -1,6 +1,5 @@
 package com.management.chat_service.service.implement;
 
-import com.management.chat_service.config.RabbitMQConfig;
 import com.management.chat_service.dto.ChatMessageRequest;
 import com.management.chat_service.dto.ChatMessageResponse;
 import com.management.chat_service.dto.GuestChatMessageDTO;
@@ -18,7 +17,6 @@ import com.management.chat_service.status.SenderType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +49,7 @@ public class GuestChatServiceImpl implements IGuestChatService {
         String key = REDIS_PREFIX + message.getSessionId();
         // Create ChatMessageRequest object to send to the producer
         ChatMessageRequest request = ChatMessageRequest.builder()
-                .chatRoomId(message.getSessionId()) // sessionId dùng làm roomId
+                .chatRoomId(message.getSessionId())
                 .sessionId(message.getSessionId())
                 .message(message.getContent())
                 .senderType(SenderType.GUEST)
@@ -69,7 +67,6 @@ public class GuestChatServiceImpl implements IGuestChatService {
         saveGuestResponseToRedis(response);
 
         // Send response to Response Queue -> this process run on class AIWorkerImpl
-        //rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, response);
         webSocketService.sendMessageToRoom(response.getSessionId(), response);
     }
 
@@ -89,7 +86,7 @@ public class GuestChatServiceImpl implements IGuestChatService {
         // Create or find chat room
         ChatRoom room = chatRoomRepository.findBySessionId(sessionId)
                 .orElseGet(() -> chatRoomRepository.save( ChatRoom.builder()
-                        .roomId(UUID.randomUUID().toString()) // Ceate a new room ID
+                        .roomId(UUID.randomUUID().toString()) // Create a new room ID
                         .sessionId(sessionId)
                         .userId(userId)
                         .name("Chat Room for Session " + sessionId)
@@ -143,5 +140,4 @@ public class GuestChatServiceImpl implements IGuestChatService {
     public void saveGuestResponseToRedis(ChatMessageResponse response) {
         redisTemplate.opsForList().rightPush(getRedisKey(response.getSessionId()), response);
     }
-
 }

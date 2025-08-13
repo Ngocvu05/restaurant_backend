@@ -102,16 +102,16 @@ public class UserServiceImpl implements UserService {
         // Lấy ảnh
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new NotFoundException("Image not found"));
-        // Kiểm tra ảnh có thuộc user không
+        // Check if the image belongs to the user.
         if (!image.getUser().getId().equals(userId)) {
             throw new BadRequestException("Image does not belong to the user");
         }
 
-        // Set ảnh hiện tại là avatar
+        // Set the current image as the avatar.
         image.setAvatar(true);
         imageRepository.save(image);
 
-        // Set các ảnh khác không phải avatar
+        // Assign images that are not avatars.
         imageRepository.unsetAllOtherAvatars(userId, imageId);
     }
 

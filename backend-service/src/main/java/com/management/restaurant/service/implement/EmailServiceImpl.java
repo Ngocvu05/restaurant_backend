@@ -19,7 +19,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -54,14 +53,14 @@ public class EmailServiceImpl implements EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
-            helper.setFrom(new InternetAddress("klassy@yourdomain.com", "Klassy Cafe")); // ✅ Tên hiển thị
-            helper.setSubject("Xác nhận đặt bàn tại Klassy Cafe"); // ✅ Subject cố định hoặc tùy biến
+            helper.setFrom(new InternetAddress("klassy@yourdomain.com", "Klassy Cafe"));
+            helper.setSubject("Xác nhận đặt bàn tại Klassy Cafe"); //  Subject
             helper.addAttachment("hoa-don.pdf", new ByteArrayResource(pdfBytes));
-            helper.setText(htmlContent, true); // ✅ true: gửi HTML
+            helper.setText(htmlContent, true); // true: send HTML
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Lỗi gửi email: " + e.getMessage(), e);
+            throw new RuntimeException("Error send email: " + e.getMessage(), e);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -115,6 +114,4 @@ public class EmailServiceImpl implements EmailService {
 
         return sb.toString();
     }
-
-
 }

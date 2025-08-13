@@ -54,5 +54,5 @@ public class Payment {
     private LocalDateTime processedAt = LocalDateTime.now();
 
     @Column(name = "processed_by")
-    private String processedBy; // Admin username who processed this
+    private String processedBy;     // Admin username who processed this
 }

@@ -11,7 +11,7 @@ public class RabbitListenerConfig {
     public SimpleRabbitListenerContainerFactory retryContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setDefaultRequeueRejected(false); // để gửi vào DLQ nếu có
+        factory.setDefaultRequeueRejected(false);
         factory.setConcurrentConsumers(3);
         factory.setMaxConcurrentConsumers(10);
         factory.setPrefetchCount(5);

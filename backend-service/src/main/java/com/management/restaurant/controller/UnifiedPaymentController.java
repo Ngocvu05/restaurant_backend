@@ -62,7 +62,7 @@ public class UnifiedPaymentController {
     }
 
     /**
-     * Xử lý callback/return chung cho tất cả payment methods
+     * Handle a unified callback/return process for all payment methods.
      */
     @PostMapping("/{paymentMethod}/callback")
     public ResponseEntity<?> handleCallback(
@@ -70,9 +70,7 @@ public class UnifiedPaymentController {
             @RequestBody Map<String, Object> callbackData) {
         try {
             log.info("Handling callback for payment method: {}", paymentMethod);
-
             PaymentDTO paymentResult = unifiedPaymentService.handleCallback(paymentMethod, callbackData);
-
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Callback processed successfully",
@@ -90,7 +88,7 @@ public class UnifiedPaymentController {
     }
 
     /**
-     * Xử lý return URL chung (đặc biệt cho VNPay)
+     * Handle a unified return URL process (especially for VNPay).
      */
     @GetMapping("/{paymentMethod}/return")
     public ResponseEntity<?> handleReturn(
@@ -137,7 +135,7 @@ public class UnifiedPaymentController {
     }
 
     /**
-     * Kiểm tra trạng thái thanh toán
+     * Check the payment status.
      */
     @GetMapping("/status/{paymentId}")
     public ResponseEntity<?> getPaymentStatus(@PathVariable Long paymentId) {
@@ -159,7 +157,7 @@ public class UnifiedPaymentController {
     }
 
     /**
-     * Lấy danh sách payment methods được hỗ trợ
+     * Retrieve the list of supported payment methods.
      */
     @GetMapping("/methods")
     public ResponseEntity<?> getSupportedPaymentMethods() {
@@ -197,7 +195,7 @@ public class UnifiedPaymentController {
     }
 
     /**
-     * Test tất cả payment methods
+     * test function
      */
     @GetMapping("/test/all")
     public ResponseEntity<?> testAllPaymentMethods() {

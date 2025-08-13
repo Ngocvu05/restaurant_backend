@@ -40,7 +40,6 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
             log.info("🌐 WebSocket - AuthHandshakeInterceptor - sessionId={}, userId={}, role={}", sessionId, userId, role);
         }
-
         return true;
     }
 

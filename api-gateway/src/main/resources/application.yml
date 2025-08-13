@@ -67,8 +67,8 @@ management:
       show-details: always
 
 jwt:
-  secret: bXktc3VwZXItc2VjcmV0LWtleS1tdXN0LWJlLWF0LWxlYXN0LTMyLWNoYXJhY3RlcnMtbG9uZw==
-  expiration: JWT_EXPIRATION:86400000
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
   algorithm: HS256
 
 logging:

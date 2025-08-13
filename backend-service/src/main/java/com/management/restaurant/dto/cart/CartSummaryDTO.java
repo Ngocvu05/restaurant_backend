@@ -54,5 +54,4 @@ public class CartSummaryDTO {
     public long getTotalItems() { return totalItems; }
     public long getTotalQuantity() { return totalQuantity; }
     public BigDecimal getTotalAmount() { return totalAmount; }
-
 }

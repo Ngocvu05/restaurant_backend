@@ -7,7 +7,6 @@ import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
 import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.service.ImageService;
-import com.management.restaurant.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,9 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -38,11 +34,10 @@ public class FileStorageService {
 
             Map<String, Object> uploadOptions = ObjectUtils.asMap(
                     "folder", "restaurant/upload/images",
-                    "public_id", filename, // 👈 Tên file không chứa extension
-                    "resource_type", "image" // đảm bảo là ảnh
+                    "public_id", filename, // file name exclude extension
+                    "resource_type", "image" // Ensure the file is an image.
             );
 
-            // ✅ Fix: Sử dụng generic type chính xác
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = (Map<String, Object>) cloudinary.uploader()
                     .upload(file.getBytes(), uploadOptions);
@@ -69,7 +64,6 @@ public class FileStorageService {
                     "resource_type", "image" // file is image
             );
 
-            // ✅ Fix: Sử dụng generic type chính xác
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = (Map<String, Object>) cloudinary.uploader()
                     .upload(file.getBytes(), uploadOptions);
@@ -90,7 +84,7 @@ public class FileStorageService {
         try {
             String publicId = extractPublicId(url);
             if (publicId != null) {
-                // ✅ Fix: Sử dụng generic type chính xác
+
                 @SuppressWarnings("unchecked")
                 Map<String, Object> emptyMap = ObjectUtils.emptyMap();
                 cloudinary.uploader().destroy(publicId, emptyMap);
@@ -104,9 +98,9 @@ public class FileStorageService {
         try {
             URI uri = new URI(url);
             String[] parts = uri.getPath().split("/");
-            // Ví dụ: /restaurant/upload/images/abc_xyz.jpg
+
             String folder = Arrays.stream(parts)
-                    .skip(1) // bỏ qua phần rỗng đầu tiên ""
+                    .skip(1) //
                     .limit(parts.length - 1)
                     .collect(Collectors.joining("/"));
 

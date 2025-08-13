@@ -29,10 +29,10 @@ public class ChatRoomController {
     }
 
     /**
-     * Tạo hoặc lấy một phòng chat riêng tư giữa người dùng hiện tại và một người dùng khác.
-     * @param targetUserId ID của người dùng muốn chat cùng.
-     * @param currentUserId ID của người dùng đang đăng nhập (lấy từ header hoặc security context).
-     * @return ChatRoomDTO của phòng chat.
+     * Create or retrieve a private chat room between the current user and another user.
+     * @param targetUserId  ID of the user to chat with.
+     * @param currentUserId ID of the currently logged-in user (taken from the header or security context).
+     * @return ChatRoomDTO of the chat room.
      */
     @PostMapping("/private")
     public ResponseEntity<ChatRoomDTO> getOrCreatePrivateRoom(

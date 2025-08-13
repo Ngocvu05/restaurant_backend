@@ -22,10 +22,22 @@ public class AddToCartRequest {
     private int quantity;
 
     // Getters and setters
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public Long getDishId() { return dishId; }
-    public void setDishId(Long dishId) { this.dishId = dishId; }
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public Long getUserId() {
+        return userId;
+    }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+    public Long getDishId() {
+        return dishId;
+    }
+    public void setDishId(Long dishId) {
+        this.dishId = dishId;
+    }
+    public int getQuantity() {
+        return quantity;
+    }
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 }

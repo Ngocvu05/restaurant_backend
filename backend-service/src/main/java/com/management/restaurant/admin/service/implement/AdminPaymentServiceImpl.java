@@ -45,7 +45,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     }
 
     /**
-     * THÊM METHOD MỚI - Lấy danh sách payment confirmations theo booking ID
+     * Retrieve the list of payment confirmations by booking ID.
      */
     @Override
     public List<PaymentConfirmationDTO> getConfirmationsByBookingId(Long bookingId) {
@@ -70,7 +70,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
 
         // Kiểm tra xem đã có yêu cầu pending nào chưa
         if (paymentConfirmationRepository.existsByBookingIdAndStatus(dto.getBookingId(), "PENDING")) {
-            throw new IllegalStateException("Đã có yêu cầu xác nhận thanh toán đang chờ xử lý cho booking này");
+            throw new IllegalStateException("A pending payment confirmation request already exists for this booking.");
         }
 
         Payment confirmation = paymentConfirmationMapper.toEntity(dto);
@@ -94,7 +94,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
                 .orElseThrow(() -> new NotFoundException("Payment confirmation not found: " + id));
 
         if (!PaymentStatus.PENDING.equals(confirmation.getStatus())) {
-            throw new IllegalStateException("Chỉ có thể xác nhận các thanh toán đang ở trạng thái PENDING");
+            throw new IllegalStateException("Only payments with the PENDING status can be confirmed.");
         }
 
         confirmation.setStatus(PaymentStatus.SUCCESS);
@@ -120,7 +120,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
                 .orElseThrow(() -> new NotFoundException("Payment confirmation not found: " + id));
 
         if (!PaymentStatus.PENDING.equals(confirmation.getStatus())) {
-            throw new IllegalStateException("Chỉ có thể từ chối các thanh toán đang ở trạng thái PENDING");
+            throw new IllegalStateException("Only payments with the PENDING status can be rejected.");
         }
 
         confirmation.setStatus(PaymentStatus.REJECTED);
