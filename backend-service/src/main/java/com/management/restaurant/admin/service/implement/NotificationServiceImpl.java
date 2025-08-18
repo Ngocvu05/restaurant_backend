@@ -133,9 +133,9 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.findAllByToUser_IdOrderByCreatedAtDesc(userId, pageable);
     }
 
-    public List<Notification> getTopNNotificationsByUser(Long userId, int limit) {
+    public Page<Notification> getTopNNotificationsByUser(Long userId, int limit) {
         Pageable topN = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        return notificationRepository.findByToUser_Id(userId, topN).getContent();
+        return notificationRepository.findByToUser_Id(userId, topN);
     }
 
     public void markAllAsRead(Long userId) {

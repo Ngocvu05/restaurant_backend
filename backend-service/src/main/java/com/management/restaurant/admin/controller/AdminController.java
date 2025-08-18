@@ -132,5 +132,4 @@ public class AdminController {
         bookingResponseDTO.setTableId(booking.getTable().getId());
         return bookingResponseDTO;
     }
-
 }

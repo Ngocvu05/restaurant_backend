@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.PageImpl;
 
@@ -22,6 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/notifications/")
 @RequiredArgsConstructor
+@Validated
 public class NotificationController {
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -34,19 +36,20 @@ public class NotificationController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Integer limit,
             @AuthenticationPrincipal UserPrincipal user) {
-
-        if (limit != null) {
-            List<Notification> topN = notificationService.getTopNNotificationsByUser(user.getId(), limit);
-            List<NotificationDTO> dtoList = topN.stream()
-                    .map(notificationMapper::toDTO)
-                    .toList();
-            Page<NotificationDTO> dtoPage = new PageImpl<>(dtoList);
-            return ResponseEntity.ok(dtoPage);
+        try{
+            if (limit != null) {
+                Page<Notification> topN = notificationService.getTopNNotificationsByUser(user.getId(), limit);
+                Page<NotificationDTO> dtoList = topN.map(notificationMapper::toDTO);
+                return ResponseEntity.ok(dtoList);
+            }else{
+                Page<Notification> notifications = notificationService.getNotificationsByUser(user.getId(), page, size);
+                Page<NotificationDTO> dtoPage = notifications.map(notificationMapper::toDTO);
+                return ResponseEntity.ok(dtoPage);
+            }
+        }catch(Exception e){
+            log.error(e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
-
-        Page<Notification> notifications = notificationService.getNotificationsByUser(user.getId(), page, size);
-        Page<NotificationDTO> dtoPage = notifications.map(notificationMapper::toDTO);
-        return ResponseEntity.ok(dtoPage);
     }
 
     @PostMapping

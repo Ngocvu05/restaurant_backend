@@ -23,5 +23,5 @@ public interface NotificationService {
 
     void markAllAsRead(Long userId);
 
-    List<Notification> getTopNNotificationsByUser(Long userId, int limit);
+    Page<Notification> getTopNNotificationsByUser(Long userId, int limit);
 }
