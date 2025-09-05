@@ -27,3 +27,5 @@ gradle-app.setting
 .idea/modules/backend-service.main.iml
 /.idea
 
+.env
+.env
