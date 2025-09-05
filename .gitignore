@@ -25,6 +25,5 @@ gradle-app.setting
 /mysql_data
 .idea/compiler.xml
 .idea/modules/backend-service.main.iml
-.idea/compiler.xml
 /.idea
-.idea/compiler.xml
+

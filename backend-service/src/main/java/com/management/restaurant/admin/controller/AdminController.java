@@ -14,10 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -66,7 +63,7 @@ public class AdminController {
                     .map(this::convertToBookingResponseDTO)
                     .collect(Collectors.toList());
 
-            log.info("Found {} bookings for revenue calculation", bookingDTOs.size());
+            log.info("Found {} bookings for revenue calculation", Optional.of(bookingDTOs.size()));
             return ResponseEntity.ok(bookingDTOs);
 
         } catch (Exception e) {
@@ -90,7 +87,7 @@ public class AdminController {
                 revenueData = new ArrayList<>();
             }
 
-            log.info("Found {} revenue entries grouped by date", revenueData.size());
+            log.info("Found {} revenue entries grouped by date", Optional.of(revenueData.size()));
             return ResponseEntity.ok(revenueData);
 
         } catch (Exception e) {

@@ -1,33 +1,41 @@
 package com.management.api_gateway.jwt;
 
+import com.management.api_gateway.service.RateLimitService;
+import com.management.api_gateway.util.FilterCommonUtils;
 import io.jsonwebtoken.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Date;
-import java.util.List;
+import java.util.Set;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
+    private final RedisTemplate<String, String> redisTemplate;
+    private final RateLimitService rateLimitService;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    private static final List<String> PUBLIC_URLS = List.of(
+    @Value("${jwt.expiration:86400000}")
+    private Long jwtExpiration;
+
+    // Using Set for better performance on lookup operations
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
             "/users/api/v1/auth/login",
             "/users/api/v1/auth/register",
             "/users/api/v1/auth/oauth2/login",
@@ -35,150 +43,177 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/users/api/v1/home",
             "/api/v1/auth/login",
             "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
             "/actuator/health",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
             "/chat/ws",
             "/chat/ws/**",
-            "/chat/api/v1/guest", // Guest user chat endpoints
+            "/chat/api/v1/guest",
             "/chat/api/v1/guest/**"
     );
 
-    // Use shared key generation logic
-    private Key getSignKey() {
-        return JwtKeyUtil.getSigningKey(jwtSecret);
+    public JwtAuthenticationFilter(RedisTemplate<String, String> redisTemplate,
+                                   RateLimitService rateLimitService) {
+        this.redisTemplate = redisTemplate;
+        this.rateLimitService = rateLimitService;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
-        String method = exchange.getRequest().getMethod().name();
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+        String method = request.getMethod().name();
+        String clientIp = FilterCommonUtils.getClientIpAddress(request);
 
-        log.info(">>> JWT Filter - Path: {}, Method: {}", path, method);
+        log.debug("Processing request: {} {} from IP: {}", method, path, clientIp);
 
-        // Always allow OPTIONS requests (CORS preflight)
-        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
-            log.info(">>> OPTIONS request detected, allowing without JWT validation");
+        // 1. Rate Limiting Check
+        if (!rateLimitService.isAllowed(clientIp)) {
+            log.warn("Rate limit exceeded for IP: {}", clientIp);
+            return FilterCommonUtils.handleUnauthorized(exchange, "Rate limit exceeded");
+        }
+
+        // 2. Always allow OPTIONS requests (CORS preflight)
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            log.debug("OPTIONS request detected, allowing without JWT validation");
             return chain.filter(exchange);
         }
 
-        // Check if the path is a public endpoint
-        boolean isPublicEndpoint = PUBLIC_URLS.stream()
-                .anyMatch(publicUrl -> {
-                    boolean matches = path.equals(publicUrl) || path.startsWith(publicUrl);
-                    if (matches) {
-                        log.info(">>> Public endpoint matched: {} for path: {}", publicUrl, path);
-                    }
-                    return matches;
+        // 3. Skip authentication for public endpoints
+        if (isPublicEndpoint(path)) {
+            log.debug("Public endpoint detected, skipping JWT validation: {}", path);
+
+            // Remove Authorization headers before forwarding to downstream service
+            ServerHttpRequest modifiedRequest = request.mutate()
+                    .headers(headers -> {
+                        headers.remove("Authorization");
+                        headers.remove("authorization");
+                    })
+                    .build();
+
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+        }
+
+        // 4. Extract and validate JWT token
+        String token = extractToken(request);
+        if (token == null) {
+            log.warn("Missing authentication token for path: {}", path);
+            return FilterCommonUtils.handleUnauthorized(exchange, "Missing authentication token");
+        }
+
+        return validateToken(token)
+                .flatMap(claims -> {
+                    log.debug("JWT validation successful for user: {}", claims.getSubject());
+
+                    // 5. Check if token is blacklisted (logout)
+                    return checkTokenBlacklist(token)
+                            .flatMap(isBlacklisted -> {
+                                if (isBlacklisted) {
+                                    log.warn("Blacklisted token used by user: {}", claims.getSubject());
+                                    return FilterCommonUtils.handleUnauthorized(exchange, "Token has been revoked");
+                                }
+
+                                // 6. Add comprehensive user info to request headers
+                                ServerHttpRequest mutatedRequest = request.mutate()
+                                        .header("X-User-Id", getClaimAsString(claims, "id"))
+                                        .header("X-User-Subject", claims.getSubject())
+                                        .header("X-User-Email", getClaimAsString(claims, "email"))
+                                        .header("X-User-Role", getClaimAsString(claims, "role"))
+                                        .header("X-User-Roles", getClaimAsString(claims, "roles"))
+                                        .build();
+
+                                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                            });
+                })
+                .onErrorResume(throwable -> {
+                    log.warn("Token validation failed for path {}: {}", path, throwable.getMessage());
+                    String errorMessage = getErrorMessage(throwable);
+                    return FilterCommonUtils.handleUnauthorized(exchange, errorMessage);
                 });
+    }
 
-        if (isPublicEndpoint) {
-            log.info(">>> Public endpoint detected, skipping JWT validation: {}", path);
+    private Mono<Claims> validateToken(String token) {
+        return Mono.fromCallable(() -> {
+            try {
+                Key signingKey = JwtKeyUtil.getSigningKey(jwtSecret);
+                return Jwts.parserBuilder()
+                        .setSigningKey(signingKey)
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody();
 
-            // Remove the Authorization header before forwarding to downstream service
-            ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .headers(headers -> headers.remove("Authorization"))
-                    .headers(headers -> headers.remove("authorization"))
-                    .build();
-
-            ServerWebExchange modifiedExchange = exchange.mutate()
-                    .request(modifiedRequest)
-                    .build();
-
-            return chain.filter(modifiedExchange);
-        }
-
-        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-        log.info(">>> JWT Filter - Authorization header present: {}", authHeader != null);
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn(">>> Missing or invalid Authorization header for path: {}", path);
-            return handleUnauthorized(exchange, "Missing or invalid Authorization header");
-        }
-
-        String token = authHeader.substring(7);
-        log.info(">>> JWT Filter - Token length: {}", token.length());
-
-        try {
-            // Use the same key generation logic as JwtService
-            Key signingKey = getSignKey();
-
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(signingKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-
-            // Check token expiration
-            if (claims.getExpiration().before(new Date())) {
-                log.warn(">>> Token expired for user: {}", claims.getSubject());
-                return handleUnauthorized(exchange, "Token expired");
+            } catch (ExpiredJwtException ex) {
+                throw new RuntimeException("JWT expired", ex);
+            } catch (UnsupportedJwtException ex) {
+                throw new RuntimeException("Unsupported JWT", ex);
+            } catch (MalformedJwtException ex) {
+                throw new RuntimeException("Malformed JWT", ex);
+            } catch (SecurityException ex) {
+                throw new RuntimeException("Invalid JWT signature", ex);
+            } catch (IllegalArgumentException ex) {
+                throw new RuntimeException("JWT is empty", ex);
+            } catch (JwtException ex) {
+                throw new RuntimeException("Invalid JWT", ex);
             }
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
 
-            log.info(">>> JWT validation successful for user: {}", claims.getSubject());
-            log.info(">>> JWT claims - ID: {}, Role: {}", claims.get("id"), claims.get("role"));
+    private Mono<Boolean> checkTokenBlacklist(String token) {
+        return Mono.fromCallable(() -> {
+            String tokenHash = DigestUtils.sha256Hex(token);
+            return redisTemplate.hasKey("blacklist:token:" + tokenHash);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
 
-            // Add user info to request headers for downstream services
-            ServerWebExchange mutatedExchange = exchange.mutate()
-                    .request(builder -> builder
-                            .header("X-User-Id", String.valueOf(claims.get("id")))
-                            .header("X-User-Role", String.valueOf(claims.get("role")))
-                            .header("X-User-Subject", claims.getSubject())
-                    )
-                    .build();
-
-            return chain.filter(mutatedExchange);
-
-        } catch (io.jsonwebtoken.security.SignatureException ex) {
-            log.error(">>> JWT signature validation failed: {}", ex.getMessage());
-            log.error(">>> This usually means the signing key is different between services");
-            return handleUnauthorized(exchange, "Invalid token signature");
-        } catch (MalformedJwtException ex) {
-            log.warn(">>> Malformed JWT token: {}", ex.getMessage());
-            return handleUnauthorized(exchange, "Malformed token");
-        } catch (ExpiredJwtException ex) {
-            log.warn(">>> JWT token expired: {}", ex.getMessage());
-            return handleUnauthorized(exchange, "Token expired");
-        } catch (UnsupportedJwtException ex) {
-            log.warn(">>> Unsupported JWT token: {}", ex.getMessage());
-            return handleUnauthorized(exchange, "Unsupported token");
-        } catch (IllegalArgumentException ex) {
-            log.warn(">>> JWT claims string is empty: {}", ex.getMessage());
-            return handleUnauthorized(exchange, "Invalid token");
-        } catch (Exception ex) {
-            log.error(">>> Unexpected error during JWT validation: {}", ex.getMessage(), ex);
-            return handleInternalServerError(exchange);
+    private String extractToken(ServerHttpRequest request) {
+        String bearerToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
+        return null;
     }
 
-    private Mono<Void> handleUnauthorized(ServerWebExchange exchange, String message) {
-        ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-
-        // Add CORS headers to error response
-        response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
-        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
-        response.getHeaders().add("Content-Type", "application/json");
-
-        String body = String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message);
-        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
-        return response.writeWith(Mono.just(buffer));
+    private boolean isPublicEndpoint(String path) {
+        return PUBLIC_ENDPOINTS.stream().anyMatch(endpoint ->
+                path.equals(endpoint) ||
+                        (endpoint.endsWith("/**") && path.startsWith(endpoint.substring(0, endpoint.length() - 3)))
+        );
     }
 
-    private Mono<Void> handleInternalServerError(ServerWebExchange exchange) {
-        ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+    /**
+     * Safely extract claim value as string, handling null values
+     */
+    private String getClaimAsString(Claims claims, String claimName) {
+        Object claim = claims.get(claimName);
+        return claim != null ? String.valueOf(claim) : "";
+    }
 
-        // Add CORS headers to error response
-        response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
-        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
-        response.getHeaders().add("Content-Type", "application/json");
+    /**
+     * Get user-friendly error message based on exception type
+     */
+    private String getErrorMessage(Throwable throwable) {
+        if (throwable instanceof SecurityException) {
+            return throwable.getMessage();
+        }
 
-        String body = "{\"error\":\"Internal Server Error\",\"message\":\"Token validation failed\"}";
-        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
-        return response.writeWith(Mono.just(buffer));
+        String message = throwable.getMessage();
+        if (message != null) {
+            if (message.contains("expired")) {
+                return "Token has expired";
+            }
+            if (message.contains("signature")) {
+                return "Invalid token signature";
+            }
+            if (message.contains("malformed")) {
+                return "Invalid token format";
+            }
+        }
+        return "Invalid authentication token";
     }
 
     @Override
     public int getOrder() {
-        return -1; // Run before other filters
+        return -100; // Execute before other filters
     }
 }

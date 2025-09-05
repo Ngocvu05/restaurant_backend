@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/api-gateway.main.iml" filepath="$PROJECT_DIR$/.idea/modules/api-gateway.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/back_end.iml" filepath="$PROJECT_DIR$/.idea/back_end.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/backend-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/chat-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/chat-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/search-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/search-service.main.iml" />
     </modules>
