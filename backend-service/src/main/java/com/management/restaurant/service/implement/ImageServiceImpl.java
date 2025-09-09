@@ -10,7 +10,6 @@ import com.management.restaurant.model.User;
 import com.management.restaurant.repository.DishRepository;
 import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.repository.UserRepository;
-import com.management.restaurant.security.UserPrincipal;
 import com.management.restaurant.service.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,5 @@
 package com.management.restaurant.admin.service;
 
-import com.management.restaurant.admin.dto.DishAdminDTO;
 import com.management.restaurant.dto.UserDTO;
 
 import java.util.List;

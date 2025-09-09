@@ -2,7 +2,6 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
 import com.management.restaurant.common.BookingStatus;
-import com.management.restaurant.common.PaymentStatus;
 import com.management.restaurant.dto.BookingDTO;
 import com.management.restaurant.dto.BookingDetailResponseDTO;
 import com.management.restaurant.dto.PaymentDTO;

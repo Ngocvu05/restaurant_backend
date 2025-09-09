@@ -2,7 +2,10 @@ package com.management.restaurant.model;
 
 import com.management.restaurant.common.RoleName;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "user_roles")

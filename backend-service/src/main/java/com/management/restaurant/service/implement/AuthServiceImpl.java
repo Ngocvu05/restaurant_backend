@@ -4,6 +4,7 @@ import com.management.restaurant.common.RoleName;
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.LoginRequest;
 import com.management.restaurant.dto.RegisterRequest;
+import com.management.restaurant.event.ChatEventProducer;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.RefreshToken;
 import com.management.restaurant.model.User;
@@ -12,9 +13,8 @@ import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.repository.RefreshTokenRepository;
 import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.repository.UserRoleRepository;
-import com.management.restaurant.service.AuthService;
 import com.management.restaurant.security.JwtService;
-import com.management.restaurant.event.ChatEventProducer;
+import com.management.restaurant.service.AuthService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

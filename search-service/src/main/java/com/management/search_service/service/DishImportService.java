@@ -1,7 +1,7 @@
 package com.management.search_service.service;
 
-import com.management.search_service.model.DishEntity;
 import com.management.search_service.model.Dish;
+import com.management.search_service.model.DishEntity;
 import com.management.search_service.repository.DishRepository;
 import com.management.search_service.repository.DishSearchRepository;
 import lombok.extern.slf4j.Slf4j;

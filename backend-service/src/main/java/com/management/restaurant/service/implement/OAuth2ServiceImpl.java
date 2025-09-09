@@ -2,14 +2,13 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.OAuth2LoginRequest;
+import com.management.restaurant.event.ChatEventProducer;
 import com.management.restaurant.model.RefreshToken;
 import com.management.restaurant.model.User;
 import com.management.restaurant.repository.RefreshTokenRepository;
+import com.management.restaurant.security.JwtService;
 import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.oauth2.*;
-
-import com.management.restaurant.security.JwtService;
-import com.management.restaurant.event.ChatEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -2,7 +2,9 @@ package com.management.restaurant.mapper;
 
 import com.management.restaurant.dto.review.ReviewDTO;
 import com.management.restaurant.model.Review;
-import org.mapstruct.*;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 
 import java.util.List;
 

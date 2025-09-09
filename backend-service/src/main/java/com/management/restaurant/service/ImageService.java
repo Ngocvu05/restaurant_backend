@@ -2,7 +2,6 @@ package com.management.restaurant.service;
 
 import com.management.restaurant.dto.ImageDTO;
 import com.management.restaurant.dto.ImageUploadDTO;
-import com.management.restaurant.security.UserPrincipal;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

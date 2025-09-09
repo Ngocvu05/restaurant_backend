@@ -6,7 +6,6 @@ import com.lowagie.text.pdf.PdfWriter;
 import com.management.restaurant.model.PreOrder;
 import org.springframework.stereotype.Component;
 
-
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;

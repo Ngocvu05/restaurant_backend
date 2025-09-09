@@ -1,7 +1,6 @@
 package com.management.restaurant.controller;
 
 import com.management.restaurant.dto.ImageDTO;
-import com.management.restaurant.dto.ImageUploadDTO;
 import com.management.restaurant.service.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
