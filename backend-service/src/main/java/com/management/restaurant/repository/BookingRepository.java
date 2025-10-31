@@ -1,5 +1,6 @@
 package com.management.restaurant.repository;
 
+import com.management.restaurant.common.BookingStatus;
 import com.management.restaurant.common.BookingStatusCount;
 import com.management.restaurant.model.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -24,4 +26,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                           @Param("end") LocalDateTime end);
 
     List<Booking> findByUserIdOrderByBookingTimeDesc(Long userId);
+    List<Booking> findByBookingTimeBetweenAndStatus(LocalDateTime start, LocalDateTime end, BookingStatus bookingStatus);
+
+    boolean existsByTable_IdAndBookingTimeAndStatusNot(Long tableIb, LocalDateTime bookingTime, BookingStatus bookingStatus);
 }

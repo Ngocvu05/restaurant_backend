@@ -1,0 +1,127 @@
+Tuyệt vời! Tôi có nhiều gợi ý để bạn nâng cao kiến thức về Database và Spring Framework. Dưới đây là các tính năng và kỹ thuật nâng cao bạn có thể thực hành:
+1. Stored Procedures & Functions
+
+Tạo stored procedures phức tạp với nhiều tham số IN/OUT/INOUT
+Gọi stored procedures từ Spring JPA (@Procedure, @Query)
+Tạo database functions và sử dụng trong queries
+Implement business logic phức tạp trong DB
+
+2. Database Transactions Nâng Cao
+
+Transaction isolation levels (READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE)
+Xử lý deadlock và rollback strategies
+@Transactional với propagation khác nhau (REQUIRES_NEW, NESTED)
+Distributed transactions với multiple databases
+Optimistic vs Pessimistic locking
+
+3. Query Optimization & Performance
+
+Database indexing strategies (B-tree, Hash, Full-text)
+Query execution plans và EXPLAIN ANALYZE
+N+1 query problem và cách giải quyết
+Batch processing với Spring Batch
+Pagination hiệu quả với Cursor-based pagination
+Query hints và database-specific optimizations
+
+4. Advanced JPA/Hibernate Features
+
+Entity Graphs để control fetch strategy
+Criteria API cho dynamic queries
+Native queries với ResultSetMapping
+Second-level cache (EhCache, Redis)
+Custom Hibernate types
+Audit logging với @CreatedDate, @LastModifiedDate
+Soft delete implementation
+
+5. Database Views & Materialized Views
+
+Tạo và map views trong JPA
+Materialized views cho reporting
+Refresh strategies cho materialized views
+
+6. Full-Text Search
+
+Hibernate Search với Elasticsearch/Lucene
+Database-native full-text search (PostgreSQL, MySQL)
+Ranking và relevance scoring
+
+7. JSON/JSONB Support
+
+Store và query JSON data trong PostgreSQL/MySQL
+Custom converters cho JSON fields
+JsonPath queries trong Spring Data
+
+8. Database Migrations
+
+Flyway hoặc Liquibase
+Version control cho database schema
+Rollback strategies
+Multi-environment migrations
+
+9. Multi-tenancy
+
+Database per tenant
+Schema per tenant
+Shared database với discriminator column
+Dynamic datasource routing
+
+10. Database Replication & Sharding
+
+Master-slave replication setup
+Read-write splitting với Spring
+Horizontal sharding strategies
+Consistent hashing
+
+11. Custom Repository Implementation
+
+Extend Spring Data repositories
+Custom base repository cho common operations
+Specifications pattern cho complex queries
+QueryDSL integration
+
+12. Database Security
+
+Row-level security
+Column-level encryption
+Database auditing
+SQL injection prevention
+
+13. Reactive Database Access
+
+R2DBC với Spring WebFlux
+Reactive repositories
+Backpressure handling
+
+14. Database Testing
+
+Testcontainers cho integration tests
+Database fixtures với DBUnit
+Transaction rollback trong tests
+In-memory databases (H2) cho unit tests
+
+Dự án thực hành gợi ý:
+E-commerce Platform:
+
+Stored procedures cho order processing
+Materialized views cho sales reports
+Full-text search cho products
+Optimistic locking cho inventory
+Multi-tenancy cho vendors
+
+Banking System:
+
+Distributed transactions
+Audit logging
+Row-level security
+Transaction isolation handling
+Stored procedures cho interest calculation
+
+Social Media App:
+
+Pagination cho news feed
+Full-text search cho posts/users
+JSONB cho flexible user profiles
+Read replicas cho scalability
+Soft delete cho user content
+
+Bạn muốn tôi deep dive vào topic nào cụ thể, hoặc tạo một tutorial/demo cho một số tính năng này không?
