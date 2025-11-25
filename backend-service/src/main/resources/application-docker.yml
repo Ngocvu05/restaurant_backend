@@ -1,0 +1,67 @@
+spring:
+  datasource:
+    jdbc-url: jdbc:mysql://mysql:3306/restaurant?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: restaurant_user
+    password: restaurant_pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    analytics:
+      jdbc-url: jdbc:mysql://mysql:3306/analytics?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      username: restaurant_user
+      password: restaurant_pass
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  data:
+    mongodb:
+      uri: mongodb://restaurant_user:restaurant_pass@mongodb:27017/restaurant_events?authSource=restaurant_events
+      database: restaurant_events
+
+    redis:
+      host: redis
+      port: 6379
+      password: admin
+      redisson:
+        config: |
+          singleServerConfig:
+            address: "redis://redis:6379"
+            database: 0
+            password: ${REDIS_PASSWORD}
+            connectionPoolSize: 64
+            connectionMinimumIdleSize: 10
+            connectTimeout: 10000
+            timeout: 3000
+            retryAttempts: 3
+            retryInterval: 1500
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: chat_user
+    password: chat_pass
+    virtual-host: /
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    com.management.restaurant: DEBUG
+    org.springframework.orm.jpa: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.zaxxer.hikari: DEBUG

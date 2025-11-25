@@ -1,0 +1,43 @@
+{
+  "dashboard": {
+    "title": "Transaction Monitoring Dashboard",
+    "panels": [
+      {
+        "title": "Transaction Duration (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(transaction_duration_seconds_bucket[5m])) by (le, type))"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Deadlock Count",
+        "targets": [
+          {
+            "expr": "sum(increase(transaction_deadlock_total[5m])) by (operation)"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Connection Pool Usage",
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{pool=\"RestaurantHikariPool\"}"
+          }
+        ],
+        "type": "gauge"
+      },
+      {
+        "title": "Optimistic Lock Failures",
+        "targets": [
+          {
+            "expr": "sum(increase(lock_optimistic_failure_total[5m])) by (entity)"
+          }
+        ],
+        "type": "graph"
+      }
+    ]
+  }
+}

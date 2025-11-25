@@ -39,10 +39,10 @@ public class InputValidationFilter implements GlobalFilter, Ordered {
             try {
                 long size = Long.parseLong(contentLength);
                 if (size > MAX_REQUEST_SIZE) {
-                    return handleBadRequest(exchange, "Request size too large");
+                    return FilterCommonUtils.handleBadRequest(exchange, "Request size too large");
                 }
             } catch (NumberFormatException e) {
-                return handleBadRequest(exchange, "Invalid content length");
+                return FilterCommonUtils.handleBadRequest(exchange, "Invalid content length");
             }
         }
 
@@ -52,7 +52,7 @@ public class InputValidationFilter implements GlobalFilter, Ordered {
             for (String value : entry.getValue()) {
                 if (containsMaliciousContent(value)) {
                     log.warn("Malicious content detected in query param {}: {}", entry.getKey(), value);
-                    return handleBadRequest(exchange, "Invalid request parameters");
+                    return FilterCommonUtils.handleBadRequest(exchange, "Invalid request parameters");
                 }
             }
         }

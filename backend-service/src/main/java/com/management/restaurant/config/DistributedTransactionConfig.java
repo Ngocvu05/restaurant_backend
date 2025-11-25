@@ -1,9 +1,10 @@
 package com.management.restaurant.config;
 
+import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -15,28 +16,59 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Properties;
 
 /**
  * Configuration for Distributed Transactions across multiple databases
- * Scenario: Restaurant system với 2 databases:
- * 1. restaurant_db: Chứa bookings, dishes, tables
- * 2. analytics_db: Chứa reports, statistics
+ * Updated for Spring Boot 3.5+ (No deprecated EntityManagerFactoryBuilder)
  */
-
+@Slf4j
 @Configuration
 @EnableTransactionManagement
 public class DistributedTransactionConfig {
-    /**
-     * PRIMARY DATABASE: restaurant_db
-     * Main operational database
-     */
+
+    // ========================================
+    // PRIMARY DATABASE: Restaurant DB
+    // ========================================
+
+    @Value("${spring.datasource.jdbc-url:jdbc:mysql://localhost:3306/restaurant?useSSL=false&serverTimezone=UTC}")
+    private String primaryJdbcUrl;
+
+    @Value("${spring.datasource.username:restaurant_user}")
+    private String primaryUsername;
+
+    @Value("${spring.datasource.password:restaurant_pass}")
+    private String primaryPassword;
+
+    @Value("${spring.datasource.driver-class-name:com.mysql.cj.jdbc.Driver}")
+    private String primaryDriverClassName;
+
     @Primary
     @Bean(name = "restaurantDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.restaurant")
     public DataSource restaurantDataSource() {
-        return DataSourceBuilder.create().build();
+        log.info("Initializing Restaurant DataSource");
+
+        HikariDataSource dataSource = new HikariDataSource();
+
+        // JDBC Connection
+        dataSource.setJdbcUrl(primaryJdbcUrl);
+        dataSource.setUsername(primaryUsername);
+        dataSource.setPassword(primaryPassword);
+        dataSource.setDriverClassName(primaryDriverClassName);
+
+        // HikariCP Pool Settings
+        dataSource.setMaximumPoolSize(10);
+        dataSource.setMinimumIdle(5);
+        dataSource.setConnectionTimeout(30000);
+        dataSource.setIdleTimeout(600000);
+        dataSource.setMaxLifetime(1800000);
+        dataSource.setPoolName("RestaurantHikariPool");
+
+        // Connection Test
+        dataSource.setConnectionTestQuery("SELECT 1");
+        dataSource.setValidationTimeout(5000);
+
+        return dataSource;
     }
 
     @Primary
@@ -44,18 +76,20 @@ public class DistributedTransactionConfig {
     public LocalContainerEntityManagerFactoryBean restaurantEntityManagerFactory(
             @Qualifier("restaurantDataSource") DataSource dataSource) {
 
+        log.info("Configuring Restaurant EntityManagerFactory");
+
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
         em.setPackagesToScan("com.management.restaurant.model");
+        em.setPersistenceUnitName("restaurant");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        vendorAdapter.setGenerateDdl(true);
+        vendorAdapter.setShowSql(true);
+        vendorAdapter.setDatabasePlatform("org.hibernate.dialect.MySQLDialect");
         em.setJpaVendorAdapter(vendorAdapter);
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
-        properties.put("hibernate.show_sql", true);
-        properties.put("hibernate.format_sql", true);
-        em.setJpaPropertyMap(properties);
+        em.setJpaProperties(hibernateProperties(true));
 
         return em;
     }
@@ -63,48 +97,163 @@ public class DistributedTransactionConfig {
     @Primary
     @Bean(name = "restaurantTransactionManager")
     public PlatformTransactionManager restaurantTransactionManager(
-            @Qualifier("restaurantEntityManagerFactory") EntityManagerFactory emf) {
-        return new JpaTransactionManager(emf);
+            @Qualifier("restaurantEntityManagerFactory") LocalContainerEntityManagerFactoryBean factory) {
+
+        log.info("Configuring Restaurant TransactionManager");
+
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(factory.getObject());
+        transactionManager.setNestedTransactionAllowed(true);
+
+        return transactionManager;
     }
 
-    /**
-     * SECONDARY DATABASE: analytics_db
-     * Reporting and analytics database
-     */
+    // ========================================
+    // SECONDARY DATABASE: Analytics DB
+    // ========================================
+
+    @Value("${spring.datasource.analytics.jdbc-url:jdbc:mysql://localhost:3306/analytics?useSSL=false&serverTimezone=UTC}")
+    private String analyticsJdbcUrl;
+
+    @Value("${spring.datasource.analytics.username:restaurant_user}")
+    private String analyticsUsername;
+
+    @Value("${spring.datasource.analytics.password:restaurant_pass}")
+    private String analyticsPassword;
+
+    @Value("${spring.datasource.analytics.driver-class-name:com.mysql.cj.jdbc.Driver}")
+    private String analyticsDriverClassName;
+
     @Bean(name = "analyticsDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.analytics")
     public DataSource analyticsDataSource() {
-        return DataSourceBuilder.create().build();
+        log.info("Initializing Analytics DataSource");
+
+        HikariDataSource dataSource = new HikariDataSource();
+
+        // JDBC Connection
+        dataSource.setJdbcUrl(analyticsJdbcUrl);
+        dataSource.setUsername(analyticsUsername);
+        dataSource.setPassword(analyticsPassword);
+        dataSource.setDriverClassName(analyticsDriverClassName);
+
+        // HikariCP Pool Settings
+        dataSource.setMaximumPoolSize(5);
+        dataSource.setMinimumIdle(2);
+        dataSource.setConnectionTimeout(30000);
+        dataSource.setIdleTimeout(600000);
+        dataSource.setMaxLifetime(1800000);
+        dataSource.setPoolName("AnalyticsHikariPool");
+
+        // Connection Test
+        dataSource.setConnectionTestQuery("SELECT 1");
+        dataSource.setValidationTimeout(5000);
+
+        return dataSource;
     }
 
     @Bean(name = "analyticsEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean analyticsEntityManagerFactory(
             @Qualifier("analyticsDataSource") DataSource dataSource) {
 
+        log.info("Configuring Analytics EntityManagerFactory");
+
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
         em.setPackagesToScan("com.management.restaurant.analytics.model");
+        em.setPersistenceUnitName("analytics");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        vendorAdapter.setGenerateDdl(true);
+        vendorAdapter.setShowSql(false);
+        vendorAdapter.setDatabasePlatform("org.hibernate.dialect.MySQLDialect");
         em.setJpaVendorAdapter(vendorAdapter);
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
-        properties.put("hibernate.show_sql", true);
-        em.setJpaPropertyMap(properties);
+        em.setJpaProperties(hibernateProperties(false));
 
         return em;
     }
 
     @Bean(name = "analyticsTransactionManager")
     public PlatformTransactionManager analyticsTransactionManager(
-            @Qualifier("analyticsEntityManagerFactory") EntityManagerFactory emf) {
-        return new JpaTransactionManager(emf);
+            @Qualifier("analyticsEntityManagerFactory") LocalContainerEntityManagerFactoryBean factory) {
+
+        log.info("Configuring Analytics TransactionManager");
+
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(factory.getObject());
+        transactionManager.setNestedTransactionAllowed(true);
+
+        return transactionManager;
+    }
+
+    // ========================================
+    // ALIAS BEANS (for backward compatibility)
+    // ========================================
+
+    @Bean(name = "transactionManager")
+    public PlatformTransactionManager transactionManager(
+            @Qualifier("restaurantTransactionManager") PlatformTransactionManager manager) {
+        return manager;
+    }
+
+    @Bean(name = "entityManagerFactory")
+    public EntityManagerFactory entityManagerFactory(
+            @Qualifier("restaurantEntityManagerFactory") LocalContainerEntityManagerFactoryBean factory) {
+        return factory.getObject();
+    }
+
+    // ========================================
+    // SHARED HIBERNATE PROPERTIES
+    // ========================================
+
+    private Properties hibernateProperties(boolean isPrimary) {
+        Properties properties = new Properties();
+
+        // Dialect
+        properties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
+
+        // Schema generation
+        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+
+        // SQL logging (only for primary in debug)
+        if (isPrimary) {
+            properties.setProperty("hibernate.show_sql", "true");
+            properties.setProperty("hibernate.format_sql", "true");
+            properties.setProperty("hibernate.use_sql_comments", "true");
+        } else {
+            properties.setProperty("hibernate.show_sql", "false");
+        }
+
+        // Connection handling
+        properties.setProperty("hibernate.connection.provider_disables_autocommit", "false");
+
+        // Batch processing
+        properties.setProperty("hibernate.jdbc.batch_size", "20");
+        properties.setProperty("hibernate.jdbc.batch_versioned_data", "true");
+        properties.setProperty("hibernate.order_inserts", "true");
+        properties.setProperty("hibernate.order_updates", "true");
+
+        // Query optimization
+        properties.setProperty("hibernate.query.fail_on_pagination_over_collection_fetch", "true");
+        properties.setProperty("hibernate.query.plan_cache_max_size", "2048");
+        properties.setProperty("hibernate.query.plan_parameter_metadata_max_size", "128");
+
+        // Default schema
+        if (isPrimary) {
+            properties.setProperty("hibernate.default_schema", "restaurant");
+        } else {
+            properties.setProperty("hibernate.default_schema", "analytics");
+        }
+
+        log.debug("Hibernate properties configured for {} database",
+                isPrimary ? "Restaurant (Primary)" : "Analytics (Secondary)");
+
+        return properties;
     }
 }
 
 /**
- * Repository Configuration for Multiple Databases
+ * Repository Configuration for Primary Database (Restaurant)
  */
 @Configuration
 @EnableJpaRepositories(
@@ -112,12 +261,17 @@ public class DistributedTransactionConfig {
         entityManagerFactoryRef = "restaurantEntityManagerFactory",
         transactionManagerRef = "restaurantTransactionManager"
 )
-class RestaurantRepositoryConfig {}
+class RestaurantRepositoryConfig {
+}
 
+/**
+ * Repository Configuration for Secondary Database (Analytics)
+ */
 @Configuration
 @EnableJpaRepositories(
         basePackages = "com.management.restaurant.analytics.repository",
         entityManagerFactoryRef = "analyticsEntityManagerFactory",
         transactionManagerRef = "analyticsTransactionManager"
 )
-class AnalyticsRepositoryConfig {}
+class AnalyticsRepositoryConfig {
+}

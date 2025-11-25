@@ -14,8 +14,14 @@ java {
 }
 
 configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    all {
+        resolutionStrategy {
+            // FIX: Use MongoDB Driver 5.2.0 to match Spring Boot 3.5.0
+            force "org.mongodb:mongodb-driver-sync:5.2.0"
+            force "org.mongodb:mongodb-driver-core:5.2.0"
+            force "org.mongodb:bson:5.2.0"
+            force "org.mongodb:bson-record-codec:5.2.0"
+        }
     }
 }
 
@@ -26,45 +32,71 @@ repositories {
 ext {
     set('springBootAdminVersion', "3.5.0")
     set('springCloudVersion', "2025.0.0")
+    // FIX: Updated MongoDB Driver version to 5.2.0 (compatible with Spring Boot 3.5.0)
+    set('mongoDriverVersion', "5.2.0")
 }
 
 dependencies {
+    // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+    // MongoDB - WITH EXPLICIT VERSION CONTROL
+    // FIX: Let Spring Boot manage MongoDB dependencies (removed exclusions)
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // Cloud & Service Discovery
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    // Metrics & Monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'io.micrometer:micrometer-core'
+
+    // Utilities
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     implementation 'org.springframework:spring-web'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'com.github.librepdf:openpdf:1.3.30'
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springframework:spring-messaging'
-    implementation 'com.cloudinary:cloudinary-http44:1.34.0'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'com.google.api-client:google-api-client:2.2.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate6:2.15.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    // For environment variable management
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'com.github.librepdf:openpdf:1.3.30'
+    implementation 'org.springframework:spring-messaging'
+    implementation 'com.cloudinary:cloudinary-http44:1.34.0'
+    implementation 'com.google.api-client:google-api-client:2.2.0'
+    implementation 'org.apache.commons:commons-pool2'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.27.2'
     implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+    // Database Drivers
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Lombok & MapStruct
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+    // Development
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    annotationProcessor 'org.projectlombok:lombok'
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.amqp:spring-rabbit-test'
     testImplementation 'com.h2database:h2'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.11.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -77,4 +109,28 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// Task to verify MongoDB dependencies
+tasks.register('verifyMongoDependencies') {
+    doLast {
+        println "\n=== MongoDB Dependencies Verification ==="
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            if (artifact.moduleVersion.id.group == 'org.mongodb') {
+                println "${artifact.moduleVersion.id.module} : ${artifact.moduleVersion.id.version}"
+            }
+        }
+        println "=========================================\n"
+    }
+}
+
+// Task to list all dependencies
+tasks.register('listDependencies') {
+    doLast {
+        println "\n=== All Dependencies ==="
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            println "${artifact.moduleVersion.id}"
+        }
+        println "========================\n"
+    }
 }

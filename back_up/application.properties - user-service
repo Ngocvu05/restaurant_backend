@@ -5,10 +5,11 @@ spring.profiles.active=dev
 # ========================================
 # PRIMARY DATABASE: Restaurant DB
 # ========================================
-spring.datasource.jdbc-url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/restaurant?useSSL=false&serverTimezone=UTC}
-spring.datasource.username=${SPRING_DATASOURCE_USERNAME:restaurant_user}
-spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:restaurant_pass}
+spring.datasource.url=${SPRING_DATASOURCE_URL}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
 # Primary Database - HikariCP Connection Pool Settings
 spring.datasource.hikari.maximum-pool-size=10
 spring.datasource.hikari.minimum-idle=5
@@ -18,35 +19,75 @@ spring.datasource.hikari.max-lifetime=1800000
 spring.datasource.hikari.pool-name=RestaurantHikariPool
 
 # ========================================
-# SECONDARY DATABASE: Analytics DB
+# MONGODB CONFIGURATION (Event Store)
 # ========================================
-spring.datasource.analytics.jdbc-url=${SPRING_DATASOURCE_URL_ANALYTICS:jdbc:mysql://localhost:3306/analytics?useSSL=false&serverTimezone=UTC}
-spring.datasource.analytics.username=${SPRING_DATASOURCE_USERNAME:restaurant_user}
-spring.datasource.analytics.password=${SPRING_DATASOURCE_PASSWORD:restaurant_pass}
+# Connection URI
+spring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI}
+spring.data.mongodb.database=${SPRING_DATA_MONGODB_DATABASE}
+
+# Connection Pool Settings
+spring.data.mongodb.auto-index-creation=true
+spring.data.mongodb.uuid-representation=standard
+
+# MongoDB specific settings
+spring.data.mongodb.repositories.enabled=true
+
+# Connection Pool (optional tuning)
+spring.data.mongodb.options.min-pool-size=5
+spring.data.mongodb.options.max-pool-size=20
+spring.data.mongodb.options.max-connection-idle-time=60000
+spring.data.mongodb.options.max-connection-life-time=120000
+
+# ========================================
+# SECONDARY DATABASE: Analytics DB (for distributed transactions)
+# ========================================
+spring.datasource.analytics.jdbc-url=${SPRING_DATASOURCE_URL_ANALYTICS}
+spring.datasource.analytics.username=${SPRING_DATASOURCE_USERNAME}
+spring.datasource.analytics.password=${SPRING_DATASOURCE_PASSWORD}
 spring.datasource.analytics.driver-class-name=com.mysql.cj.jdbc.Driver
-# Analytics Database - HikariCP Settings
 spring.datasource.analytics.hikari.maximum-pool-size=5
 spring.datasource.analytics.hikari.minimum-idle=2
 spring.datasource.analytics.hikari.connection-timeout=30000
-spring.datasource.analytics.hikari.idle-timeout=600000
-spring.datasource.analytics.hikari.max-lifetime=1800000
 spring.datasource.analytics.hikari.pool-name=AnalyticsHikariPool
-
-# ========================================
-# MONGODB CONFIGURATION (Event Store)
-# ========================================
-spring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI}
-spring.data.mongodb.database=${SPRING_DATA_MONGODB_DATABASE}
-spring.data.mongodb.auto-index-creation=true
-spring.data.mongodb.uuid-representation=standard
-spring.data.mongodb.repositories.enabled=true
 
 # ========================================
 # JPA/HIBERNATE CONFIG
 # ========================================
-# Note: Hibernate properties are configured in DistributedTransactionConfig.java
-# These global settings may be overridden by EntityManagerFactory beans
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
 spring.jpa.open-in-view=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# ========================================
+# TRANSACTION ISOLATION LEVEL
+# ========================================
+# 1 = READ_UNCOMMITTED (Dirty reads possible)
+# 2 = READ_COMMITTED (Default for PostgreSQL)
+# 4 = REPEATABLE_READ (Default for MySQL)
+# 8 = SERIALIZABLE (Highest isolation, slowest)
+spring.jpa.properties.hibernate.connection.isolation=2
+
+# ========================================
+# BATCH PROCESSING & PERFORMANCE
+# ========================================
+spring.jpa.properties.hibernate.jdbc.batch_size=20
+spring.jpa.properties.hibernate.jdbc.batch_versioned_data=true
+spring.jpa.properties.hibernate.order_inserts=true
+spring.jpa.properties.hibernate.order_updates=true
+
+# ========================================
+# QUERY & LOCKING SETTINGS
+# ========================================
+spring.jpa.properties.hibernate.query.fail_on_pagination_over_collection_fetch=true
+spring.jpa.properties.hibernate.query.plan_cache_max_size=2048
+spring.jpa.properties.hibernate.query.plan_parameter_metadata_max_size=128
+
+# ========================================
+# SQL FORMATTING & DEBUGGING
+# ========================================
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.use_sql_comments=true
+spring.jpa.properties.hibernate.generate_statistics=false
 
 # ========================================
 # TRANSACTION MANAGER SETTINGS
@@ -55,9 +96,25 @@ spring.transaction.default-timeout=30
 spring.transaction.rollback-on-commit-failure=true
 
 # ========================================
-# RETRY CONFIGURATION
+# RETRY CONFIGURATION (for optimistic locking)
 # ========================================
 spring.retry.enabled=true
+
+# ========================================
+# ATOMIKOS JTA SETTINGS (for XA/Distributed Transactions)
+# ========================================
+# Note: Uncomment if using distributed transactions with Atomikos
+atomikos.datasource.restaurant.unique-resource-name=restaurantDS
+atomikos.datasource.restaurant.max-pool-size=10
+atomikos.datasource.restaurant.min-pool-size=5
+atomikos.datasource.restaurant.max-lifetime=20000
+atomikos.datasource.restaurant.borrow-connection-timeout=30
+
+atomikos.datasource.analytics.unique-resource-name=analyticsDS
+atomikos.datasource.analytics.max-pool-size=5
+atomikos.datasource.analytics.min-pool-size=2
+atomikos.datasource.analytics.max-lifetime=20000
+atomikos.datasource.analytics.borrow-connection-timeout=30
 
 # ========================================
 # UPLOAD DIRECTORY
@@ -103,7 +160,7 @@ cloudinary.api-key=${CLOUDINARY_API_KEY}
 cloudinary.api-secret=${CLOUDINARY_API_SECRET}
 
 # ========================================
-# EUREKA CLIENT CONFIG
+# EUREKA CLIENT CONFIG (Discovery Service)
 # ========================================
 eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka/
 eureka.instance.prefer-ip-address=true
@@ -123,9 +180,26 @@ management.prometheus.metrics.export.enabled=true
 management.server.port=8081
 management.metrics.enable.jvm=true
 management.metrics.enable.hikaricp=true
-management.metrics.enable.hibernate=true
+
+# ========================================
+# CUSTOM METRICS TAGS
+# ========================================
 management.metrics.tags.application=${spring.application.name}
 management.metrics.tags.environment=${spring.profiles.active}
+
+# ========================================
+# HIKARICP METRICS
+# ========================================
+management.metrics.enable.hikaricp=true
+management.metrics.enable.jvm=true
+management.metrics.enable.process=true
+management.metrics.enable.system=true
+
+# ========================================
+# TRANSACTION METRICS
+# ========================================
+spring.jpa.properties.hibernate.generate_statistics=true
+management.metrics.enable.hibernate=true
 
 # ========================================
 # RABBITMQ CONFIGURATION
@@ -136,21 +210,25 @@ spring.rabbitmq.username=${RABBITMQ_USERNAME}
 spring.rabbitmq.password=${RABBITMQ_PASSWORD}
 spring.rabbitmq.virtual-host=${RABBITMQ_VIRTUAL_HOST}
 spring.rabbitmq.connection-timeout=30000
+
 spring.rabbitmq.template.retry.enabled=true
 spring.rabbitmq.template.retry.initial-interval=1000
 spring.rabbitmq.template.retry.max-attempts=3
 spring.rabbitmq.template.retry.max-interval=10000
 spring.rabbitmq.template.retry.multiplier=2
+
 spring.rabbitmq.listener.simple.missing-queues-fatal=false
 
 # ========================================
-# REDIS CONFIGURATION
+# Redis Configuration
 # ========================================
-spring.data.redis.host=${REDIS_HOST:redis}
-spring.data.redis.port=${REDIS_PORT:6379}
-spring.data.redis.password=${REDIS_PASSWORD:admin}
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.password=
 spring.data.redis.database=0
 spring.data.redis.timeout=2000ms
+
+# Redis Connection Pool
 spring.data.redis.lettuce.pool.max-active=8
 spring.data.redis.lettuce.pool.max-idle=8
 spring.data.redis.lettuce.pool.min-idle=0
@@ -159,7 +237,7 @@ spring.data.redis.lettuce.pool.max-wait=-1ms
 # ========================================
 # KAFKA CONFIGURATION
 # ========================================
-spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+spring.kafka.bootstrap-servers=9092
 
 # ========================================
 # LOGGING CONFIGURATION
@@ -170,7 +248,7 @@ logging.level.org.springframework.web=WARN
 logging.level.org.springframework.messaging.simp.broker=WARN
 logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n
 
-# Transaction & Database Logging
+# Transaction & Database Logging (for development/debugging)
 logging.level.com.management.restaurant=DEBUG
 logging.level.org.springframework.transaction=DEBUG
 logging.level.org.springframework.orm.jpa=DEBUG
@@ -179,7 +257,3 @@ logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 logging.level.org.hibernate.engine.jdbc.spi.SqlExceptionHelper=DEBUG
 logging.level.org.springframework.data.mongodb.core.MongoTemplate=DEBUG
 logging.level.org.springframework.data.mongodb.repository=DEBUG
-
-# DataSource logging
-logging.level.com.zaxxer.hikari.HikariConfig=DEBUG
-logging.level.com.zaxxer.hikari.pool.HikariPool=DEBUG
