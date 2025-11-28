@@ -21,26 +21,31 @@ public class RabbitMQConfig {
     public static final String DISH_EXCHANGE = "dish.exchange";
     public static final String USER_EXCHANGE = "user.exchange";
     public static final String REVIEW_EXCHANGE = "review.exchange";
+    public static final String BOOKING_EXCHANGE = "booking.exchange";
 
     // Queue names
     public static final String DISH_SEARCH_QUEUE = "dish.search.queue";
     public static final String USER_SEARCH_QUEUE = "user.search.queue";
     public static final String REVIEW_SEARCH_QUEUE = "review.search.queue";
+    public static final String BOOKING_SEARCH_QUEUE = "booking.search.queue";
 
     // Dead Letter Queues
     public static final String DISH_DLQ = "dish.search.dlq";
     public static final String USER_DLQ = "user.search.dlq";
     public static final String REVIEW_DLQ = "review.search.dlq";
+    public static final String BOOKING_DLQ = "booking.search.dlq";
 
     // Dead Letter Exchanges
     public static final String DISH_DLX = "dish.dlx";
     public static final String USER_DLX = "user.dlx";
     public static final String REVIEW_DLX = "review.dlx";
+    public static final String BOOKING_DLX = "booking.dlx";
 
     // Routing keys
     public static final String DISH_ROUTING_KEY = "dish.*";
     public static final String USER_ROUTING_KEY = "user.*";
     public static final String REVIEW_ROUTING_KEY = "review.*";
+    public static final String BOOKING_ROUTING_KEY = "booking.*";
 
     // ============ MAIN EXCHANGES ============
     @Bean
@@ -64,6 +69,13 @@ public class RabbitMQConfig {
                 .build();
     }
 
+    @Bean
+    public TopicExchange bookingExchange() {
+        return ExchangeBuilder.topicExchange(BOOKING_EXCHANGE)
+                .durable(true)
+                .build();
+    }
+
     // ============ DEAD LETTER EXCHANGES ============
     @Bean
     public DirectExchange dishDeadLetterExchange() {
@@ -82,6 +94,13 @@ public class RabbitMQConfig {
     @Bean
     public DirectExchange reviewDeadLetterExchange() {
         return ExchangeBuilder.directExchange(REVIEW_DLX)
+                .durable(true)
+                .build();
+    }
+
+    @Bean
+    public DirectExchange bookingDLX() {
+        return ExchangeBuilder.directExchange(BOOKING_DLX)
                 .durable(true)
                 .build();
     }
@@ -114,7 +133,21 @@ public class RabbitMQConfig {
                 .build();
     }
 
+    @Bean
+    public Queue bookingSearchQueue() {
+        return QueueBuilder.durable(BOOKING_SEARCH_QUEUE)
+                .withArgument("x-dead-letter-exchange", BOOKING_DLX)
+                .withArgument("x-dead-letter-routing-key", "failed")
+                .withArgument("x-message-ttl", 300000) // 5 minutes
+                .build();
+    }
+
     // ============ DEAD LETTER QUEUES ============
+    @Bean
+    public Queue bookingDeadLetterQueue() {
+        return QueueBuilder.durable(BOOKING_DLQ).build();
+    }
+
     @Bean
     public Queue dishDeadLetterQueue() {
         return QueueBuilder.durable(DISH_DLQ).build();
@@ -152,7 +185,21 @@ public class RabbitMQConfig {
                 .with(REVIEW_ROUTING_KEY);
     }
 
+    @Bean
+    public Binding bookingSearchBinding() {
+        return BindingBuilder.bind(bookingSearchQueue())
+                .to(bookingExchange())
+                .with(BOOKING_ROUTING_KEY);
+    }
+
     // ============ BINDINGS FOR DEAD LETTER QUEUES ============
+    @Bean
+    public Binding bookingDLQBinding() {
+        return BindingBuilder.bind(bookingDLX())
+                .to(bookingDLX())
+                .with("failed");
+    }
+
     @Bean
     public Binding dishDeadLetterBinding() {
         return BindingBuilder.bind(dishDeadLetterQueue())

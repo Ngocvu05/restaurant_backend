@@ -1,7 +1,7 @@
 package com.management.restaurant.service.payments.implement;
 
-import com.management.restaurant.common.PaymentMethod;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentMethod;
+import com.management.restaurant.contains.PaymentStatus;
 import com.management.restaurant.dto.PaymentDTO;
 import com.management.restaurant.exception.MoMoPaymentException;
 import com.management.restaurant.model.Booking;

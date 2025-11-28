@@ -80,7 +80,8 @@ public class DistributedTransactionConfig {
 
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
-        em.setPackagesToScan("com.management.restaurant.model");
+        em.setPackagesToScan("com.management.restaurant.model",
+                "com.management.restaurant.event.model");
         em.setPersistenceUnitName("restaurant");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

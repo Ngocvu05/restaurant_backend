@@ -2,7 +2,7 @@ package com.management.restaurant.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

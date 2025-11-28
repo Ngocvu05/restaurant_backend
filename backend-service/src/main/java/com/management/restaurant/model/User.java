@@ -1,7 +1,7 @@
 package com.management.restaurant.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.management.restaurant.common.UserStatus;
+import com.management.restaurant.contains.UserStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,6 @@
 package com.management.restaurant.model;
 
-import com.management.restaurant.common.TableStatus;
+import com.management.restaurant.contains.TableStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

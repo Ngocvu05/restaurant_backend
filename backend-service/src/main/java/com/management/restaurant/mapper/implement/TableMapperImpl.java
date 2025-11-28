@@ -1,6 +1,6 @@
 package com.management.restaurant.mapper.implement;
 
-import com.management.restaurant.common.TableStatus;
+import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.dto.TableDTO;
 import com.management.restaurant.mapper.TableMapper;
 import com.management.restaurant.model.TableEntity;

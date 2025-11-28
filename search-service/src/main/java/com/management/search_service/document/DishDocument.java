@@ -12,6 +12,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Elasticsearch Document cho Dish
+ * Optimized cho full-text search và filtering
+ */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,7 +30,19 @@ public class DishDocument {
     @Field(type = FieldType.Long)
     private Long dishId;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    /**
+     * Name with multiple analyzers:
+     * - Standard: cho full-text search
+     * - Keyword: cho exact match và sorting
+     */
+    @MultiField(
+            mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+            otherFields = {
+                    @InnerField(suffix = "keyword", type = FieldType.Keyword),
+                    @InnerField(suffix = "autocomplete", type = FieldType.Text,
+                            analyzer = "autocomplete", searchAnalyzer = "autocomplete_search")
+            }
+    )
     private String name;
 
     @Field(type = FieldType.Text, analyzer = "standard")
@@ -37,7 +54,15 @@ public class DishDocument {
     @Field(type = FieldType.Boolean)
     private Boolean isAvailable;
 
-    @Field(type = FieldType.Keyword)
+    /**
+     * Category với keyword field cho filtering
+     */
+    @MultiField(
+            mainField = @Field(type = FieldType.Text),
+            otherFields = {
+                    @InnerField(suffix = "keyword", type = FieldType.Keyword)
+            }
+    )
     private String category;
 
     @Field(type = FieldType.Keyword)

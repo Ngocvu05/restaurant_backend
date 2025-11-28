@@ -1,6 +1,6 @@
 package com.management.restaurant.mapper.implement;
 
-import com.management.restaurant.common.UserRoleCache;
+import com.management.restaurant.contains.UserRoleCache;
 import com.management.restaurant.dto.ImageDTO;
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.mapper.UserMapper;

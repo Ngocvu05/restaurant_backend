@@ -2,8 +2,8 @@ package com.management.restaurant.admin.mapper.implement;
 
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
 import com.management.restaurant.admin.mapper.AdminPaymentMapper;
-import com.management.restaurant.common.PaymentMethod;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentMethod;
+import com.management.restaurant.contains.PaymentStatus;
 import com.management.restaurant.model.Payment;
 import org.springframework.stereotype.Component;
 

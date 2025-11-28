@@ -1,6 +1,6 @@
 package com.management.restaurant.service.implement;
 
-import com.management.restaurant.common.InvoicePdfGenerator;
+import com.management.restaurant.contains.InvoicePdfGenerator;
 import com.management.restaurant.model.Dish;
 import com.management.restaurant.model.PreOrder;
 import com.management.restaurant.service.EmailService;

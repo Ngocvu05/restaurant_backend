@@ -1,7 +1,7 @@
 package com.management.restaurant.dto;
 
-import com.management.restaurant.common.PaymentMethod;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentMethod;
+import com.management.restaurant.contains.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

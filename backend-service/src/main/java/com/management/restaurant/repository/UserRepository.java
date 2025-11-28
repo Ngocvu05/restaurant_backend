@@ -1,6 +1,6 @@
 package com.management.restaurant.repository;
 
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

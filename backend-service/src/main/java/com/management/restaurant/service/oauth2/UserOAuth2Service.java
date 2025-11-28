@@ -1,6 +1,6 @@
 package com.management.restaurant.service.oauth2;
 
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
 import com.management.restaurant.repository.ImageRepository;

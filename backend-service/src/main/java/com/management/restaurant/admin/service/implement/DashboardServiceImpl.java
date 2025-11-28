@@ -3,7 +3,7 @@ package com.management.restaurant.admin.service.implement;
 import com.management.restaurant.admin.dto.DashboardDTO;
 import com.management.restaurant.admin.dto.RevenueDTO;
 import com.management.restaurant.admin.service.DashboardService;
-import com.management.restaurant.common.BookingStatusCount;
+import com.management.restaurant.contains.BookingStatusCount;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.repository.*;
 import lombok.RequiredArgsConstructor;

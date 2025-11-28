@@ -1,5 +1,6 @@
 package com.management.restaurant.service.implement;
 
+import com.management.restaurant.analytics.service.MongoActivityLogService;
 import com.management.restaurant.dto.review.ReviewDTO;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.exception.ValidationException;
@@ -32,6 +33,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final DishRepository dishRepository;
     private final ReviewMapper reviewMapper;
+    private final MongoActivityLogService activityLogService;
 
     // Spam prevention constants
     private static final int MAX_REVIEWS_PER_EMAIL_PER_DISH = 1;
@@ -69,6 +71,20 @@ public class ReviewServiceImpl implements ReviewService {
 
         // Update dish rating statistics
         updateDishRatingStats(reviewDTO.getDishId());
+
+        activityLogService.logActivity(
+                null, // Anonymous user - use email as identifier
+                "REVIEW_CREATED",
+                reviewDTO.getCustomerName() + " reviewed " + dish.getName(),
+                Map.of(
+                        "reviewId", savedReview.getId(),
+                        "dishId", reviewDTO.getDishId(),
+                        "dishName", dish.getName(),
+                        "rating", reviewDTO.getRating(),
+                        "customerEmail", reviewDTO.getCustomerEmail(),
+                        "customerName", reviewDTO.getCustomerName()
+                )
+        );
 
         log.info("Review created successfully with ID: {}", savedReview.getId());
         return reviewMapper.toDTO(savedReview);

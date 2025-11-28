@@ -1,7 +1,7 @@
 package com.management.restaurant.service.implement;
 
-import com.management.restaurant.common.BookingStatus;
-import com.management.restaurant.common.TableStatus;
+import com.management.restaurant.contains.BookingStatus;
+import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.exception.ResourceNotFoundException;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.model.TableEntity;
@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;

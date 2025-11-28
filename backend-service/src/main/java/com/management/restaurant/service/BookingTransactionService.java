@@ -1,6 +1,6 @@
 package com.management.restaurant.service;
 
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.model.Booking;
 
 import java.math.BigDecimal;

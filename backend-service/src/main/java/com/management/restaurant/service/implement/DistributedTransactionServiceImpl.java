@@ -2,7 +2,7 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.analytics.model.SalesReport;
 import com.management.restaurant.analytics.repository.SalesReportRepository;
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.helper.SagaTransaction;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.repository.BookingRepository;

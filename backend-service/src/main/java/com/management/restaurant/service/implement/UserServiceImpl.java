@@ -3,7 +3,7 @@ package com.management.restaurant.service.implement;
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.dto.UserInfoDTO;
 import com.management.restaurant.event.EventPublisherService;
-import com.management.restaurant.event.implement.UserEvent;
+import com.management.restaurant.event.model.UserEvent;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.IUserInfoMapper;
 import com.management.restaurant.mapper.UserMapper;

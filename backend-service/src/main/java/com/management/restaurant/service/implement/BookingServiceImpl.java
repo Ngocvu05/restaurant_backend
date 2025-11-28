@@ -1,11 +1,14 @@
 package com.management.restaurant.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.analytics.service.MongoActivityLogService;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.dto.BookingDTO;
 import com.management.restaurant.dto.BookingDetailResponseDTO;
 import com.management.restaurant.dto.PaymentDTO;
 import com.management.restaurant.dto.PreOrderDTO;
+import com.management.restaurant.event.OutboxEventService;
+import com.management.restaurant.event.model.BookingEvent;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.BookingMapper;
 import com.management.restaurant.mapper.PaymentMapper;
@@ -15,6 +18,7 @@ import com.management.restaurant.service.BookingService;
 import com.management.restaurant.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -36,8 +40,11 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
     private final QrPaymentServiceImpl qrPaymentService;
+    private final MongoActivityLogService mongoActivityLogService;
+    private final OutboxEventService outboxEventService;
 
     @Override
+    @Transactional
     public BookingDTO createBooking(BookingDTO dto) {
         // 1. Find user and tables
         User user = userRepository.findByUsername(dto.getUsername())
@@ -51,6 +58,9 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.PENDING);
         booking.setUser(user);
         booking.setTable(table);
+        booking.setBookingTime(dto.getBookingTime());
+        booking.setNumberOfGuests(dto.getNumberOfGuests());
+        booking.setNote(dto.getNote());
 
         List<PreOrder> preOrders = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -105,8 +115,41 @@ public class BookingServiceImpl implements BookingService {
                     booking.getTotalAmount()
             );
         }
-        //Send notication to admin
+        // Send notification to admin
         notificationService.notifyAllAdmins("Đặt bàn mới", "Người dùng " + user.getUsername() + " đã đặt bàn.");
+
+        // Log to MongoDB (async)
+        mongoActivityLogService.logActivity(
+                String.valueOf(user.getId()),
+                "BOOKING_CREATED",
+                "User created booking for table " + table.getTableName(),
+                Map.of(
+                        "bookingId", savedBooking.getId(),
+                        "tableId", table.getId(),
+                        "tableName", table.getTableName(),
+                        "numberOfGuests", booking.getNumberOfGuests(),
+                        "totalAmount", totalAmount,
+                        "preOrderCount", preOrders.size()
+                )
+        );
+
+        // SAVE EVENT TO OUTBOX (SAME TRANSACTION!)
+        BookingEvent event = BookingEvent.builder()
+                .eventType("booking.created")
+                .bookingId(savedBooking.getId())
+                .userId(user.getId())
+                .username(user.getUsername())
+                .tableId(table.getId())
+                .tableName(table.getTableName())
+                .bookingTime(savedBooking.getBookingTime())
+                .numberOfGuests(savedBooking.getNumberOfGuests())
+                .status(savedBooking.getStatus().name())
+                .totalAmount(totalAmount)
+                .version(1L)
+                .triggeredBy(user.getUsername())
+                .build();
+
+        outboxEventService.saveBookingEvent(event);
 
         return bookingMapper.toDTO(savedBooking);
     }
@@ -145,14 +188,19 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDTO updateBooking(Long id, BookingDTO dto) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        //Update logic
+        String oldStatus =  booking.getStatus().name();
 
         booking.setBookingTime(dto.getBookingTime());
         booking.setNumberOfGuests(dto.getNumberOfGuests());
         booking.setNote(dto.getNote());
         booking.setStatus(BookingStatus.valueOf(dto.getStatus()));
+
         User user = dto.getUserId() != null
                 ? userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"))
@@ -164,6 +212,30 @@ public class BookingServiceImpl implements BookingService {
         if (dto.getPreOrderDishes() != null && !dto.getPreOrderDishes().isEmpty()) {
             List<PreOrder> dishes = preorderRepository.findAllById(dto.getPreOrderDishes().stream().map(PreOrderDTO::getDishId).collect(Collectors.toList()));
             booking.setPreOrders(dishes);
+        }
+
+        if(!oldStatus.equals(dto.getStatus())) {
+            mongoActivityLogService.logActivity(
+                    String.valueOf(booking.getUser().getId()),
+                    "BOOKING_STATUS_CHANGED",
+                    String.format("Booking status changed from %s to %s",
+                            oldStatus, dto.getStatus()),
+                    Map.of(
+                            "bookingId", id,
+                            "oldStatus", oldStatus,
+                            "newStatus", dto.getStatus()
+                    )
+            );
+
+            BookingEvent event = BookingEvent.builder()
+                    .eventType("booking.status.changed")
+                    .bookingId(booking.getId())
+                    .userId(booking.getUser().getId())
+                    .oldStatus(oldStatus)
+                    .newStatus(dto.getStatus())
+                    .build();
+
+            outboxEventService.saveBookingEvent(event);
         }
 
         return bookingMapper.toDTO(bookingRepository.save(booking));

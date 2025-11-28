@@ -1,6 +1,6 @@
 package com.management.restaurant.service.implement;
 
-import com.management.restaurant.common.TableStatus;
+import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.model.Dish;
 import com.management.restaurant.model.TableEntity;
 import com.management.restaurant.repository.DishRepository;

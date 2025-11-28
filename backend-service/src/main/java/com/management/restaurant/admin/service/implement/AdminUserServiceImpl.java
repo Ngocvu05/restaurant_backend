@@ -1,7 +1,7 @@
 package com.management.restaurant.admin.service.implement;
 
 import com.management.restaurant.admin.service.AdminUserService;
-import com.management.restaurant.common.UserRoleCache;
+import com.management.restaurant.contains.UserRoleCache;
 import com.management.restaurant.dto.UserDTO;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.UserMapper;

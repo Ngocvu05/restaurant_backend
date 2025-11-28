@@ -35,9 +35,15 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'io.micrometer:micrometer-registry-prometheus' // Prometheus metrics -> monitoring
+
+    // Prometheus metrics -> monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // Circuit Breaker for Resilience
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+
     runtimeOnly 'com.mysql:mysql-connector-j'  // for MySQL
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

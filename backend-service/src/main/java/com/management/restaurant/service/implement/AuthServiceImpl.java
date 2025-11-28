@@ -1,6 +1,6 @@
 package com.management.restaurant.service.implement;
 
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.LoginRequest;
 import com.management.restaurant.dto.RegisterRequest;

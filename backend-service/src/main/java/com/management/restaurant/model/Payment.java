@@ -1,7 +1,7 @@
 package com.management.restaurant.model;
 
-import com.management.restaurant.common.PaymentMethod;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentMethod;
+import com.management.restaurant.contains.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

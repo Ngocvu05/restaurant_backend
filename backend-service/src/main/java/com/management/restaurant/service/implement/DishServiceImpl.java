@@ -2,7 +2,7 @@ package com.management.restaurant.service.implement;
 
 import com.management.restaurant.dto.DishDTO;
 import com.management.restaurant.event.EventPublisherService;
-import com.management.restaurant.event.implement.DishEvent;
+import com.management.restaurant.event.model.DishEvent;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.DishMapper;
 import com.management.restaurant.model.Dish;

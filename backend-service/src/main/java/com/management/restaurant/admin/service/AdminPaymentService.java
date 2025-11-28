@@ -2,7 +2,7 @@ package com.management.restaurant.admin.service;
 
 import com.management.restaurant.admin.dto.AdminConfirmationRequest;
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentStatus;
 
 import java.util.List;
 

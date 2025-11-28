@@ -1,7 +1,7 @@
 package com.management.restaurant.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.model.Notification;
 import com.management.restaurant.model.OrderHistory;

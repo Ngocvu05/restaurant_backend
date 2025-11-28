@@ -13,6 +13,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 
 @Slf4j
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -55,6 +57,7 @@ public class SecurityConfig {
 
                         // Admin endpoints
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/v1/sync/**").authenticated()
 
                         // All other endpoints need authentication
                         .anyRequest().authenticated()

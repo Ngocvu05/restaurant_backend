@@ -1,4 +1,4 @@
-package com.management.restaurant.common;
+package com.management.restaurant.contains;
 
 import com.management.restaurant.model.UserRole;
 import com.management.restaurant.repository.UserRoleRepository;

@@ -265,6 +265,13 @@ services:
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
+      # Database
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=restaurant
+      - DB_USERNAME=restaurant_user
+      - DB_PASSWORD=restaurant_pass
+
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -280,9 +287,16 @@ services:
 
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
+      # Logging Configuration
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
       - APP_USER_SERVICE_BASE_URL=http://user-service:8081/api/v1/sync
+
+      - USER_SERVICE_LOGIN_URL=http://user-service:8081/api/v1/auth/login
+      - SYSTEM_USER_USERNAME=admin
+      - SYSTEM_USER_PASSWORD=admin123
+      - SYSTEM_TOKEN_RETRY_MAX_ATTEMPTS=10
+      - SYSTEM_TOKEN_RETRY_DELAY_SECONDS=3
     ports:
       - "8082:8082"
     restart: unless-stopped
@@ -423,11 +437,31 @@ services:
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # RabbitMQ
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
+
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
+
       # Gateway routes for chat service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_URI=lb://chat-service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_PREDICATES_PATH=/chat/**
+      # Gateway routes for user service
+      - SPRING_CLOUD_GATEWAY_ROUTES_USER_SERVICE_URI=lb://user-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_USER_SERVICE_PREDICATES_PATH=/users/**
+      # Gateway routes for search service
+      - SPRING_CLOUD_GATEWAY_ROUTES_SEARCH_SERVICE_URI=lb://search-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_SEARCH_SERVICE_PREDICATES_PATH=/search/**
     ports:
       - "8080:8080"
     restart: on-failure

@@ -1,5 +1,6 @@
 package com.management.restaurant.service.implement;
 
+import com.management.restaurant.analytics.service.MongoActivityLogService;
 import com.management.restaurant.dto.cart.CartDTO;
 import com.management.restaurant.dto.cart.CartItemDTO;
 import com.management.restaurant.dto.cart.CartSummaryDTO;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -27,6 +29,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final DishRepository dishRepository;
     private final CartMapper cartMapper;
+    private final MongoActivityLogService activityLogService;
 
     /**
      * Add item to cart
@@ -51,18 +54,33 @@ public class CartServiceImpl implements CartService {
         Optional<Cart> existingCart = cartRepository.findByUserIdAndDishId(userId, dishId);
 
         Cart cart;
+        boolean isNew = false;
         if (existingCart.isPresent()) {
             // Update quantity
             cart = existingCart.get();
             cart.setQuantity(cart.getQuantity() + quantity);
         } else {
             // Create new cart item
+            isNew = true;
             cart = Cart.builder()
                     .userId(userId)
                     .dishId(dishId)
                     .quantity(quantity)
                     .build();
         }
+
+        activityLogService.logActivity(
+                String.valueOf(userId),
+                "CART_ITEM_ADDED",
+                "Added " + dish.getName() + " to cart",
+                Map.of(
+                        "dishId", dishId,
+                        "dishName", dish.getName(),
+                        "quantity", quantity,
+                        "price", dish.getPrice(),
+                        "isNew", isNew
+                )
+        );
 
         cart = cartRepository.save(cart);
 
@@ -125,7 +143,25 @@ public class CartServiceImpl implements CartService {
     public void clearCart(Long userId) {
         log.info("Clearing cart for user {}", userId);
 
+        // Get cart summary before clearing
+        List<Cart> cartItems = cartRepository.findByUserIdWithDish(userId);
+        BigDecimal totalAmount = cartItems.stream()
+                .filter(cart -> cart.getDish() != null)
+                .map(cart -> cart.getDish().getPrice()
+                        .multiply(BigDecimal.valueOf(cart.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         cartRepository.deleteByUserId(userId);
+
+        activityLogService.logActivity(
+                String.valueOf(userId),
+                "CART_CLEARED",
+                "User cleared cart",
+                Map.of(
+                        "itemCount", cartItems.size(),
+                        "totalAmount", totalAmount
+                )
+        );
     }
 
     /**

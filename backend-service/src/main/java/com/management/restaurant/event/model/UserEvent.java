@@ -1,4 +1,4 @@
-package com.management.restaurant.event.implement;
+package com.management.restaurant.event.model;
 
 import com.management.restaurant.event.BaseEvent;
 import lombok.AllArgsConstructor;

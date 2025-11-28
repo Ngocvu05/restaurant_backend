@@ -3,7 +3,7 @@ package com.management.restaurant.admin.service.implement;
 import com.management.restaurant.admin.dto.NotificationDTO;
 import com.management.restaurant.admin.mapper.NotificationMapper;
 import com.management.restaurant.admin.service.NotificationService;
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.model.Notification;
 import com.management.restaurant.model.User;

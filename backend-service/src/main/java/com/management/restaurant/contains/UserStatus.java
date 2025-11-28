@@ -1,4 +1,4 @@
-package com.management.restaurant.common;
+package com.management.restaurant.contains;
 
 public enum UserStatus {
     ACTIVE,

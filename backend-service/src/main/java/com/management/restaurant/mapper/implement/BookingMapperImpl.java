@@ -1,6 +1,6 @@
 package com.management.restaurant.mapper.implement;
 
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.dto.BookingDTO;
 import com.management.restaurant.dto.PreOrderDTO;
 import com.management.restaurant.mapper.BookingMapper;
