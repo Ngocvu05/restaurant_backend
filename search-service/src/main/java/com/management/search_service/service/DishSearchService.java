@@ -1,5 +1,8 @@
 package com.management.search_service.service;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.management.search_service.document.DishDocument;
 import com.management.search_service.events.implement.DishEvent;
 import com.management.search_service.model.Dish;
@@ -28,10 +31,44 @@ public class DishSearchService {
     private final DishSearchRepository dishSearchRepository;
     private final ElasticsearchTemplate elasticsearchTemplate;
     private final DishDocumentRepository dishDocumentRepository;
+    private final ElasticsearchClient elasticsearchClient;
 
     public List<Dish> searchByName(String keyword) {
         log.info("Searching dishes by name: {}", keyword);
         return dishSearchRepository.findByNameContainingIgnoreCase(keyword);
+    }
+
+    public List<DishDocument> searchByNameAdvanced(String keyword) {
+        log.info("Advanced search for: {}", keyword);
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+
+        try {
+            SearchResponse<DishDocument> response = elasticsearchClient.search(s -> s
+                            .index("dishes")
+                            .query(q -> q
+                                    .multiMatch(m -> m
+                                            .query(keyword)
+                                            .fields("name^3", "description^2", "category")
+                                            .type(co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType.BestFields)
+                                            .fuzziness("AUTO") // Handles typos
+                                            .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
+                                    )
+                            )
+                            .size(50),
+                    DishDocument.class
+            );
+
+            return response.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Advanced search failed", e);
+            return List.of();
+        }
     }
 
     public List<Dish> searchByCategory(String category) {
