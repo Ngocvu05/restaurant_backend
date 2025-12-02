@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.data.elasticsearch.core.query.StringQuery;
@@ -106,7 +107,7 @@ public class DishSearchService {
         SearchHits<Dish> hits = elasticsearchTemplate.search(query, Dish.class);
 
         return hits.getSearchHits().stream()
-                .map(hit -> hit.getContent())
+                .map(SearchHit::getContent)
                 .collect(Collectors.toList());
     }
 
@@ -150,7 +151,7 @@ public class DishSearchService {
         SearchHits<Dish> hits = elasticsearchTemplate.search(query, Dish.class);
 
         return hits.getSearchHits().stream()
-                .map(hit -> hit.getContent())
+                .map(SearchHit::getContent)
                 .collect(Collectors.toList());
     }
 
@@ -186,7 +187,7 @@ public class DishSearchService {
         SearchHits<Dish> hits = elasticsearchTemplate.search(query, Dish.class);
 
         return hits.getSearchHits().stream()
-                .map(hit -> hit.getContent())
+                .map(SearchHit::getContent)
                 .limit(10) // Giới hạn 10 gợi ý
                 .collect(Collectors.toList());
     }
