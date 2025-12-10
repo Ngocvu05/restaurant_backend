@@ -1,4 +1,4 @@
-package com.management.restaurant.service;
+package com.management.restaurant.analytics.service;
 
 import com.management.restaurant.model.Dish;
 import com.management.restaurant.model.TableEntity;
@@ -14,4 +14,6 @@ public interface LockingExamplesService {
     Dish incrementOrderCountHybrid(Long dishId);
     TableEntity bookTableWithTimeout(Long tableId);
     Dish getDishWithLock(Long dishId);
+    void testOptimisticLockingConflict(Long dishId);
+    void testPessimisticLockingDeadlock();
 }

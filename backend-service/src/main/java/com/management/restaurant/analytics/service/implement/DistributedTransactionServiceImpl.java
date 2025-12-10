@@ -1,4 +1,4 @@
-package com.management.restaurant.service.implement;
+package com.management.restaurant.analytics.service.implement;
 
 import com.management.restaurant.analytics.model.SalesReport;
 import com.management.restaurant.analytics.repository.SalesReportRepository;
@@ -6,7 +6,7 @@ import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.helper.SagaTransaction;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.repository.BookingRepository;
-import com.management.restaurant.service.DistributedTransactionService;
+import com.management.restaurant.analytics.service.DistributedTransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;

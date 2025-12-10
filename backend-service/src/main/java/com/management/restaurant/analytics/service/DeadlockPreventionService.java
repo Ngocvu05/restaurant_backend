@@ -1,4 +1,4 @@
-package com.management.restaurant.service;
+package com.management.restaurant.analytics.service;
 
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.model.TableEntity;
@@ -22,4 +22,5 @@ public interface DeadlockPreventionService {
     Booking createBookingNoRollbackOnValidation(Long tableId, int numberOfGuests);
     void processOrderStrictRollback(Long bookingId);
     void updateTwoDishes(Long dishId1, Long dishId2, BigDecimal priceChange);
+    void simulateDeadlock();
 }

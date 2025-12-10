@@ -1,4 +1,4 @@
-package com.management.restaurant.service.implement;
+package com.management.restaurant.analytics.service.implement;
 
 import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.contains.TableStatus;
@@ -9,7 +9,7 @@ import com.management.restaurant.model.TableEntity;
 import com.management.restaurant.repository.BookingRepository;
 import com.management.restaurant.repository.DishRepository;
 import com.management.restaurant.repository.TableRepository;
-import com.management.restaurant.service.DeadlockPreventionService;
+import com.management.restaurant.analytics.service.DeadlockPreventionService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PessimisticLockException;
@@ -410,6 +410,7 @@ public class DeadlockPreventionServiceImpl implements DeadlockPreventionService 
     /**
      * Test Deadlock Scenario
      */
+    @Override
     public void simulateDeadlock() {
         log.info("=== Simulating Deadlock Scenario ===");
 

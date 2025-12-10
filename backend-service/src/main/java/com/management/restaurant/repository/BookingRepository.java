@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -25,7 +26,38 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                           @Param("end") LocalDateTime end);
 
     List<Booking> findByUserIdOrderByBookingTimeDesc(Long userId);
-    List<Booking> findByBookingTimeBetweenAndStatus(LocalDateTime start, LocalDateTime end, BookingStatus bookingStatus);
+    List<Booking> findByBookingTimeBetweenAndStatus(LocalDateTime start, LocalDateTime end,
+                                                    BookingStatus bookingStatus);
 
-    boolean existsByTable_IdAndBookingTimeAndStatusNot(Long tableIb, LocalDateTime bookingTime, BookingStatus bookingStatus);
+    boolean existsByTable_IdAndBookingTimeAndStatusNot(Long tableIb, LocalDateTime bookingTime,
+                                                       BookingStatus bookingStatus);
+
+    @Query("SELECT b FROM Booking b " +
+            "LEFT JOIN FETCH b.user " +
+            "LEFT JOIN FETCH b.table")
+    List<Booking> findAllWithUserAndTable();
+
+    @Query("SELECT DISTINCT b FROM Booking b " +
+            "LEFT JOIN FETCH b.user " +
+            "LEFT JOIN FETCH b.table " +
+            "LEFT JOIN FETCH b.preOrders po " +
+            "LEFT JOIN FETCH po.dish")
+    List<Booking> findAllWithDetails();
+
+    @Query("SELECT b FROM Booking b " +
+            "LEFT JOIN FETCH b.user " +
+            "LEFT JOIN FETCH b.table " +
+            "LEFT JOIN FETCH b.preOrders po " +
+            "LEFT JOIN FETCH po.dish " +
+            "WHERE b.id = :id")
+    Optional<Booking> findByIdWithDetails(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT b FROM Booking b " +
+            "LEFT JOIN FETCH b.user " +
+            "LEFT JOIN FETCH b.table " +
+            "LEFT JOIN FETCH b.preOrders po " +
+            "LEFT JOIN FETCH po.dish " +
+            "WHERE b.user.id = :userId " +
+            "ORDER BY b.bookingTime DESC")
+    List<Booking> findByUserIdWithDetails(@Param("userId") Long userId);
 }

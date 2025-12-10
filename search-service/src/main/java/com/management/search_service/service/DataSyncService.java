@@ -65,7 +65,7 @@ public class DataSyncService {
         try {
             log.info("Syncing dishes from user-service...");
             String url = userServiceBaseUrl + "/dishes/all";
-            log.debug("📡 Calling: {}", url);
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -101,7 +101,7 @@ public class DataSyncService {
         try {
             log.info("Syncing users from user-service...");
             String url = userServiceBaseUrl + "/users/all";
-            log.debug("📡 Calling: {}", url);
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -137,7 +137,7 @@ public class DataSyncService {
         try {
             log.info("Syncing reviews from user-service...");
             String url = userServiceBaseUrl + "/reviews/all";
-            log.debug("📡 Calling: {}", url);
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -174,7 +174,7 @@ public class DataSyncService {
         String token = systemTokenManager.getSystemToken();
 
         // Log token info for debugging (without exposing actual token)
-        log.debug("Using token for authentication - Token length: {}, Starts with 'Bearer': {}",
+        log.info("Using token for authentication - Token length: {}, Starts with 'Bearer': {}",
                 token != null ? token.length() : 0,
                 token != null && token.startsWith("Bearer"));
 
@@ -202,7 +202,7 @@ public class DataSyncService {
         if (token == null || token.trim().isEmpty()) {
             log.error("  - Token is null or empty!");
         } else {
-            log.debug("  - Token format appears valid (length: {})", token.length());
+            log.info("  - Token format appears valid (length: {})", token.length());
         }
     }
 

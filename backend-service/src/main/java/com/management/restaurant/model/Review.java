@@ -1,25 +1,27 @@
 package com.management.restaurant.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.management.restaurant.model.base.SoftDeletableEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.LocalDateTime;
-
+/**
+ * Review Entity with Auditing & Soft Delete
+ */
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "reviews")
-public class Review {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+@Table(name = "reviews", indexes = {
+        @Index(name = "idx_dish_id", columnList = "dish_id"),
+        @Index(name = "idx_customer_email", columnList = "customer_email"),
+        @Index(name = "idx_rating", columnList = "rating"),
+        @Index(name = "idx_is_active", columnList = "is_active")
+})
+@EqualsAndHashCode(callSuper = true, exclude = {"dish"})
+@ToString(exclude = {"dish"})
+public class Review extends SoftDeletableEntity{
     @Column(name = "dish_id", nullable = false)
     private Long dishId;
 
@@ -49,24 +51,10 @@ public class Review {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    @Builder.Default
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Builder.Default
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    // Relations
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dish_id", insertable = false, updatable = false)
     @JsonBackReference
     private Dish dish;
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
     // Validation methods
     public boolean isValidRating() {
@@ -79,5 +67,17 @@ public class Review {
 
     public boolean isValidCustomerName() {
         return customerName != null && !customerName.trim().isEmpty() && customerName.length() <= 100;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    public void verify() {
+        this.isVerified = true;
     }
 }

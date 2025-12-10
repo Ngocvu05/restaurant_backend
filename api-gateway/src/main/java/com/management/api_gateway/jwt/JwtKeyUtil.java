@@ -15,22 +15,22 @@ public class JwtKeyUtil {
      */
     public static Key getSigningKey(String jwtSecret) {
         // Debug logging
-        log.debug(">>> JWT Secret length: {}", jwtSecret.length());
-        log.debug(">>> JWT Secret first 10 chars: {}",
+        log.info(">>> JWT Secret length: {}", jwtSecret.length());
+        log.info(">>> JWT Secret first 10 chars: {}",
                 jwtSecret.substring(0, Math.min(jwtSecret.length(), 10)));
 
         // Check if secret is Base64 encoded
         try {
             byte[] decoded = Base64.getDecoder().decode(jwtSecret);
-            log.debug(">>> Secret appears to be Base64 encoded");
-            log.debug(">>> Decoded bytes length: {}", decoded.length);
+            log.info(">>> Secret appears to be Base64 encoded");
+            log.info(">>> Decoded bytes length: {}", decoded.length);
 
             // If secret is Base64, decode before using
             return Keys.hmacShaKeyFor(decoded);
         } catch (Exception e) {
-            log.debug(">>> Secret is NOT Base64, using raw string");
+            log.info(">>> Secret is NOT Base64, using raw string");
             byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-            log.debug(">>> Raw string bytes length: {}", keyBytes.length);
+            log.info(">>> Raw string bytes length: {}", keyBytes.length);
 
             return Keys.hmacShaKeyFor(keyBytes);
         }

@@ -25,13 +25,13 @@ public class Booking {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, insertable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"bookings", "hibernateLazyInitializer", "handler"})
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"bookings", "hibernateLazyInitializer", "handler"})
-    @JoinColumn(name = "table_id", nullable = false, insertable = false)
+    @JoinColumn(name = "table_id", nullable = false)
     private TableEntity table;
 
     private LocalDateTime bookingTime;

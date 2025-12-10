@@ -1,4 +1,4 @@
-package com.management.restaurant.service;
+package com.management.restaurant.analytics.service;
 
 import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.model.Booking;
@@ -12,4 +12,5 @@ public interface BookingPropagationService {
     void performNonTransactionalTask(String taskName);
     void addOrderToBooking(Long bookingId, Long dishId, int quantity);
     void complexBookingOperation(Long bookingId);
+    void testRollbackScenario(Long bookingId);
 }

@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Document(indexName = "bookings")
+@Setting(settingPath = "elasticsearch-settings.json")
 @Data
 @Builder
 @NoArgsConstructor

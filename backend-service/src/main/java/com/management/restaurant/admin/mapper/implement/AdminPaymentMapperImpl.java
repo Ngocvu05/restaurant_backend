@@ -34,7 +34,6 @@ public class AdminPaymentMapperImpl implements AdminPaymentMapper {
             return null;
         }
         return Payment.builder()
-                .id(dto.getId())
                 .amount(dto.getAmount())
                 .adminNote(dto.getAdminNote())
                 .paymentMethod(PaymentMethod.valueOf(dto.getPaymentMethod()))
@@ -44,7 +43,6 @@ public class AdminPaymentMapperImpl implements AdminPaymentMapper {
                 .customerNote(dto.getCustomerNote())
                 .transactionReference(dto.getTransactionReference())
                 .status(PaymentStatus.valueOf(dto.getStatus()))
-                .createdAt(dto.getCreatedAt())
                 .build();
     }
 }

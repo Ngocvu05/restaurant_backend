@@ -1,5 +1,5 @@
 package com.management.restaurant.contains;
 
 public enum PaymentStatus {
-    PENDING, SUCCESS, FAILED, CANCELLED, REJECTED
+    PENDING, SUCCESS, FAILED, CANCELLED, REJECTED, REFUNDED
 }

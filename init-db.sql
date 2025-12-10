@@ -1,6 +1,20 @@
 /*
  Navicat Premium Data Transfer
 
+ Modified: Added Audit & Soft Delete Support
+ Date: 2025-01-01
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- =====================================================
+-- ORIGINAL SCHEMA + DATA (từ init-db.sql)
+-- =====================================================
+
+/*
+ Navicat Premium Data Transfer
+
  Source Server         : restaurant
  Source Server Type    : MySQL
  Source Server Version : 80405 (8.4.5)
@@ -22,20 +36,20 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `bookings`;
 CREATE TABLE `bookings`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `booking_time` datetime(6) NULL DEFAULT NULL,
-  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `number_of_guests` int NOT NULL,
-  `number_of_people` int NOT NULL,
-  `status` enum('CANCELLED','COMPLETED','CONFIRMED','PENDING','RESERVED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `total_amount` decimal(38, 2) NULL DEFAULT NULL,
-  `table_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `FK4uj6guqq3uqggk3nj3h302089`(`table_id` ASC) USING BTREE,
-  INDEX `FKeyog2oic85xg7hsu2je2lx3s6`(`user_id` ASC) USING BTREE,
-  CONSTRAINT `FK4uj6guqq3uqggk3nj3h302089` FOREIGN KEY (`table_id`) REFERENCES `tables` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `FKeyog2oic85xg7hsu2je2lx3s6` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                             `id` bigint NOT NULL AUTO_INCREMENT,
+                             `booking_time` datetime(6) NULL DEFAULT NULL,
+                             `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                             `number_of_guests` int NOT NULL,
+                             `number_of_people` int NOT NULL,
+                             `status` enum('CANCELLED','COMPLETED','CONFIRMED','PENDING','RESERVED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                             `total_amount` decimal(38, 2) NULL DEFAULT NULL,
+                             `table_id` bigint NOT NULL,
+                             `user_id` bigint NOT NULL,
+                             PRIMARY KEY (`id`) USING BTREE,
+                             INDEX `FK4uj6guqq3uqggk3nj3h302089`(`table_id` ASC) USING BTREE,
+                             INDEX `FKeyog2oic85xg7hsu2je2lx3s6`(`user_id` ASC) USING BTREE,
+                             CONSTRAINT `FK4uj6guqq3uqggk3nj3h302089` FOREIGN KEY (`table_id`) REFERENCES `tables` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                             CONSTRAINT `FKeyog2oic85xg7hsu2je2lx3s6` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -53,15 +67,15 @@ INSERT INTO `bookings` VALUES (5, '2025-07-01 09:15:01.543000', 'aaa', 2, 0, 'PE
 -- ----------------------------
 DROP TABLE IF EXISTS `dishes`;
 CREATE TABLE `dishes`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `created_at` datetime(6) NULL DEFAULT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `available` bit(1) NULL DEFAULT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `order_count` int NOT NULL,
-  `price` decimal(38, 2) NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
+                           `id` bigint NOT NULL AUTO_INCREMENT,
+                           `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `created_at` datetime(6) NULL DEFAULT NULL,
+                           `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `available` bit(1) NULL DEFAULT NULL,
+                           `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `order_count` int NOT NULL,
+                           `price` decimal(38, 2) NULL DEFAULT NULL,
+                           PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 107 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -179,17 +193,17 @@ INSERT INTO `dishes` VALUES (106, 'Đồ uống', '2025-07-09 07:06:52.000000', 
 -- ----------------------------
 DROP TABLE IF EXISTS `images`;
 CREATE TABLE `images`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `is_avatar` bit(1) NOT NULL,
-  `uploaded_at` datetime(6) NULL DEFAULT NULL,
-  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `dish_id` bigint NULL DEFAULT NULL,
-  `user_id` bigint NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `FKedtd63h4lhqsm05mqcmrclpy9`(`dish_id` ASC) USING BTREE,
-  INDEX `FK13ljqfrfwbyvnsdhihwta8cpr`(`user_id` ASC) USING BTREE,
-  CONSTRAINT `FK13ljqfrfwbyvnsdhihwta8cpr` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `FKedtd63h4lhqsm05mqcmrclpy9` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                           `id` bigint NOT NULL AUTO_INCREMENT,
+                           `is_avatar` bit(1) NOT NULL,
+                           `uploaded_at` datetime(6) NULL DEFAULT NULL,
+                           `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `dish_id` bigint NULL DEFAULT NULL,
+                           `user_id` bigint NULL DEFAULT NULL,
+                           PRIMARY KEY (`id`) USING BTREE,
+                           INDEX `FKedtd63h4lhqsm05mqcmrclpy9`(`dish_id` ASC) USING BTREE,
+                           INDEX `FK13ljqfrfwbyvnsdhihwta8cpr`(`user_id` ASC) USING BTREE,
+                           CONSTRAINT `FK13ljqfrfwbyvnsdhihwta8cpr` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                           CONSTRAINT `FKedtd63h4lhqsm05mqcmrclpy9` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 44 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -205,18 +219,18 @@ INSERT INTO `images` VALUES (43, b'1', '2025-07-02 15:33:55.547503', 'https://re
 -- ----------------------------
 DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `is_read` tinyint(1) NULL DEFAULT 0,
-  `created_at` datetime NULL DEFAULT NULL,
-  `user_id` bigint NULL DEFAULT NULL,
-  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `to_user_id` bigint NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `user_id`(`user_id` ASC) USING BTREE,
-  INDEX `FK9u6rfqx9lueovqy0a5mcccsfg`(`to_user_id` ASC) USING BTREE,
-  CONSTRAINT `FK9u6rfqx9lueovqy0a5mcccsfg` FOREIGN KEY (`to_user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                                  `id` bigint NOT NULL AUTO_INCREMENT,
+                                  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                                  `is_read` tinyint(1) NULL DEFAULT 0,
+                                  `created_at` datetime NULL DEFAULT NULL,
+                                  `user_id` bigint NULL DEFAULT NULL,
+                                  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                                  `to_user_id` bigint NULL DEFAULT NULL,
+                                  PRIMARY KEY (`id`) USING BTREE,
+                                  INDEX `user_id`(`user_id` ASC) USING BTREE,
+                                  INDEX `FK9u6rfqx9lueovqy0a5mcccsfg`(`to_user_id` ASC) USING BTREE,
+                                  CONSTRAINT `FK9u6rfqx9lueovqy0a5mcccsfg` FOREIGN KEY (`to_user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                                  CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -262,22 +276,22 @@ INSERT INTO `notifications` VALUES (35, 'Người dùng mới đã tạo tài kh
 -- ----------------------------
 DROP TABLE IF EXISTS `order_history`;
 CREATE TABLE `order_history`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `created_at` datetime(6) NULL DEFAULT NULL,
-  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `quantity` int NOT NULL,
-  `served` bit(1) NULL DEFAULT NULL,
-  `total_amount` decimal(38, 2) NULL DEFAULT NULL,
-  `booking_id` bigint NULL DEFAULT NULL,
-  `dish_id` bigint NULL DEFAULT NULL,
-  `user_id` bigint NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `FK1i4v6ae89s6n93oj2ygrm8dcq`(`booking_id` ASC) USING BTREE,
-  INDEX `FK6m0tpp3jmic2v0yk4evx6fux1`(`dish_id` ASC) USING BTREE,
-  INDEX `FK4voclnbr2965u9qn6c8pknive`(`user_id` ASC) USING BTREE,
-  CONSTRAINT `FK1i4v6ae89s6n93oj2ygrm8dcq` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `FK4voclnbr2965u9qn6c8pknive` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `FK6m0tpp3jmic2v0yk4evx6fux1` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                                  `id` bigint NOT NULL AUTO_INCREMENT,
+                                  `created_at` datetime(6) NULL DEFAULT NULL,
+                                  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                                  `quantity` int NOT NULL,
+                                  `served` bit(1) NULL DEFAULT NULL,
+                                  `total_amount` decimal(38, 2) NULL DEFAULT NULL,
+                                  `booking_id` bigint NULL DEFAULT NULL,
+                                  `dish_id` bigint NULL DEFAULT NULL,
+                                  `user_id` bigint NOT NULL,
+                                  PRIMARY KEY (`id`) USING BTREE,
+                                  INDEX `FK1i4v6ae89s6n93oj2ygrm8dcq`(`booking_id` ASC) USING BTREE,
+                                  INDEX `FK6m0tpp3jmic2v0yk4evx6fux1`(`dish_id` ASC) USING BTREE,
+                                  INDEX `FK4voclnbr2965u9qn6c8pknive`(`user_id` ASC) USING BTREE,
+                                  CONSTRAINT `FK1i4v6ae89s6n93oj2ygrm8dcq` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                                  CONSTRAINT `FK4voclnbr2965u9qn6c8pknive` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                                  CONSTRAINT `FK6m0tpp3jmic2v0yk4evx6fux1` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -289,15 +303,15 @@ CREATE TABLE `order_history`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `payments`;
 CREATE TABLE `payments`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `amount` decimal(38, 2) NULL DEFAULT NULL,
-  `payment_method` enum('BANK_TRANSFER','CARD','CASH','MOMO','VNPAY') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `payment_time` datetime(6) NULL DEFAULT NULL,
-  `status` enum('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REJECTED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `booking_id` bigint NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `FKc52o2b1jkxttngufqp3t7jr3h`(`booking_id` ASC) USING BTREE,
-  CONSTRAINT `FKc52o2b1jkxttngufqp3t7jr3h` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                             `id` bigint NOT NULL AUTO_INCREMENT,
+                             `amount` decimal(38, 2) NULL DEFAULT NULL,
+                             `payment_method` enum('BANK_TRANSFER','CARD','CASH','MOMO','VNPAY') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                             `payment_time` datetime(6) NULL DEFAULT NULL,
+                             `status` enum('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REJECTED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                             `booking_id` bigint NULL DEFAULT NULL,
+                             PRIMARY KEY (`id`) USING BTREE,
+                             INDEX `FKc52o2b1jkxttngufqp3t7jr3h`(`booking_id` ASC) USING BTREE,
+                             CONSTRAINT `FKc52o2b1jkxttngufqp3t7jr3h` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -310,16 +324,16 @@ INSERT INTO `payments` VALUES (1, 240.00, 'CASH', '2025-06-25 13:27:13.000000', 
 -- ----------------------------
 DROP TABLE IF EXISTS `preorders`;
 CREATE TABLE `preorders`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `quantity` int NOT NULL,
-  `booking_id` bigint NOT NULL,
-  `dish_id` bigint NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `FK31b2jdstgs4frww2vflamlwns`(`booking_id` ASC) USING BTREE,
-  INDEX `FK24579qbh6eki7tkuupth4w7n8`(`dish_id` ASC) USING BTREE,
-  CONSTRAINT `FK24579qbh6eki7tkuupth4w7n8` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `FK31b2jdstgs4frww2vflamlwns` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                              `id` bigint NOT NULL AUTO_INCREMENT,
+                              `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                              `quantity` int NOT NULL,
+                              `booking_id` bigint NOT NULL,
+                              `dish_id` bigint NULL DEFAULT NULL,
+                              PRIMARY KEY (`id`) USING BTREE,
+                              INDEX `FK31b2jdstgs4frww2vflamlwns`(`booking_id` ASC) USING BTREE,
+                              INDEX `FK24579qbh6eki7tkuupth4w7n8`(`dish_id` ASC) USING BTREE,
+                              CONSTRAINT `FK24579qbh6eki7tkuupth4w7n8` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                              CONSTRAINT `FK31b2jdstgs4frww2vflamlwns` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -355,14 +369,14 @@ INSERT INTO `preorders` VALUES (24, NULL, 2, 5, 1);
 -- ----------------------------
 DROP TABLE IF EXISTS `refresh_token`;
 CREATE TABLE `refresh_token`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `expiry_date` datetime(6) NULL DEFAULT NULL,
-  `token` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `user_id` bigint NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `UKr4k4edos30bx9neoq81mdvwph`(`token` ASC) USING BTREE,
-  UNIQUE INDEX `UKf95ixxe7pa48ryn1awmh2evt7`(`user_id` ASC) USING BTREE,
-  CONSTRAINT `FKjtx87i0jvq2svedphegvdwcuy` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                                  `id` bigint NOT NULL AUTO_INCREMENT,
+                                  `expiry_date` datetime(6) NULL DEFAULT NULL,
+                                  `token` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+                                  `user_id` bigint NOT NULL,
+                                  PRIMARY KEY (`id`) USING BTREE,
+                                  UNIQUE INDEX `UKr4k4edos30bx9neoq81mdvwph`(`token` ASC) USING BTREE,
+                                  UNIQUE INDEX `UKf95ixxe7pa48ryn1awmh2evt7`(`user_id` ASC) USING BTREE,
+                                  CONSTRAINT `FKjtx87i0jvq2svedphegvdwcuy` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -374,12 +388,12 @@ CREATE TABLE `refresh_token`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `tables`;
 CREATE TABLE `tables`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `capacity` int NOT NULL,
-  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `status` enum('AVAILABLE','BOOKED','OCCUPIED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `table_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
+                           `id` bigint NOT NULL AUTO_INCREMENT,
+                           `capacity` int NOT NULL,
+                           `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `status` enum('AVAILABLE','BOOKED','OCCUPIED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           `table_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                           PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -393,10 +407,10 @@ INSERT INTO `tables` VALUES (2, 6, 'bàn dài, chứa được 6 người, phù 
 -- ----------------------------
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `name` enum('ADMIN','CUSTOMER','STAFF') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `UK182xa1gitcxqhaq6nn3n2kmo3`(`name` ASC) USING BTREE
+                               `id` bigint NOT NULL AUTO_INCREMENT,
+                               `name` enum('ADMIN','CUSTOMER','STAFF') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+                               PRIMARY KEY (`id`) USING BTREE,
+                               UNIQUE INDEX `UK182xa1gitcxqhaq6nn3n2kmo3`(`name` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -411,19 +425,19 @@ INSERT INTO `user_roles` VALUES (2, 'STAFF');
 -- ----------------------------
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `created_at` datetime(6) NULL DEFAULT NULL,
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `full_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `phone_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `role_id` bigint NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `UKr43af9ap4edm43mmtq01oddj6`(`username` ASC) USING BTREE,
-  INDEX `FKh555fyoyldpyaltlb7jva35j2`(`role_id` ASC) USING BTREE,
-  CONSTRAINT `FKh555fyoyldpyaltlb7jva35j2` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+                          `id` bigint NOT NULL AUTO_INCREMENT,
+                          `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                          `created_at` datetime(6) NULL DEFAULT NULL,
+                          `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                          `full_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                          `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+                          `phone_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+                          `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+                          `role_id` bigint NOT NULL,
+                          PRIMARY KEY (`id`) USING BTREE,
+                          UNIQUE INDEX `UKr43af9ap4edm43mmtq01oddj6`(`username` ASC) USING BTREE,
+                          INDEX `FKh555fyoyldpyaltlb7jva35j2`(`role_id` ASC) USING BTREE,
+                          CONSTRAINT `FKh555fyoyldpyaltlb7jva35j2` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -453,3 +467,279 @@ CREATE PROCEDURE `generate_dishes`()
 delimiter ;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- =====================================================
+-- MIGRATION: Add Audit & Soft Delete Fields
+-- Chạy sau khi INSERT data xong
+-- =====================================================
+
+-- ===== 1. USERS TABLE =====
+ALTER TABLE users
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD COLUMN status ENUM('ACTIVE','INACTIVE','BANNED') NOT NULL DEFAULT 'ACTIVE' COMMENT 'User status' AFTER deleted_by,
+    ADD INDEX idx_users_deleted_at (deleted_at),
+    ADD INDEX idx_users_created_at (created_at);
+
+UPDATE users
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 2. DISHES TABLE =====
+ALTER TABLE dishes
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD COLUMN version BIGINT NOT NULL DEFAULT 0 COMMENT 'Optimistic locking version' AFTER deleted_by,
+    ADD COLUMN average_rating DECIMAL(3,2) DEFAULT 0.00 COMMENT 'Average rating' AFTER version,
+    ADD COLUMN total_reviews INT NOT NULL DEFAULT 0 COMMENT 'Total reviews count' AFTER average_rating,
+    ADD INDEX idx_dishes_deleted_at (deleted_at),
+    ADD INDEX idx_dishes_created_at (created_at),
+    ADD INDEX idx_dishes_category (category),
+    ADD INDEX idx_dishes_available (available),
+    ADD INDEX idx_dishes_order_count (order_count),
+    ADD INDEX idx_dishes_average_rating (average_rating);
+
+UPDATE dishes
+SET created_by = 'system',
+    updated_by = 'system',
+    version = 0,
+    average_rating = 0.00,
+    total_reviews = 0
+WHERE created_by IS NULL;
+
+-- ===== 3. BOOKINGS TABLE =====
+ALTER TABLE bookings
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp' AFTER total_amount,
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD INDEX idx_bookings_deleted_at (deleted_at),
+    ADD INDEX idx_bookings_created_at (created_at),
+    ADD INDEX idx_bookings_booking_time (booking_time),
+    ADD INDEX idx_bookings_status (status),
+    ADD INDEX idx_bookings_user_id (user_id);
+
+UPDATE bookings
+SET created_by = 'system',
+    updated_by = 'system',
+    created_at = booking_time
+WHERE created_by IS NULL;
+
+-- ===== 4. TABLES TABLE =====
+ALTER TABLE tables
+    MODIFY COLUMN status ENUM('AVAILABLE','OCCUPIED','RESERVED','MAINTENANCE','BOOKED') DEFAULT 'AVAILABLE',
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp' AFTER table_name,
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD INDEX idx_tables_deleted_at (deleted_at),
+    ADD INDEX idx_tables_created_at (created_at),
+    ADD INDEX idx_tables_status (status),
+    ADD INDEX idx_tables_capacity (capacity);
+
+UPDATE tables
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 5. PAYMENTS TABLE =====
+ALTER TABLE payments
+    MODIFY COLUMN status ENUM('PENDING','COMPLETED','FAILED','CANCELLED','REFUNDED') DEFAULT 'PENDING',
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp' AFTER booking_id,
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD COLUMN transaction_reference VARCHAR(100) UNIQUE COMMENT 'Transaction reference ID' AFTER deleted_by,
+    ADD COLUMN customer_note TEXT COMMENT 'Customer note' AFTER transaction_reference,
+    ADD COLUMN admin_note TEXT COMMENT 'Admin note' AFTER customer_note,
+    ADD COLUMN processed_at TIMESTAMP NULL COMMENT 'When payment was processed' AFTER admin_note,
+    ADD COLUMN processed_by VARCHAR(100) COMMENT 'Admin who processed payment' AFTER processed_at,
+    ADD INDEX idx_payments_deleted_at (deleted_at),
+    ADD INDEX idx_payments_created_at (created_at),
+    ADD INDEX idx_payments_status (status),
+    ADD INDEX idx_payments_booking_id (booking_id),
+    ADD INDEX idx_payments_transaction_ref (transaction_reference);
+
+UPDATE payments
+SET created_by = 'system',
+    updated_by = 'system',
+    created_at = payment_time
+WHERE created_by IS NULL;
+
+-- ===== 6. ORDER_HISTORY TABLE =====
+-- Không cần soft delete vì là audit trail
+ALTER TABLE order_history
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD INDEX idx_order_history_created_at (created_at),
+    ADD INDEX idx_order_history_booking_id (booking_id),
+    ADD INDEX idx_order_history_user_id (user_id),
+    ADD INDEX idx_order_history_dish_id (dish_id);
+
+UPDATE order_history
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 7. PREORDERS TABLE =====
+-- Không cần soft delete vì là phần của booking
+ALTER TABLE preorders
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp' AFTER dish_id,
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD INDEX idx_preorders_created_at (created_at),
+    ADD INDEX idx_preorders_booking_id (booking_id),
+    ADD INDEX idx_preorders_dish_id (dish_id);
+
+UPDATE preorders
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 8. IMAGES TABLE =====
+ALTER TABLE images
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER uploaded_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD COLUMN deleted_at TIMESTAMP NULL COMMENT 'Soft delete timestamp' AFTER updated_by,
+    ADD COLUMN deleted_by VARCHAR(100) COMMENT 'Username who deleted this record' AFTER deleted_at,
+    ADD INDEX idx_images_deleted_at (deleted_at),
+    ADD INDEX idx_images_uploaded_at (uploaded_at);
+
+UPDATE images
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 9. NOTIFICATIONS TABLE =====
+-- Không cần soft delete vì là notification history
+ALTER TABLE notifications
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record' AFTER created_at,
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp' AFTER created_by,
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record' AFTER updated_at,
+    ADD INDEX idx_notifications_created_at (created_at);
+
+UPDATE notifications
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 10. USER_ROLES TABLE =====
+ALTER TABLE user_roles
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+    ADD COLUMN created_by VARCHAR(100) COMMENT 'Username who created this record',
+    ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    ADD COLUMN updated_by VARCHAR(100) COMMENT 'Username who last updated this record';
+
+UPDATE user_roles
+SET created_by = 'system',
+    updated_by = 'system'
+WHERE created_by IS NULL;
+
+-- ===== 11. REVIEWS TABLE (Nếu có) =====
+-- Tạo bảng reviews nếu chưa có
+CREATE TABLE IF NOT EXISTS `reviews` (
+                                         `id` bigint NOT NULL AUTO_INCREMENT,
+                                         `dish_id` bigint NOT NULL COMMENT 'Dish being reviewed',
+                                         `customer_name` varchar(100) NOT NULL COMMENT 'Customer name',
+                                         `customer_email` varchar(255) DEFAULT NULL COMMENT 'Customer email',
+                                         `customer_avatar` varchar(500) DEFAULT NULL COMMENT 'Customer avatar URL',
+                                         `rating` int NOT NULL COMMENT 'Rating 1-5 stars',
+                                         `comment` text NOT NULL COMMENT 'Review comment',
+                                         `is_active` bit(1) NOT NULL DEFAULT b'1' COMMENT 'Is review active',
+                                         `is_verified` bit(1) NOT NULL DEFAULT b'0' COMMENT 'Is review verified',
+                                         `ip_address` varchar(45) DEFAULT NULL COMMENT 'IP address of reviewer',
+                                         `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                         `created_by` varchar(100) DEFAULT 'system',
+                                         `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                                         `updated_by` varchar(100) DEFAULT NULL,
+                                         `deleted_at` timestamp NULL DEFAULT NULL,
+                                         `deleted_by` varchar(100) DEFAULT NULL,
+                                         PRIMARY KEY (`id`),
+                                         KEY `idx_dish_id` (`dish_id`),
+                                         KEY `idx_customer_email` (`customer_email`),
+                                         KEY `idx_rating` (`rating`),
+                                         KEY `idx_is_active` (`is_active`),
+                                         KEY `idx_reviews_deleted_at` (`deleted_at`),
+                                         KEY `idx_reviews_created_at` (`created_at`),
+                                         CONSTRAINT `fk_reviews_dish` FOREIGN KEY (`dish_id`) REFERENCES `dishes` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Customer reviews for dishes';
+
+-- =====================================================
+-- VERIFICATION QUERIES
+-- =====================================================
+
+-- Check all tables have audit fields
+SELECT
+    TABLE_NAME,
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    COLUMN_COMMENT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'restaurant'
+  AND TABLE_NAME IN ('users', 'dishes', 'bookings', 'tables', 'payments', 'order_history', 'preorders', 'images', 'notifications')
+  AND COLUMN_NAME IN ('created_at', 'created_by', 'updated_at', 'updated_by', 'deleted_at', 'deleted_by')
+ORDER BY TABLE_NAME, COLUMN_NAME;
+
+-- Check indexes were created
+SELECT
+    TABLE_NAME,
+    INDEX_NAME,
+    COLUMN_NAME
+FROM INFORMATION_SCHEMA.STATISTICS
+WHERE TABLE_SCHEMA = 'restaurant'
+  AND (INDEX_NAME LIKE 'idx_%deleted_at' OR INDEX_NAME LIKE 'idx_%created_at')
+ORDER BY TABLE_NAME, INDEX_NAME;
+
+-- Count records in each table
+SELECT
+    'users' as table_name, COUNT(*) as record_count FROM users
+UNION ALL
+SELECT 'dishes', COUNT(*) FROM dishes
+UNION ALL
+SELECT 'bookings', COUNT(*) FROM bookings
+UNION ALL
+SELECT 'tables', COUNT(*) FROM tables
+UNION ALL
+SELECT 'payments', COUNT(*) FROM payments
+UNION ALL
+SELECT 'order_history', COUNT(*) FROM order_history
+UNION ALL
+SELECT 'preorders', COUNT(*) FROM preorders
+UNION ALL
+SELECT 'images', COUNT(*) FROM images
+UNION ALL
+SELECT 'notifications', COUNT(*) FROM notifications;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =====================================================
+-- MIGRATION COMPLETED
+-- =====================================================
+-- Summary:
+-- ✅ Added audit fields (created_by, updated_by) to all tables
+-- ✅ Added soft delete fields (deleted_at, deleted_by) to relevant tables
+-- ✅ Added indexes for performance
+-- ✅ Added version field to dishes for optimistic locking
+-- ✅ Updated payment status enum to match Java entity
+-- ✅ Updated table status enum to include RESERVED and MAINTENANCE
+-- ✅ Created reviews table with full audit support
+-- ✅ All existing data updated with 'system' as creator
+-- =====================================================

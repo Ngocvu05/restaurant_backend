@@ -6,6 +6,7 @@ import com.management.search_service.events.implement.BookingEvent;
 import com.management.search_service.model.ProcessedEvent;
 import com.management.search_service.repository.BookingDocumentRepository;
 import com.management.search_service.repository.ProcessedEventRepository;
+import com.management.search_service.service.EventMetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -23,6 +24,7 @@ public class BookingEventConsumer {
     private final BookingDocumentRepository bookingDocumentRepository;
     private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
+    private final EventMetricsService eventMetricsService;
 
     @RabbitListener(queues = "booking.search.queue")
     @Transactional
@@ -40,7 +42,7 @@ public class BookingEventConsumer {
 
             // Check idempotency
             if (processedEventRepository.existsByEventId(finalEventId)) {
-                log.info("⚠️  Event already processed: {}", finalEventId);
+                log.info("⚠️ Event already processed: {}", finalEventId);
                 return;
             }
 
@@ -55,7 +57,7 @@ public class BookingEventConsumer {
             // Mark as processed
             long duration = System.currentTimeMillis() - startTime;
             markAsProcessed(finalEventId, event.getEventType(), "BOOKING", duration);
-
+            eventMetricsService.recordEventProcessed(event.getEventType(), duration);
             log.info("✅ Processed in {}ms: {}", duration, finalEventId);
 
         } catch (Exception e) {
@@ -101,7 +103,7 @@ public class BookingEventConsumer {
                             log.info("✅ Updated status");
                         },
                         () -> {
-                            log.warn("⚠️  Booking not found, creating");
+                            log.warn("⚠️ Booking not found, creating");
                             handleBookingCreated(event);
                         }
                 );

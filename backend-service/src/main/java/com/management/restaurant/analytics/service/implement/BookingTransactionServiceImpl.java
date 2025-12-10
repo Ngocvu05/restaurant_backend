@@ -1,31 +1,180 @@
-package com.management.restaurant.service.implement;
+package com.management.restaurant.analytics.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
+import com.management.restaurant.analytics.service.BookingTransactionService;
+import com.management.restaurant.analytics.service.MongoUserSessionService;
 import com.management.restaurant.contains.BookingStatus;
+import com.management.restaurant.contains.TableStatus;
+import com.management.restaurant.exception.ResourceNotFoundException;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.model.Notification;
 import com.management.restaurant.model.OrderHistory;
+import com.management.restaurant.model.TableEntity;
 import com.management.restaurant.repository.BookingRepository;
 import com.management.restaurant.repository.NotificationRepository;
 import com.management.restaurant.repository.OrderHistoryRepository;
-import com.management.restaurant.service.BookingPropagationService;
+import com.management.restaurant.repository.TableRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BookingPropagationServiceImpl implements BookingPropagationService {
+public class BookingTransactionServiceImpl implements BookingTransactionService {
     private final BookingRepository bookingRepository;
+    private final TableRepository tableRepository;
     private final NotificationRepository notificationRepository;
     private final OrderHistoryRepository orderHistoryRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+
+    /**
+     * READ_COMMITTED: Tránh dirty read
+     * Use case: Đọc thông tin booking đã được confirm
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED, readOnly = true)
+    @Override
+    public Booking getConfirmedBooking(Long bookingId) {
+        log.info("Getting confirmed booking with READ_COMMITTED isolation");
+        return bookingRepository.findById(bookingId)
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+    }
+
+    /**
+     * REPEATABLE_READ: Đảm bảo đọc consistent data trong suốt transaction
+     * Use case: Tính toán tổng doanh thu từ các bookings
+     */
+    @Transactional(isolation = Isolation.REPEATABLE_READ, readOnly = true)
+    @Override
+    public BigDecimal calculateTotalRevenue(LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("Calculating revenue with REPEATABLE_READ isolation");
+
+        // Đọc lần 1
+        BigDecimal total1 = bookingRepository
+                .findByBookingTimeBetweenAndStatus(startDate, endDate, BookingStatus.COMPLETED)
+                .stream()
+                .map(Booking::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Simulate some processing
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Đọc lần 2 - Sẽ trả về kết quả giống lần 1 trong cùng transaction
+        BigDecimal total2 = bookingRepository
+                .findByBookingTimeBetweenAndStatus(startDate, endDate, BookingStatus.COMPLETED)
+                .stream()
+                .map(Booking::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        log.info("Total1: {}, Total2: {} - Should be equal", total1, total2);
+        return total2;
+    }
+
+    /**
+     * SERIALIZABLE: Mức cao nhất, tránh phantom read
+     * Use case: Đặt bàn - không cho phép 2 người đặt cùng 1 bàn
+     */
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Override
+    public Booking createBookingWithSerializable(Long tableId, Long userId, LocalDateTime bookingTime, int numberOfGuests) {
+        log.info("Creating booking with SERIALIZABLE isolation");
+
+        // Kiểm tra bàn available
+        TableEntity table = tableRepository.findById(tableId)
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        if (table.getStatus() != TableStatus.AVAILABLE) {
+            throw new IllegalStateException("Table is not available");
+        }
+
+        // Kiểm tra không có booking trùng thời gian
+        boolean hasConflict = bookingRepository
+                .existsByTable_IdAndBookingTimeAndStatusNot(
+                        tableId, bookingTime, BookingStatus.CANCELLED);
+
+        if (hasConflict) {
+            throw new IllegalStateException("Time slot already booked");
+        }
+
+        // Tạo booking
+        Booking booking = Booking.builder()
+                .table(table)
+                .bookingTime(bookingTime)
+                .numberOfGuests(numberOfGuests)
+                .status(BookingStatus.PENDING)
+                .build();
+
+        // Update table status
+        table.setStatus(TableStatus.BOOKED);
+        tableRepository.save(table);
+
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * DEFAULT (database default): Thường là READ_COMMITTED
+     * Use case: CRUD operations thông thường
+     */
+    @Transactional
+    @Override
+    public Booking updateBookingStatus(Long bookingId, BookingStatus newStatus) {
+        log.info("Updating booking status with DEFAULT isolation");
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        booking.setStatus(newStatus);
+
+        // Update table status based on booking status
+        if (newStatus == BookingStatus.CANCELLED || newStatus == BookingStatus.COMPLETED) {
+            TableEntity table = booking.getTable();
+            table.setStatus(TableStatus.AVAILABLE);
+            tableRepository.save(table);
+        }
+
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * So sánh isolation levels
+     */
+    @Override
+    public void demonstrateIsolationLevels(Long bookingId) {
+        log.info("=== Demonstrating Isolation Levels ===");
+
+        // Thread 1: Read with READ_COMMITTED
+        new Thread(() -> {
+            try {
+                Booking booking =   getConfirmedBooking(bookingId);
+                log.info("Thread 1 (READ_COMMITTED): {}", booking.getStatus());
+            } catch (Exception e) {
+                log.error("Thread 1 error", e);
+            }
+        }).start();
+
+        // Thread 2: Update booking
+        new Thread(() -> {
+            try {
+                Thread.sleep(500);
+                updateBookingStatus(bookingId, BookingStatus.COMPLETED);
+                log.info("Thread 2: Updated booking status");
+            } catch (Exception e) {
+                log.error("Thread 2 error", e);
+            }
+        }).start();
+    }
 
     /**
      * REQUIRED (default): Join existing transaction hoặc tạo mới
@@ -63,7 +212,7 @@ public class BookingPropagationServiceImpl implements BookingPropagationService 
                 .content(String.format("Booking %d: %s at %s",
                         bookingId, action, LocalDateTime.now()))
                 .createdAt(LocalDateTime.now())
-                .isRead(Boolean.valueOf(false))
+                .isRead(false)
                 .build();
 
         notificationRepository.save(notification);
@@ -141,10 +290,8 @@ public class BookingPropagationServiceImpl implements BookingPropagationService 
             OrderHistory order = OrderHistory.builder()
                     .booking(bookingRepository.findById(bookingId).orElseThrow())
                     .quantity(quantity)
-                    .served(Boolean.valueOf(false))
-                    .createdAt(LocalDateTime.now())
+                    .served(false)
                     .build();
-
             orderHistoryRepository.save(order);
 
             // Nếu operation này fail, chỉ rollback nested transaction
@@ -175,7 +322,7 @@ public class BookingPropagationServiceImpl implements BookingPropagationService 
 
             // 4. Add order (NESTED - partial rollback nếu fail)
             try {
-                addOrderToBooking(bookingId, Long.valueOf(1L), 2);
+                addOrderToBooking(bookingId, 1L, 2);
             } catch (Exception e) {
                 log.warn("Failed to add order, continuing...");
             }
@@ -195,6 +342,7 @@ public class BookingPropagationServiceImpl implements BookingPropagationService 
      * Test rollback behavior
      */
     @Transactional
+    @Override
     public void testRollbackScenario(Long bookingId) {
         log.info("Testing rollback scenario");
 
@@ -206,26 +354,5 @@ public class BookingPropagationServiceImpl implements BookingPropagationService 
 
         // Force rollback
         throw new RuntimeException("Simulated error - trigger rollback");
-    }
-}
-
-@Service
-@RequiredArgsConstructor
-@Slf4j
-class AuditLogService {
-    private final NotificationRepository notificationRepository;
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void logBookingUpdate(Long bookingId, BookingStatus newStatus) {
-        log.info("Logging booking update in same transaction");
-
-        Notification audit = Notification.builder()
-                .title("Audit Log")
-                .content(String.format("Booking %d updated to %s", bookingId, newStatus))
-                .createdAt(LocalDateTime.now())
-                .isRead(Boolean.valueOf(false))
-                .build();
-
-        notificationRepository.save(audit);
     }
 }

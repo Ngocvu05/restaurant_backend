@@ -22,7 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Document(indexName = "dishes")
-@Setting(replicas = 0, shards = 1)
+@Setting(replicas = 0, shards = 1, settingPath = "elasticsearch-settings.json")
 public class DishDocument {
     @Id
     private String id;

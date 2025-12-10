@@ -1,7 +1,11 @@
 package com.management.restaurant.analytics.service;
 
 import com.management.restaurant.analytics.model.UserSession;
+import com.management.restaurant.contains.BookingStatus;
+import com.management.restaurant.model.Booking;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**

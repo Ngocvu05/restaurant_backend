@@ -12,7 +12,9 @@ import com.management.restaurant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,20 +26,23 @@ public class SyncDataService {
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
 
+    @Transactional(readOnly = true)
     public List<DishSyncDto> getAllDishesForSync() {
-        List<Dish> dishes = dishRepository.findAll();
+        List<Dish> dishes = dishRepository.findAllWithImages();
         return dishes.stream()
                 .map(this::convertToDishSyncDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<UserSyncDto> getAllUsersForSync() {
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAllWithImages();
         return users.stream()
                 .map(this::convertToUserSyncDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<ReviewSyncDto> getAllReviewsForSync() {
         List<Review> reviews = reviewRepository.findAll();
         return reviews.stream()
@@ -46,6 +51,18 @@ public class SyncDataService {
     }
 
     private DishSyncDto convertToDishSyncDto(Dish dish) {
+        // Safely get images with null check
+        List<String> imageUrls = null;
+        try {
+            if (dish.getImages() != null && !dish.getImages().isEmpty()) {
+                imageUrls = dish.getImages().stream()
+                        .map(img -> img.getUrl())
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("Could not load images for dish {}: {}", dish.getId(), e.getMessage());
+            imageUrls = Collections.emptyList();  // ✅ Return empty list instead of null
+        }
         return DishSyncDto.builder()
                 .id(dish.getId())
                 .name(dish.getName())
@@ -53,10 +70,7 @@ public class SyncDataService {
                 .price(dish.getPrice())
                 .isAvailable(dish.getIsAvailable())
                 .category(dish.getCategory())
-                .imageUrls(dish.getImages() != null ?
-                        dish.getImages().stream()
-                                .map(img -> img.getUrl())
-                                .collect(Collectors.toList()) : null)
+                .imageUrls(imageUrls)
                 .averageRating(dish.getAverageRating())
                 .totalReviews(dish.getTotalReviews())
                 .orderCount(dish.getOrderCount())
@@ -65,6 +79,19 @@ public class SyncDataService {
     }
 
     private UserSyncDto convertToUserSyncDto(User user) {
+        String avatarUrl = null;
+        try {
+            if (user.getImages() != null && !user.getImages().isEmpty()) {
+                avatarUrl = user.getImages().stream()
+                        .filter(img -> img.isAvatar())
+                        .findFirst()
+                        .map(img -> img.getUrl())
+                        .orElse(null);
+            }
+        } catch (Exception e) {
+            log.warn("Could not load avatar for user {}: {}", user.getId(), e.getMessage());
+        }
+
         return UserSyncDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -74,12 +101,7 @@ public class SyncDataService {
                 .address(user.getAddress())
                 .roleName(user.getRole() != null ? user.getRole().getName().name() : null)
                 .status(user.getStatus().name())
-                .avatarUrl(user.getImages() != null && !user.getImages().isEmpty() ?
-                        user.getImages().stream()
-                                .filter(img -> img.isAvatar())
-                                .findFirst()
-                                .map(img -> img.getUrl())
-                                .orElse(null) : null)
+                .avatarUrl(avatarUrl)
                 .createdAt(user.getCreatedAt())
                 .build();
     }

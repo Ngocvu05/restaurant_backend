@@ -54,7 +54,7 @@ public class MongoActivityLogServiceImpl implements MongoActivityLogService {
                     .build();
 
             activityLogRepository.save(activityLog);
-            log.debug("Logged activity: {} for user: {}", activityType, userId);
+            log.info("Logged activity: {} for user: {}", activityType, userId);
         }catch(Exception e){
             log.error("Failed to log activity: {}", e.getMessage());
         }

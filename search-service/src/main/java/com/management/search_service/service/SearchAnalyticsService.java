@@ -44,7 +44,7 @@ public class SearchAnalyticsService {
                     .document(document)
             ));
 
-            log.debug("Tracked search: keyword={}, results={}", keyword, resultCount);
+            log.info("Tracked search: keyword={}, results={}", keyword, resultCount);
         } catch (Exception e) {
             log.error("Failed to track search: {}", e.getMessage());
         }
@@ -68,7 +68,7 @@ public class SearchAnalyticsService {
                     .document(document)
             ));
 
-            log.debug("Tracked click: keyword={}, dishId={}, position={}",
+            log.info("Tracked click: keyword={}, dishId={}, position={}",
                     keyword, dishId, position);
         } catch (Exception e) {
             log.error("Failed to track click: {}", e.getMessage());

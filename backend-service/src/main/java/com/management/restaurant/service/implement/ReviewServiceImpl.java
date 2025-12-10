@@ -293,7 +293,7 @@ public class ReviewServiceImpl implements ReviewService {
         dish.updateRatingStats();
 
         dishRepository.save(dish);
-        log.debug("Updated rating stats for dish ID: {}", dishId);
+        log.info("Updated rating stats for dish ID: {}", dishId);
     }
 
     @Override

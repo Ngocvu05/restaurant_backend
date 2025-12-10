@@ -3,6 +3,7 @@ package com.management.restaurant.service;
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.LoginRequest;
 import com.management.restaurant.dto.RegisterRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AuthService {
@@ -11,4 +12,7 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
 
     AuthResponse refreshToken(String refreshToken);
+
+    void logout(HttpServletRequest request);
+    void revokeAllUserTokens(Long userId);
 }

@@ -19,4 +19,11 @@ public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, 
 
     @Query("SELECT p.eventType, COUNT(p) FROM ProcessedEvent p GROUP BY p.eventType")
     List<Object[]> countByEventType();
+    //method support metrics
+    long countByEventTypeStartingWith(String prefix);
+
+    long countByProcessedAtAfter(LocalDateTime since);
+
+    @Query("SELECT AVG(p.processingDurationMs) FROM ProcessedEvent p")
+    double findAverageProcessingTime();
 }

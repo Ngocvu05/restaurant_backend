@@ -8,7 +8,6 @@ import com.management.restaurant.repository.DishRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,35 +43,33 @@ public class ReviewMapperImpl implements ReviewMapper {
     public Review toEntity(ReviewDTO reviewDTO) {
         if (reviewDTO == null) return null;
 
-        Review review = new Review();
-        review.setId(reviewDTO.getId());
-        review.setDishId(reviewDTO.getDishId());
-        review.setCustomerName(reviewDTO.getCustomerName());
-        review.setCustomerEmail(reviewDTO.getCustomerEmail());
-        review.setCustomerAvatar(reviewDTO.getCustomerAvatar());
-        review.setRating(reviewDTO.getRating());
-        review.setComment(reviewDTO.getComment());
-
-        // Set default values for new entities
-        if (reviewDTO.getId() == null) {
-            review.setIsActive(true);
-            review.setIsVerified(false);
-            review.setCreatedAt(LocalDateTime.now());
-            review.setUpdatedAt(LocalDateTime.now());
-        } else {
-            review.setIsActive(reviewDTO.getIsActive());
-            review.setIsVerified(reviewDTO.getIsVerified());
-            review.setCreatedAt(reviewDTO.getCreatedAt());
-            review.setUpdatedAt(reviewDTO.getUpdatedAt());
-        }
-
-        review.setIpAddress(reviewDTO.getIpAddress());
-
         // Load dish relationship if dishId is provided
+        Dish dish = null;
         if (reviewDTO.getDishId() != null) {
-            Dish dish = dishRepository.findById(reviewDTO.getDishId()).orElse(null);
-            review.setDish(dish);
+            dish = dishRepository.findById(reviewDTO.getDishId()).orElse(null);
         }
+
+        // Build Review using SuperBuilder
+        Review review = Review.builder()
+                .dishId(reviewDTO.getDishId())
+                .customerName(reviewDTO.getCustomerName())
+                .customerEmail(reviewDTO.getCustomerEmail())
+                .customerAvatar(reviewDTO.getCustomerAvatar())
+                .rating(reviewDTO.getRating())
+                .comment(reviewDTO.getComment())
+                .isActive(reviewDTO.getIsActive() != null ? reviewDTO.getIsActive() : true)
+                .isVerified(reviewDTO.getIsVerified() != null ? reviewDTO.getIsVerified() : false)
+                .ipAddress(reviewDTO.getIpAddress())
+                .dish(dish)
+                .build();
+
+        // Set ID separately (inherited field)
+        if (reviewDTO.getId() != null) {
+            review.setId(reviewDTO.getId());
+        }
+
+        // DON'T set createdAt/updatedAt manually - let JPA Auditing handle it
+        // If this is an update, JPA will handle updatedAt automatically
 
         return review;
     }
@@ -80,7 +77,6 @@ public class ReviewMapperImpl implements ReviewMapper {
     @Override
     public List<ReviewDTO> toDTOList(List<Review> reviews) {
         if (reviews == null) return null;
-
         return reviews.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -89,7 +85,6 @@ public class ReviewMapperImpl implements ReviewMapper {
     @Override
     public List<Review> toEntityList(List<ReviewDTO> reviewDTOs) {
         if (reviewDTOs == null) return null;
-
         return reviewDTOs.stream()
                 .map(this::toEntity)
                 .collect(Collectors.toList());
@@ -99,7 +94,7 @@ public class ReviewMapperImpl implements ReviewMapper {
     public void updateEntityFromDTO(ReviewDTO reviewDTO, Review review) {
         if (reviewDTO == null || review == null) return;
 
-        // Update only allowed fields (ignore id, createdAt, dishId)
+        // Update only allowed fields (don't update id, createdAt, dishId)
         if (reviewDTO.getCustomerName() != null) {
             review.setCustomerName(reviewDTO.getCustomerName());
         }
@@ -122,8 +117,7 @@ public class ReviewMapperImpl implements ReviewMapper {
             review.setIsVerified(reviewDTO.getIsVerified());
         }
 
-        // Always update the updatedAt timestamp
-        review.setUpdatedAt(LocalDateTime.now());
+        // DON'T manually set updatedAt - JPA Auditing will handle it via @PreUpdate
     }
 
     @Override
@@ -142,9 +136,6 @@ public class ReviewMapperImpl implements ReviewMapper {
                 .isVerified(review.getIsVerified())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
-                // Exclude dish information
-                .dishName(null)
-                .dishCategory(null)
                 .build();
     }
 
@@ -175,7 +166,6 @@ public class ReviewMapperImpl implements ReviewMapper {
     @Override
     public List<ReviewDTO> toSimpleDTOList(List<Review> reviews) {
         if (reviews == null) return null;
-
         return reviews.stream()
                 .map(this::toSimpleDTO)
                 .collect(Collectors.toList());
@@ -184,7 +174,6 @@ public class ReviewMapperImpl implements ReviewMapper {
     @Override
     public List<ReviewDTO> toPublicDTOList(List<Review> reviews) {
         if (reviews == null) return null;
-
         return reviews.stream()
                 .map(this::toPublicDTO)
                 .collect(Collectors.toList());

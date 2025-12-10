@@ -22,4 +22,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findUserByImageId(@Param("imageId") Long imageId);
 
     List<User> findAllByEmail(String email);
+
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.images " +
+            "LEFT JOIN FETCH u.role")
+    List<User> findAllWithImages();
 }

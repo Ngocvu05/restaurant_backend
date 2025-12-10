@@ -31,18 +31,17 @@ public class PreOrderMapperImpl implements PreOrderMapper {
         preorder.setQuantity(dto.getQuantity());
         preorder.setNote(dto.getNote());
 
+        Booking booking = null;
         if (dto.getBookingId() != null) {
-            Booking booking = new Booking();
             booking.setId(dto.getBookingId());
             preorder.setBooking(booking);
         }
 
+        Dish dish = null;
         if (dto.getDishId() != null) {
-            Dish dish = new Dish();
             dish.setId(dto.getDishId());
             preorder.setDish(dish);
         }
-
         return preorder;
     }
 }

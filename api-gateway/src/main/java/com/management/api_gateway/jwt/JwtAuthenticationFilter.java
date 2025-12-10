@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.security.Key;
+import java.util.Date;
 import java.util.Set;
 
 @Slf4j
@@ -65,7 +66,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String method = request.getMethod().name();
         String clientIp = FilterCommonUtils.getClientIpAddress(request);
 
-        log.debug("Processing request: {} {} from IP: {}", method, path, clientIp);
+        log.info("Processing request: {} {} from IP: {}", method, path, clientIp);
 
         // 1. Rate Limiting Check
         if (!rateLimitService.isAllowed(clientIp)) {
@@ -75,13 +76,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // 2. Always allow OPTIONS requests (CORS preflight)
         if (request.getMethod() == HttpMethod.OPTIONS) {
-            log.debug("OPTIONS request detected, allowing without JWT validation");
+            log.info("OPTIONS request detected, allowing without JWT validation");
             return chain.filter(exchange);
         }
 
         // 3. Skip authentication for public endpoints
         if (isPublicEndpoint(path)) {
-            log.debug("Public endpoint detected, skipping JWT validation: {}", path);
+            log.info("Public endpoint detected, skipping JWT validation: {}", path);
 
             // Remove Authorization headers before forwarding to downstream service
             ServerHttpRequest modifiedRequest = request.mutate()
@@ -103,7 +104,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         return validateToken(token)
                 .flatMap(claims -> {
-                    log.debug("JWT validation successful for user: {}", claims.getSubject());
+                    log.info("JWT validation successful for user: {}", claims.getSubject());
 
                     // 5. Check if token is blacklisted (logout)
                     return checkTokenBlacklist(token)
@@ -136,12 +137,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return Mono.fromCallable(() -> {
             try {
                 Key signingKey = JwtKeyUtil.getSigningKey(jwtSecret);
-                return Jwts.parserBuilder()
+                Claims claims = Jwts.parserBuilder()
                         .setSigningKey(signingKey)
                         .build()
                         .parseClaimsJws(token)
                         .getBody();
-
+                validateTokenAge(claims);
+                return claims;
             } catch (ExpiredJwtException ex) {
                 throw new RuntimeException("JWT expired", ex);
             } catch (UnsupportedJwtException ex) {
@@ -156,6 +158,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 throw new RuntimeException("Invalid JWT", ex);
             }
         }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private void validateTokenAge(Claims claims) {
+        Date issuedAt = claims.getIssuedAt();
+        if (issuedAt != null) {
+            long ageMinutes = (System.currentTimeMillis() - issuedAt.getTime()) / 60000;
+
+            // Example: Reject tokens older than 24 hours (even if not expired)
+            if (ageMinutes > 1440) {
+                throw new RuntimeException("Token too old");
+            }
+        }
     }
 
     private Mono<Boolean> checkTokenBlacklist(String token) {

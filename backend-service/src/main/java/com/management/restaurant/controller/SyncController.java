@@ -30,7 +30,7 @@ public class SyncController {
      * Requires ADMIN or SYSTEM role
      */
     @GetMapping("/dishes/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'SYSTEM') or hasAnyRole('ADMIN', 'SYSTEM')")
+    @PreAuthorize("hasAnyAuthority('ADMIN') or hasAnyRole('ADMIN')")
     public ResponseEntity<List<DishSyncDto>> getAllDishesForSync() {
         try {
             log.info("📥 Sync request received for all dishes");
@@ -48,7 +48,7 @@ public class SyncController {
      * Requires ADMIN or SYSTEM role
      */
     @GetMapping("/users/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'SYSTEM') or hasAnyRole('ADMIN', 'SYSTEM')")
+    @PreAuthorize("hasAnyAuthority('ADMIN') or hasAnyRole('ADMIN')")
     public ResponseEntity<List<UserSyncDto>> getAllUsersForSync() {
         try {
             log.info("📥 Sync request received for all users");
@@ -66,7 +66,7 @@ public class SyncController {
      * Requires ADMIN or SYSTEM role
      */
     @GetMapping("/reviews/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'SYSTEM') or hasAnyRole('ADMIN', 'SYSTEM')")
+    @PreAuthorize("hasAnyAuthority('ADMIN') or hasAnyRole('ADMIN')")
     public ResponseEntity<List<ReviewSyncDto>> getAllReviewsForSync() {
         try {
             log.info("📥 Sync request received for all reviews");

@@ -246,7 +246,7 @@ public class DistributedTransactionConfig {
             properties.setProperty("hibernate.default_schema", "analytics");
         }
 
-        log.debug("Hibernate properties configured for {} database",
+        log.info("Hibernate properties configured for {} database",
                 isPrimary ? "Restaurant (Primary)" : "Analytics (Secondary)");
 
         return properties;

@@ -1,11 +1,11 @@
-package com.management.restaurant.service.implement;
+package com.management.restaurant.service.advance;
 
 import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.model.Dish;
 import com.management.restaurant.model.TableEntity;
 import com.management.restaurant.repository.DishRepository;
 import com.management.restaurant.repository.TableRepository;
-import com.management.restaurant.service.LockingExamplesService;
+import com.management.restaurant.analytics.service.LockingExamplesService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.LockTimeoutException;
@@ -65,6 +65,7 @@ public class LockingExamplesServiceImpl implements LockingExamplesService {
     /**
      * Test Optimistic Locking Conflict
      */
+    @Override
     public void testOptimisticLockingConflict(Long dishId) {
         log.info("=== Testing Optimistic Locking Conflict ===");
 
@@ -176,6 +177,7 @@ public class LockingExamplesServiceImpl implements LockingExamplesService {
     /**
      * Test Pessimistic Locking - Deadlock scenario
      */
+    @Override
     public void testPessimisticLockingDeadlock() {
         log.info("=== Testing Pessimistic Locking Deadlock ===");
 

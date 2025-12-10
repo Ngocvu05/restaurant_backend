@@ -187,7 +187,6 @@ public class AdvancedSearchController {
     @GetMapping("/analytics/ctr")
     public ResponseEntity<Map<String, Double>> getClickThroughRates(
             @RequestParam(defaultValue = "7") int days) {
-
         log.info("Getting CTR for last {} days", days);
 
         Map<String, Double> ctr = analyticsService.getClickThroughRates(days);

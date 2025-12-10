@@ -156,14 +156,16 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public BookingDTO getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         return bookingMapper.toDTO(booking);
     }
 
+    @Transactional(readOnly = true)
     public BookingDetailResponseDTO getBookingDetail(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy booking"));
 
         Payment payment = paymentRepository.findFirstByBookingId(bookingId)
@@ -180,8 +182,9 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingDTO> getAllBookings() {
-        return bookingRepository.findAll()
+        return bookingRepository.findAllWithDetails()
                 .stream()
                 .map(bookingMapper::toDTO)
                 .collect(Collectors.toList());
@@ -247,8 +250,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingDTO> getBookingHistory(Long userId) {
-        List<Booking> bookings = bookingRepository.findByUserIdOrderByBookingTimeDesc(userId);
-        return bookings.stream().map(bookingMapper::toDTO).collect(Collectors.toList());
+        return bookingRepository.findByUserIdWithDetails(userId)
+                .stream()
+                .map(bookingMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

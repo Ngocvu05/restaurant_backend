@@ -21,4 +21,8 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> findByCategory(String category);
 
     List<Dish> findByIsAvailable(Boolean isAvailable);
+
+    @Query("SELECT DISTINCT d FROM Dish d " +
+            "LEFT JOIN FETCH d.images ")
+    List<Dish> findAllWithImages();
 }

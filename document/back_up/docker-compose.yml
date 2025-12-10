@@ -181,7 +181,7 @@ services:
       - SPRING_DATA_MONGODB_DATABASE=${SPRING_DATA_MONGODB_DATABASE}
       # JWT configuration
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
       - LOG_FILE_PATH=./logs/<service-name>.log
     ports:
       - "8081:8081"
@@ -239,7 +239,7 @@ services:
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
       - APP_USER_SERVICE_BASE_URL=http://user-service:8081/api/v1/sync
@@ -316,7 +316,7 @@ services:
 
       # JWT Configuration
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # WebSocket Configuration
       - WEBSOCKET_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
@@ -384,7 +384,7 @@ services:
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
       # Gateway routes for chat service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_URI=lb://chat-service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_PREDICATES_PATH=/chat/**

@@ -206,7 +206,7 @@ services:
 
       # JWT Configuration
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # Email Configuration
       - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
@@ -286,7 +286,7 @@ services:
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
       # Logging Configuration
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
@@ -370,7 +370,7 @@ services:
 
       # JWT Configuration
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # WebSocket Configuration
       - WEBSOCKET_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
@@ -451,7 +451,7 @@ services:
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # Gateway routes for chat service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_URI=lb://chat-service
@@ -534,6 +534,49 @@ services:
       - xpack.security.transport.ssl.enabled=false
     depends_on:
       - elasticsearch
+
+  # RabbitMQ Exporter for Prometheus
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq-exporter
+    environment:
+      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_USER=chat_user
+      - RABBIT_PASSWORD=chat_pass
+      - PUBLISH_PORT=9419
+    ports:
+      - "9419:9419"
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-network
+
+  # MySQL Exporter for Prometheus
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    environment:
+      - DATA_SOURCE_NAME=restaurant_user:restaurant_pass@(mysql:3306)/restaurant
+    ports:
+      - "9104:9104"
+    depends_on:
+      - mysql
+    networks:
+      - microservices-network
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=admin
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - microservices-network
 
 networks:
   microservices-network:

@@ -105,7 +105,6 @@ management:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION}
   algorithm: HS256
 
 logging:

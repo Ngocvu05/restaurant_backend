@@ -60,7 +60,7 @@ public class TransactionHelper {
      * @return Result from the action
      */
     public <T> T executeInRestaurantTransaction(Supplier<T> action) {
-        log.debug("Executing in restaurant database transaction");
+        log.info("Executing in restaurant database transaction");
         TransactionTemplate template = new TransactionTemplate(restaurantTxManager);
         return template.execute(status -> action.get());
     }
@@ -71,7 +71,7 @@ public class TransactionHelper {
      * @param action Runnable that contains the business logic
      */
     public void executeInRestaurantTransaction(Runnable action) {
-        log.debug("Executing in restaurant database transaction (void)");
+        log.info("Executing in restaurant database transaction (void)");
         TransactionTemplate template = new TransactionTemplate(restaurantTxManager);
         template.execute(status -> {
             action.run();
@@ -87,7 +87,7 @@ public class TransactionHelper {
      * @return Result from the action
      */
     public <T> T executeInRestaurantTransactionReadOnly(Supplier<T> action) {
-        log.debug("Executing in restaurant database transaction (read-only)");
+        log.info("Executing in restaurant database transaction (read-only)");
         TransactionTemplate template = new TransactionTemplate(restaurantTxManager);
         template.setReadOnly(true);
         return template.execute(status -> action.get());
@@ -105,7 +105,7 @@ public class TransactionHelper {
      * @return Result from the action
      */
     public <T> T executeInAnalyticsTransaction(Supplier<T> action) {
-        log.debug("Executing in analytics database transaction");
+        log.info("Executing in analytics database transaction");
         TransactionTemplate template = new TransactionTemplate(analyticsTxManager);
         return template.execute(status -> action.get());
     }
@@ -116,7 +116,7 @@ public class TransactionHelper {
      * @param action Runnable that contains the business logic
      */
     public void executeInAnalyticsTransaction(Runnable action) {
-        log.debug("Executing in analytics database transaction (void)");
+        log.info("Executing in analytics database transaction (void)");
         TransactionTemplate template = new TransactionTemplate(analyticsTxManager);
         template.execute(status -> {
             action.run();
@@ -132,7 +132,7 @@ public class TransactionHelper {
      * @return Result from the action
      */
     public <T> T executeInAnalyticsTransactionReadOnly(Supplier<T> action) {
-        log.debug("Executing in analytics database transaction (read-only)");
+        log.info("Executing in analytics database transaction (read-only)");
         TransactionTemplate template = new TransactionTemplate(analyticsTxManager);
         template.setReadOnly(true);
         return template.execute(status -> action.get());
@@ -148,7 +148,7 @@ public class TransactionHelper {
      * @return TransactionStatus for managing the transaction
      */
     public TransactionStatus beginRestaurantTransaction() {
-        log.debug("Beginning restaurant database transaction manually");
+        log.info("Beginning restaurant database transaction manually");
         DefaultTransactionDefinition def = new DefaultTransactionDefinition();
         def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         return restaurantTxManager.getTransaction(def);
@@ -160,7 +160,7 @@ public class TransactionHelper {
      * @return TransactionStatus for managing the transaction
      */
     public TransactionStatus beginAnalyticsTransaction() {
-        log.debug("Beginning analytics database transaction manually");
+        log.info("Beginning analytics database transaction manually");
         DefaultTransactionDefinition def = new DefaultTransactionDefinition();
         def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         return analyticsTxManager.getTransaction(def);
@@ -172,7 +172,7 @@ public class TransactionHelper {
      * @param status TransactionStatus from beginRestaurantTransaction()
      */
     public void commitRestaurantTransaction(TransactionStatus status) {
-        log.debug("Committing restaurant database transaction");
+        log.info("Committing restaurant database transaction");
         restaurantTxManager.commit(status);
     }
 
@@ -182,7 +182,7 @@ public class TransactionHelper {
      * @param status TransactionStatus from beginAnalyticsTransaction()
      */
     public void commitAnalyticsTransaction(TransactionStatus status) {
-        log.debug("Committing analytics database transaction");
+        log.info("Committing analytics database transaction");
         analyticsTxManager.commit(status);
     }
 
@@ -236,11 +236,11 @@ public class TransactionHelper {
         try {
             // Execute restaurant operation
             restaurantResult = executeInRestaurantTransaction(restaurantOperation);
-            log.debug("Restaurant operation completed successfully");
+            log.info("Restaurant operation completed successfully");
 
             // Execute analytics operation
             analyticsResult = executeInAnalyticsTransaction(analyticsOperation);
-            log.debug("Analytics operation completed successfully");
+            log.info("Analytics operation completed successfully");
 
             return new DistributedResult<>(restaurantResult, analyticsResult, true);
 

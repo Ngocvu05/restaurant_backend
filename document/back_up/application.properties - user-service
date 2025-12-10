@@ -149,7 +149,7 @@ spring.websocket.session-timeout=300000
 # JWT CONFIGURATION
 # ========================================
 jwt.secret=${JWT_SECRET}
-jwt.expiration=${JWT_EXPIRATION}
+jwt.expiration=${JWT_ACCESS_TOKEN_EXPIRATION}
 jwt.algorithm=HS256
 
 # ========================================

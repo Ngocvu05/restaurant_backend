@@ -52,23 +52,20 @@ public class SystemTokenManager {
                 log.info("🔄 Attempting to generate system token (attempt {}/{})", attempt, maxRetryAttempts);
 
                 String loginUrl = userServiceUrl + "/api/v1/auth/login";
-                log.debug("📡 Calling: {}", loginUrl);
+                log.info("📡 Calling: {}", loginUrl);
 
-                // ✅ Dùng "username" cho user-service
                 Map<String, String> loginRequest = new HashMap<>();
                 loginRequest.put("username", systemUsername);
                 loginRequest.put("password", systemPassword);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-
                 HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
-
                 ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
                 if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                     Map<String, Object> body = response.getBody();
-                    log.debug("📥 Response body: {}", body);
+                    log.info("📥 Response body: {}", body);
                     String token = null;
                     if (body.containsKey("success") && body.get("success") == Boolean.TRUE) {
                         // Format has wrapper
@@ -77,14 +74,13 @@ public class SystemTokenManager {
                                 ? (String) data.get("accessToken")
                                 : (String) data.get("token");
                     } else if (body.containsKey("token")) {
-                        // Format trực tiếp (user-service của bạn)
                         token = (String) body.get("token");
                     }
 
                     if (token != null && !token.isEmpty()) {
                         this.systemToken = token;
                         log.info("✅ System JWT token generated successfully");
-                        log.debug("Token: {}...{}",
+                        log.info("Token: {}...{}",
                                 systemToken.substring(0, Math.min(20, systemToken.length())),
                                 systemToken.substring(Math.max(0, systemToken.length() - 10)));
                         return;
