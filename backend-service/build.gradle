@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id "org.sonarqube" version "6.0.1.5171"
 }
 
 group = 'com.restaurant'
@@ -11,6 +13,132 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+// ========================================
+// SONARQUBE CONFIGURATION (LOCAL)
+// ========================================
+sonar {
+    properties {
+        // ✅ LOCAL SonarQube (không phải SonarCloud)
+        property "sonar.projectKey", "restaurant-user-service"
+        property "sonar.projectName", "Restaurant User Service"
+        property "sonar.host.url", "http://localhost:9000"
+
+        // Source directories
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", "src/test/java"
+
+        // Coverage
+        property "sonar.coverage.jacoco.xmlReportPaths",
+                "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+
+        // ✅ EXCLUSIONS - Không analyze các file này
+        property "sonar.exclusions", """
+            **/dto/**,
+            **/model/**,
+            **/entity/**,
+            **/config/**,
+            **/exception/**,
+            **/constant/**,
+            **/event/model/**,
+            **/*Application.java,
+            **/RestaurantApplication.java
+        """.trim().replaceAll(/\s+/, '')
+
+        // Coverage exclusions
+        property "sonar.coverage.exclusions", """
+            **/dto/**,
+            **/model/**,
+            **/entity/**,
+            **/config/**,
+            **/exception/**,
+            **/event/model/**
+        """.trim().replaceAll(/\s+/, '')
+
+        // Language settings
+        property "sonar.language", "java"
+        property "sonar.java.source", "21"
+        property "sonar.sourceEncoding", "UTF-8"
+
+        // Binaries
+        property "sonar.java.binaries", "${buildDir}/classes/java/main"
+        property "sonar.java.libraries", configurations.runtimeClasspath.files.join(',')
+        property "sonar.java.test.binaries", "${buildDir}/classes/java/test"
+        property "sonar.java.test.libraries", configurations.testRuntimeClasspath.files.join(',')
+    }
+}
+
+// ========================================
+// JACOCO CONFIGURATION (CODE COVERAGE)
+// ========================================
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    // Exclude DTOs, Models, Config from coverage
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/dto/**',
+                    '**/model/**',
+                    '**/entity/**',
+                    '**/config/**',
+                    '**/exception/**',
+                    '**/constant/**',
+                    '**/event/model/**',
+                    '**/*Application.class'
+            ])
+        }))
+    }
+}
+
+// Coverage thresholds
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.60  // 60% coverage minimum
+            }
+        }
+
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.50
+            }
+
+            excludes = [
+                    '*.dto.*',
+                    '*.model.*',
+                    '*.entity.*',
+                    '*.config.*',
+                    '*.exception.*'
+            ]
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+check {
+    dependsOn jacocoTestCoverageVerification
 }
 
 configurations {
@@ -32,7 +160,6 @@ repositories {
 ext {
     set('springBootAdminVersion', "3.5.0")
     set('springCloudVersion', "2025.0.0")
-    // Updated MongoDB Driver version to 5.2.0 (compatible with Spring Boot 3.5.0)
     set('mongoDriverVersion', "5.2.0")
 }
 
@@ -108,6 +235,12 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.register('sonarAnalyze') {
+    group = 'verification'
+    description = 'Run tests and SonarQube analysis'
+    dependsOn 'clean', 'test', 'jacocoTestReport', 'sonar'
 }
 
 // Task to verify MongoDB dependencies

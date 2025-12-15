@@ -20,17 +20,15 @@ import java.util.Properties;
 
 /**
  * Configuration for Distributed Transactions across multiple databases
- * Updated for Spring Boot 3.5+ (No deprecated EntityManagerFactoryBuilder)
+ * Using HikariCP for high-performance connection pooling
  */
 @Slf4j
 @Configuration
 @EnableTransactionManagement
 public class DistributedTransactionConfig {
-
     // ========================================
     // PRIMARY DATABASE: Restaurant DB
     // ========================================
-
     @Value("${spring.datasource.jdbc-url:jdbc:mysql://localhost:3306/restaurant?useSSL=false&serverTimezone=UTC}")
     private String primaryJdbcUrl;
 
@@ -46,7 +44,7 @@ public class DistributedTransactionConfig {
     @Primary
     @Bean(name = "restaurantDataSource")
     public DataSource restaurantDataSource() {
-        log.info("Initializing Restaurant DataSource");
+        log.info("Initializing Restaurant DataSource with URL: {}", primaryJdbcUrl);
 
         HikariDataSource dataSource = new HikariDataSource();
 
@@ -68,6 +66,10 @@ public class DistributedTransactionConfig {
         dataSource.setConnectionTestQuery("SELECT 1");
         dataSource.setValidationTimeout(5000);
 
+        // Auto-commit settings
+        dataSource.setAutoCommit(true);
+
+        log.info("Restaurant DataSource initialized successfully");
         return dataSource;
     }
 
@@ -92,11 +94,12 @@ public class DistributedTransactionConfig {
 
         em.setJpaProperties(hibernateProperties(true));
 
+        log.info("Restaurant EntityManagerFactory configured successfully");
         return em;
     }
 
     @Primary
-    @Bean(name = "restaurantTransactionManager")
+    @Bean(name = "transactionManager") // Primary transaction manager
     public PlatformTransactionManager restaurantTransactionManager(
             @Qualifier("restaurantEntityManagerFactory") LocalContainerEntityManagerFactoryBean factory) {
 
@@ -106,6 +109,7 @@ public class DistributedTransactionConfig {
         transactionManager.setEntityManagerFactory(factory.getObject());
         transactionManager.setNestedTransactionAllowed(true);
 
+        log.info("Restaurant TransactionManager configured successfully");
         return transactionManager;
     }
 
@@ -127,7 +131,7 @@ public class DistributedTransactionConfig {
 
     @Bean(name = "analyticsDataSource")
     public DataSource analyticsDataSource() {
-        log.info("Initializing Analytics DataSource");
+        log.info("Initializing Analytics DataSource with URL: {}", analyticsJdbcUrl);
 
         HikariDataSource dataSource = new HikariDataSource();
 
@@ -149,6 +153,10 @@ public class DistributedTransactionConfig {
         dataSource.setConnectionTestQuery("SELECT 1");
         dataSource.setValidationTimeout(5000);
 
+        // Auto-commit settings
+        dataSource.setAutoCommit(true);
+
+        log.info("Analytics DataSource initialized successfully");
         return dataSource;
     }
 
@@ -171,6 +179,7 @@ public class DistributedTransactionConfig {
 
         em.setJpaProperties(hibernateProperties(false));
 
+        log.info("Analytics EntityManagerFactory configured successfully");
         return em;
     }
 
@@ -184,18 +193,13 @@ public class DistributedTransactionConfig {
         transactionManager.setEntityManagerFactory(factory.getObject());
         transactionManager.setNestedTransactionAllowed(true);
 
+        log.info("Analytics TransactionManager configured successfully");
         return transactionManager;
     }
 
     // ========================================
     // ALIAS BEANS (for backward compatibility)
     // ========================================
-
-    @Bean(name = "transactionManager")
-    public PlatformTransactionManager transactionManager(
-            @Qualifier("restaurantTransactionManager") PlatformTransactionManager manager) {
-        return manager;
-    }
 
     @Bean(name = "entityManagerFactory")
     public EntityManagerFactory entityManagerFactory(
@@ -260,7 +264,7 @@ public class DistributedTransactionConfig {
 @EnableJpaRepositories(
         basePackages = "com.management.restaurant.repository",
         entityManagerFactoryRef = "restaurantEntityManagerFactory",
-        transactionManagerRef = "restaurantTransactionManager"
+        transactionManagerRef = "transactionManager"
 )
 class RestaurantRepositoryConfig {
 }

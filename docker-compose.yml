@@ -297,6 +297,9 @@ services:
       - SYSTEM_USER_PASSWORD=admin123
       - SYSTEM_TOKEN_RETRY_MAX_ATTEMPTS=10
       - SYSTEM_TOKEN_RETRY_DELAY_SECONDS=3
+
+      # Server Configuration
+      - SERVER_PORT=8082
     ports:
       - "8082:8082"
     restart: unless-stopped

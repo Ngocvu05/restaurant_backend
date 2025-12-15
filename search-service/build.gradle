@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.3'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id 'org.sonarqube' version '6.0.1.5171'
 }
 
 group = 'com.restaurant'
@@ -12,6 +14,116 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+// SonarQube Configuration
+sonar {
+    properties {
+        property "sonar.projectKey", "restaurant-search-service"
+        property "sonar.projectName", "Restaurant Search Service"
+        property "sonar.host.url", "http://localhost:9000"
+
+        // Source directories
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", "src/test/java"
+
+        // Coverage
+        property "sonar.coverage.jacoco.xmlReportPaths",
+                "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+
+        // Exclusions
+        property "sonar.exclusions", """
+            **/dto/**,
+            **/model/**,
+            **/document/**,
+            **/config/**,
+            **/exception/**,
+            **/constant/**,
+            **/*Application.java,
+            **/SearchServiceApplication.java
+        """.trim()
+
+        property "sonar.coverage.exclusions", """
+            **/dto/**,
+            **/model/**,
+            **/config/**,
+            **/document/**
+        """.trim()
+
+        // Language
+        property "sonar.language", "java"
+        property "sonar.java.source", "21"
+        property "sonar.sourceEncoding", "UTF-8"
+
+        // Binaries
+        property "sonar.java.binaries", "${buildDir}/classes/java/main"
+        property "sonar.java.libraries", configurations.runtimeClasspath.files.join(',')
+    }
+}
+
+// JaCoCo Configuration
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/dto/**',
+                    '**/model/**',
+                    '**/document/**',
+                    '**/config/**',
+                    '**/exception/**'
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.60
+            }
+        }
+
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.50
+            }
+
+            excludes = [
+                    '*.dto.*',
+                    '*.model.*',
+                    '*.config.*',
+                    '*.document.*'
+            ]
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+check {
+    dependsOn jacocoTestCoverageVerification
+}
+
 
 configurations {
     compileOnly {
@@ -29,12 +141,20 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-    implementation 'co.elastic.clients:elasticsearch-java:8.13.4'
+    // Elasticsearch Data (Exclude actuator health indicator)
+    implementation('org.springframework.boot:spring-boot-starter-data-elasticsearch') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-actuator-autoconfigure'
+    }
+
+    // Downgrade Elasticsearch client stable version
+    implementation 'co.elastic.clients:elasticsearch-java:8.11.1'
+
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Actuator but not auto-config Elasticsearch health
+    implementation('org.springframework.boot:spring-boot-starter-actuator')
 
     // Prometheus metrics -> monitoring
     implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -44,7 +164,7 @@ dependencies {
     // Circuit Breaker for Resilience
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 
-    runtimeOnly 'com.mysql:mysql-connector-j'  // for MySQL
+    runtimeOnly 'com.mysql:mysql-connector-j'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
@@ -61,4 +181,10 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.register('sonarAnalyze') {
+    group = 'verification'
+    description = 'Run tests and SonarQube analysis'
+    dependsOn 'clean', 'test', 'jacocoTestReport', 'sonar'
 }

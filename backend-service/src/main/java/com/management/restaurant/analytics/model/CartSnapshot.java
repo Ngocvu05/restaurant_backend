@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,5 +40,5 @@ class CartItemSnapshot {
     private Long dishId;
     private String dishName;
     private Integer quantity;
-    private java.math.BigDecimal price;
+    private BigDecimal price;
 }

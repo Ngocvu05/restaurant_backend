@@ -21,8 +21,8 @@ import java.time.LocalDate;
 /**
  * Service demonstrating Distributed Transactions across multiple databases
  * <p>
- * IMPORTANT: Spring @Transactional chỉ hoạt động với 1 database
- * Để handle multiple databases, có 3 approaches:
+ * IMPORTANT: Spring @Transactional just work with 1 database
+ * Để handle multiple databases, have 3 approaches:
  * <p>
  * 1. ChainedTransactionManager (deprecated) - Execute transactions sequentially
  * 2. JTA/XA Transactions (Atomikos, Bitronix) - True 2-phase commit
@@ -44,7 +44,7 @@ public class DistributedTransactionServiceImpl implements DistributedTransaction
     /**
      * APPROACH 1: Sequential Transactions (Simple but not ACID)
      * Commit DB1 first, then DB2
-     * Problem: Nếu DB2 fail, DB1 đã commit -> data inconsistency
+     * Problem: Nếu DB2 fail, DB1 commited -> data inconsistency
      */
     @Override
     public void completeBookingSequential(Long bookingId) {
@@ -91,8 +91,8 @@ public class DistributedTransactionServiceImpl implements DistributedTransaction
 
         } catch (Exception e) {
             log.error("Failed to update analytics DB - Data inconsistency!", e);
-            // Problem: Restaurant DB đã commit, không thể rollback
-            // Need compensating transaction để rollback booking
+            // Problem: Restaurant DB commited, can not rollback
+            // Need compensating transaction rolled back booking
             compensateBookingUpdate(bookingId);
             throw new RuntimeException("Analytics update failed", e);
         }

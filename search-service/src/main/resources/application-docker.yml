@@ -1,0 +1,30 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.elasticsearch.ElasticsearchReactiveHealthContributorAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.elasticsearch.ElasticsearchHealthContributorAutoConfiguration
+
+  elasticsearch:
+    uris: http://elasticsearch:9200
+
+  datasource:
+    url: jdbc:mysql://mysql:3306/restaurant?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: restaurant_user
+    password: restaurant_pass
+
+management:
+  health:
+    elasticsearch:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.management.search_service: DEBUG
+    org.springframework.boot.actuate: WARN
