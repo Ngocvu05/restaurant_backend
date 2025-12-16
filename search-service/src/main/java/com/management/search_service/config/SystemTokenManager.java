@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Slf4j
 public class SystemTokenManager {
-
     private final RestTemplate restTemplate;
     private String systemToken;
 

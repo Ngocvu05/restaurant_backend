@@ -33,6 +33,8 @@ public class RabbitMQConfig {
     public static final String CONVERT_SESSION_ROUTING_KEY = "chat.routing.convert";
     public static final String USER_TO_USER_ROUTING_KEY = "chat.routing.user2user";
 
+    private static final String ACTION = "x-single-active-consumer";
+
     @Bean
     public TopicExchange chatExchange() {
         return new TopicExchange(CHAT_EXCHANGE);
@@ -41,7 +43,7 @@ public class RabbitMQConfig {
     @Bean
     public Queue chatQueue() {
         return  QueueBuilder.durable(CHAT_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
 
     }
@@ -49,28 +51,28 @@ public class RabbitMQConfig {
     @Bean
     public Queue guestChatQueue() {
         return QueueBuilder.durable(GUEST_CHAT_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
     }
 
     @Bean
     public Queue aiQueue() {
         return  QueueBuilder.durable(AI_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
     }
 
     @Bean
     public Queue responseQueue() {
         return QueueBuilder.durable(RESPONSE_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
     }
 
     @Bean
     public Queue sessionConversionQueue() {
         return QueueBuilder.durable(SESSION_CONVERT_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
     }
 
@@ -102,7 +104,7 @@ public class RabbitMQConfig {
     @Bean
     public Queue userToUserQueue() {
         return QueueBuilder.durable(USER_TO_USER_QUEUE)
-                .withArgument("x-single-active-consumer", true)
+                .withArgument(ACTION, true)
                 .build();
     }
 

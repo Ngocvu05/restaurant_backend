@@ -27,7 +27,7 @@ public class AIWorkerImpl implements IAIWorker {
     private final ChatRoomRepository chatRoomRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Set<String> processingSessionIds = ConcurrentHashMap.newKeySet();
-    @Autowired
+    
     @Qualifier("aiWorkerExecutor")
     private TaskExecutor aiWorkerExecutor;
 

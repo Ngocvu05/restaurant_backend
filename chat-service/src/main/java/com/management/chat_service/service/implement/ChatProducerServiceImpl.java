@@ -26,11 +26,6 @@ public class ChatProducerServiceImpl implements IChatProducerService {
     }
 
     @Override
-    public void sendMessageToChatQueue(ChatMessageRequest request) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.CHAT_ROUTING_KEY, request);
-    }
-
-    @Override
     public void handleGuestAIMessage(ChatMessageRequest request) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.CHAT_EXCHANGE, RabbitMQConfig.AI_ROUTING_KEY, request);
         log.info("🚀 GuestChatService - Sent guest message to AI: {}", request.getMessage());
@@ -42,7 +37,7 @@ public class ChatProducerServiceImpl implements IChatProducerService {
     }
 
     @Override
-    public void sendMessageToChatQueue_v2(ChatMessageRequest request) {
+    public void sendMessageToChatQueue(ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findByRoomId(request.getChatRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("Chat room not found with ID: " + request.getChatRoomId()));
         //handle for first time admin joins the room

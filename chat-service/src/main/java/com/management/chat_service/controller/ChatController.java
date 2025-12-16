@@ -41,7 +41,7 @@ public class ChatController {
                 request.setSenderType(SenderType.USER);
             }
 
-            chatProducerService.sendMessageToChatQueue_v2(request);
+            chatProducerService.sendMessageToChatQueue(request);
             log.info(">>> ChatController - Message sent to queue successfully");
 
             return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");

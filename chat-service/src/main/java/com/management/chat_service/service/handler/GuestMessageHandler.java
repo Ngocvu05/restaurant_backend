@@ -17,7 +17,7 @@ public class GuestMessageHandler implements IChatMessageHandler{
     @Override
     public ChatMessage handleMessage(ChatRoom chatRoom, String senderName, Long senderId, String content) {
         // process message (storage db, send to redis,...)
-        ChatMessage message = ChatMessage.builder()
+        return  ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .senderId(senderId)
                 .senderName(senderName)
@@ -29,6 +29,5 @@ public class GuestMessageHandler implements IChatMessageHandler{
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
-        return  message;
     }
 }

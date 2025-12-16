@@ -100,7 +100,7 @@ public class AdminChatController {
                 request.setSenderType(SenderType.ADMIN);
             }
 
-            chatProducerService.sendMessageToChatQueue_v2(request);
+            chatProducerService.sendMessageToChatQueue(request);
             log.info(">>> AdminChatController - Message sent to queue successfully");
 
             return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");

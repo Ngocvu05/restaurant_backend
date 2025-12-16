@@ -9,136 +9,138 @@ echo ║   Restaurant Management Microservices         ║
 echo ╚═══════════════════════════════════════════════╝
 echo.
 
-REM Set your token here or use environment variable
+REM ==================================================
+REM Sonar token
+REM ==================================================
 if "%SONAR_TOKEN%"=="" (
-    set /p SONAR_TOKEN="Enter SonarQube token: "
+    set /p SONAR_TOKEN="🔑 Enter SonarQube token: "
 )
 
 if "%SONAR_TOKEN%"=="" (
-    echo ❌ Token is required!
+    echo ❌ SonarQube token is required!
     pause
     exit /b 1
 )
 
 set SONAR_HOST=http://localhost:9000
 
-echo [1/6] Checking SonarQube...
+REM ==================================================
+REM Check SonarQube
+REM ==================================================
+echo [1/6] Checking SonarQube status...
 curl -s %SONAR_HOST%/api/system/status 2>nul | findstr "UP" >nul
+
 if errorlevel 1 (
     echo ⚠️  SonarQube not running. Starting...
     docker-compose -f docker-compose.sonarqube.yml up -d
-    echo ⏳ Waiting 120 seconds for SonarQube to start...
+    echo ⏳ Waiting 120 seconds...
     timeout /t 120 /nobreak >nul
-    echo ✅ SonarQube should be ready now
 ) else (
     echo ✅ SonarQube is running
 )
 
 echo.
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo   Starting Analysis...
+echo   🚀 Starting SonarQube Analysis (NO TESTS)
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-REM Track results
 set SUCCESS_COUNT=0
 set TOTAL_COUNT=5
 
+REM ==================================================
+REM user-service
+REM ==================================================
 echo.
 echo [2/6] Analyzing user-service...
 cd backend-service
-call gradlew.bat clean test jacocoTestReport sonar ^
+
+call gradlew.bat sonarAnalyze ^
     -Dsonar.host.url=%SONAR_HOST% ^
     -Dsonar.token=%SONAR_TOKEN% ^
-    -x test ^
     --no-daemon --console=plain
 
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ user-service analysis completed
+    echo ✅ user-service analyzed
     set /a SUCCESS_COUNT+=1
 ) else (
-    echo ❌ user-service analysis failed
+    echo ❌ user-service failed
 )
 cd ..
 
+REM ==================================================
+REM search-service
+REM ==================================================
 echo.
 echo [3/6] Analyzing search-service...
 cd search-service
-call gradlew.bat clean test jacocoTestReport sonar ^
+
+call gradlew.bat sonarAnalyze ^
     -Dsonar.host.url=%SONAR_HOST% ^
     -Dsonar.token=%SONAR_TOKEN% ^
-    -x test ^
     --no-daemon --console=plain
 
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ search-service analysis completed
+    echo ✅ search-service analyzed
     set /a SUCCESS_COUNT+=1
 ) else (
-    echo ❌ search-service analysis failed
+    echo ❌ search-service failed
 )
 cd ..
 
+REM ==================================================
+REM chat-service
+REM ==================================================
 echo.
 echo [4/6] Analyzing chat-service...
 cd chat-service
-call gradlew.bat clean test jacocoTestReport sonar ^
+
+call gradlew.bat sonarAnalyze ^
     -Dsonar.host.url=%SONAR_HOST% ^
     -Dsonar.token=%SONAR_TOKEN% ^
-    -x test ^
     --no-daemon --console=plain
 
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ chat-service analysis completed
+    echo ✅ chat-service analyzed
     set /a SUCCESS_COUNT+=1
 ) else (
-    echo ❌ chat-service analysis failed
+    echo ❌ chat-service failed
 )
 cd ..
 
+REM ==================================================
+REM api-gateway
+REM ==================================================
 echo.
 echo [5/6] Analyzing api-gateway...
 cd api-gateway
-call gradlew.bat clean test jacocoTestReport sonar ^
+
+call gradlew.bat sonarAnalyze ^
     -Dsonar.host.url=%SONAR_HOST% ^
     -Dsonar.token=%SONAR_TOKEN% ^
-    -x test ^
     --no-daemon --console=plain
 
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ api-gateway analysis completed
+    echo ✅ api-gateway analyzed
     set /a SUCCESS_COUNT+=1
 ) else (
-    echo ❌ api-gateway analysis failed
+    echo ❌ api-gateway failed
 )
 cd ..
 
+REM ==================================================
+REM discovery-service
+REM ==================================================
 echo.
-echo [6/6] Skipping discovery-service (Eureka config only)...
+echo [6/6] Skipping discovery-service (Eureka only)
 set /a SUCCESS_COUNT+=1
 
 echo.
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo   Analysis Summary
+echo   📊 Analysis Summary
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo.
-echo   Results: %SUCCESS_COUNT%/%TOTAL_COUNT% services analyzed successfully
-echo.
-echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo.
-echo 📊 View results at: %SONAR_HOST%
-echo.
-echo Projects:
-echo   • restaurant-user-service
-echo   • restaurant-search-service
-echo   • restaurant-chat-service
-echo   • restaurant-api-gateway
-echo   • restaurant-discovery-service (skipped)
+echo   Results: %SUCCESS_COUNT% / %TOTAL_COUNT%
+echo   SonarQube: %SONAR_HOST%
 echo.
 
-if %SUCCESS_COUNT% EQU %TOTAL_COUNT% (
-    echo 🎉 All analyses completed successfully!
-) else (
-    echo ⚠️  Some analyses failed. Check logs for details.
-)
-
-echo.
 pause

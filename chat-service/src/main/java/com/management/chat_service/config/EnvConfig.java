@@ -5,6 +5,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class EnvConfig {
+    private EnvConfig(){
+        throw new IllegalStateException("Utility class");
+    }
+
     private static final Dotenv dotenv = Dotenv.configure()
             .ignoreIfMissing()
             .load();

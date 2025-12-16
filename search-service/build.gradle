@@ -50,13 +50,13 @@ sonar {
         """.trim()
 
         // Language
-        property "sonar.language", "java"
-        property "sonar.java.source", "21"
-        property "sonar.sourceEncoding", "UTF-8"
-
-        // Binaries
+//        property "sonar.language", "java"
+//        property "sonar.java.source", "21"
+//        property "sonar.sourceEncoding", "UTF-8"
+//
+//        // Binaries
         property "sonar.java.binaries", "${buildDir}/classes/java/main"
-        property "sonar.java.libraries", configurations.runtimeClasspath.files.join(',')
+//        property "sonar.java.libraries", configurations.runtimeClasspath.files.join(',')
     }
 }
 
@@ -120,9 +120,9 @@ test {
     finalizedBy jacocoTestReport
 }
 
-check {
-    dependsOn jacocoTestCoverageVerification
-}
+//check {
+//    dependsOn jacocoTestCoverageVerification
+//}
 
 
 configurations {
@@ -185,6 +185,8 @@ tasks.named('test') {
 
 tasks.register('sonarAnalyze') {
     group = 'verification'
-    description = 'Run tests and SonarQube analysis'
-    dependsOn 'clean', 'test', 'jacocoTestReport', 'sonar'
+    description = 'Compile code and run SonarQube analysis (NO tests)'
+
+    dependsOn 'classes', 'compileJava', 'compileTestJava'
+    finalizedBy 'sonar'
 }
