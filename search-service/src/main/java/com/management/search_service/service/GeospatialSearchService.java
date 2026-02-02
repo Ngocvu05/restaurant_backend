@@ -9,6 +9,7 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.management.search_service.document.RestaurantDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,8 +17,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Geospatial Search - Tìm kiếm theo vị trí địa lý
- * Use case: Tìm nhà hàng/món ăn gần người dùng
+ * Geospatial Search with Caching
+ * Location-based queries cached by coordinates + distance
  */
 
 @Service
@@ -27,11 +28,15 @@ public class GeospatialSearchService {
     private final ElasticsearchClient elasticsearchClient;
 
     /**
-     * 1. Tìm nhà hàng trong bán kính (distance) từ vị trí user
-     * Ví dụ: Tìm nhà hàng trong bán kính 5km
+     * 1. Find nearby restaurants - Cache by location + distance
+     * Popular queries cached in L2 (Redis)
      */
-    public List<RestaurantDocument> findNearbyRestaurants(
-            double lat, double lon, String distance) {
+    @Cacheable(value = "search",
+            key = "'geo:nearby:' + #lat + ':' + #lon + ':' + #distance",
+            cacheManager = "redisCacheManager")
+    public List<RestaurantDocument> findNearbyRestaurants(double lat, double lon, String distance) {
+        log.info("Finding nearby restaurants: lat={}, lon={}, distance={} [CACHE MISS]",
+                lat, lon, distance);
         try {
             SearchResponse<RestaurantDocument> response = elasticsearchClient.search(s -> s
                             .index("restaurants")
@@ -77,12 +82,16 @@ public class GeospatialSearchService {
     }
 
     /**
-     * 2. Tìm kiếm trong bounding box (hình chữ nhật)
-     * Useful cho map view
+     * 2. Find in bounding box - Cache by box coordinates
+     * Good for map view caching
      */
-    public List<RestaurantDocument> findInBoundingBox(
-            double topLeftLat, double topLeftLon,
-            double bottomRightLat, double bottomRightLon) {
+    @Cacheable(value = "search",
+            key = "'geo:box:' + #topLeftLat + ':' + #topLeftLon + ':' + #bottomRightLat + ':' + #bottomRightLon",
+            cacheManager = "redisCacheManager")
+    public List<RestaurantDocument> findInBoundingBox(double topLeftLat, double topLeftLon,
+                                                        double bottomRightLat, double bottomRightLon) {
+        log.info("Finding in bounding box: topLeft=[{},{}], bottomRight=[{},{}] [CACHE MISS]",
+                topLeftLat, topLeftLon, bottomRightLat, bottomRightLon);
         try {
             SearchResponse<RestaurantDocument> response = elasticsearchClient.search(s -> s
                             .index("restaurants")
@@ -111,9 +120,12 @@ public class GeospatialSearchService {
     }
 
     /**
-     * 3. Tìm nhà hàng trong polygon (đa giác)
-     * Useful cho khu vực phức tạp (quận, phường)
+     * 3. Find in polygon - Cache by polygon hash
+     * Note: Create a hash of the polygon points for cache key
      */
+    @Cacheable(value = "search",
+            key = "'geo:polygon:' + T(java.util.Objects).hash(#polygonPoints)",
+            cacheManager = "redisCacheManager")
     public List<RestaurantDocument> findInPolygon(List<double[]> polygonPoints) {
         try {
             SearchResponse<RestaurantDocument> response = elasticsearchClient.search(s -> s
@@ -145,11 +157,15 @@ public class GeospatialSearchService {
     }
 
     /**
-     * 4. Combined search: Text search + Geo distance
-     * Tìm "phở" trong bán kính 3km
+     * 4. Combined text + geo search - Cache by keyword + location
+     * High-value query combining multiple factors
      */
-    public List<RestaurantDocument> searchDishesNearby(
-            String keyword, double lat, double lon, String distance) {
+    @Cacheable(value = "search",
+            key = "'geo:combined:' + #keyword + ':' + #lat + ':' + #lon + ':' + #distance",
+            cacheManager = "redisCacheManager")
+    public List<RestaurantDocument> searchDishesNearby(String keyword, double lat, double lon, String distance) {
+        log.info("Searching '{}' nearby: lat={}, lon={}, distance={} [CACHE MISS]",
+                keyword, lat, lon, distance);
         try {
             SearchResponse<RestaurantDocument> response = elasticsearchClient.search(s -> s
                             .index("restaurants")
@@ -198,10 +214,14 @@ public class GeospatialSearchService {
     }
 
     /**
-     * 5. Aggregation by distance
-     * Đếm số nhà hàng theo khoảng cách
+     * 5. Aggregation by distance - Cache for analytics
+     * Expensive aggregation, good cache candidate
      */
+    @Cacheable(value = "analytics",
+            key = "'geo:distance-agg:' + #lat + ':' + #lon",
+            cacheManager = "redisCacheManager")
     public Map<String, Long> countByDistance(double lat, double lon) {
+        log.info("Counting by distance from: lat={}, lon={} [CACHE MISS]", lat, lon);
         try {
             SearchResponse<RestaurantDocument> response = elasticsearchClient.search(s -> s
                             .index("restaurants")

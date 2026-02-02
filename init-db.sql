@@ -368,20 +368,266 @@ INSERT INTO `preorders` VALUES (24, NULL, 2, 5, 1);
 -- Table structure for refresh_token
 -- ----------------------------
 DROP TABLE IF EXISTS `refresh_token`;
-CREATE TABLE `refresh_token`  (
-                                  `id` bigint NOT NULL AUTO_INCREMENT,
-                                  `expiry_date` datetime(6) NULL DEFAULT NULL,
-                                  `token` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-                                  `user_id` bigint NOT NULL,
-                                  PRIMARY KEY (`id`) USING BTREE,
-                                  UNIQUE INDEX `UKr4k4edos30bx9neoq81mdvwph`(`token` ASC) USING BTREE,
-                                  UNIQUE INDEX `UKf95ixxe7pa48ryn1awmh2evt7`(`user_id` ASC) USING BTREE,
-                                  CONSTRAINT `FKjtx87i0jvq2svedphegvdwcuy` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+CREATE TABLE `refresh_token` (
+                                 `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
+                                 `token` VARCHAR(767) NOT NULL COMMENT 'Refresh token value (unique)',
+                                 `user_id` BIGINT NOT NULL COMMENT 'User ID owning this token',
+                                 `expiry_date` DATETIME(6) NOT NULL COMMENT 'Token expiration date',
+
+    -- Audit fields
+                                 `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT 'Token creation timestamp',
+                                 `created_by` VARCHAR(100) DEFAULT 'system' COMMENT 'Username who created this token',
+                                 `updated_at` DATETIME(6) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(6) COMMENT 'Last update timestamp',
+                                 `updated_by` VARCHAR(100) DEFAULT NULL COMMENT 'Username who last updated this token',
+
+    -- Soft delete fields
+                                 `deleted_at` DATETIME(6) NULL DEFAULT NULL COMMENT 'Soft delete timestamp',
+                                 `deleted_by` VARCHAR(100) DEFAULT NULL COMMENT 'Username who deleted this token',
+
+    -- Token revocation fields
+                                 `revoked` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Is token revoked',
+                                 `revoked_at` DATETIME(6) NULL DEFAULT NULL COMMENT 'When token was revoked',
+                                 `revoked_by` VARCHAR(100) DEFAULT NULL COMMENT 'Who revoked the token',
+                                 `revoked_reason` VARCHAR(255) DEFAULT NULL COMMENT 'Reason for revocation',
+
+    -- Security tracking fields
+                                 `ip_address` VARCHAR(45) DEFAULT NULL COMMENT 'IP address when token was created',
+                                 `user_agent` VARCHAR(500) DEFAULT NULL COMMENT 'User agent when token was created',
+                                 `device_id` VARCHAR(255) DEFAULT NULL COMMENT 'Device identifier',
+                                 `device_name` VARCHAR(100) DEFAULT NULL COMMENT 'Device name (e.g., Chrome on Windows)',
+
+    -- Token rotation fields
+                                 `token_family` VARCHAR(100) DEFAULT NULL COMMENT 'Token family ID for rotation tracking',
+                                 `parent_token_id` BIGINT DEFAULT NULL COMMENT 'Previous token in refresh chain',
+
+    -- Usage tracking fields
+                                 `last_used_at` DATETIME(6) NULL DEFAULT NULL COMMENT 'Last time token was used',
+                                 `use_count` INT NOT NULL DEFAULT 0 COMMENT 'Number of times token was used',
+
+    -- Constraints
+                                 PRIMARY KEY (`id`) USING BTREE,
+                                 UNIQUE KEY `uk_refresh_token_token` (`token`) USING BTREE,
+
+    -- Indexes for performance
+                                 INDEX `idx_refresh_token_user_id` (`user_id`) USING BTREE,
+                                 INDEX `idx_refresh_token_expiry_date` (`expiry_date`) USING BTREE,
+                                 INDEX `idx_refresh_token_revoked` (`revoked`) USING BTREE,
+                                 INDEX `idx_refresh_token_deleted_at` (`deleted_at`) USING BTREE,
+                                 INDEX `idx_refresh_token_created_at` (`created_at`) USING BTREE,
+                                 INDEX `idx_refresh_token_token_family` (`token_family`) USING BTREE,
+                                 INDEX `idx_refresh_token_ip_address` (`ip_address`) USING BTREE,
+                                 INDEX `idx_refresh_token_last_used_at` (`last_used_at`) USING BTREE,
+
+    -- Foreign keys
+                                 CONSTRAINT `fk_refresh_token_user`
+                                     FOREIGN KEY (`user_id`)
+                                         REFERENCES `users` (`id`)
+                                         ON DELETE CASCADE
+                                         ON UPDATE RESTRICT,
+
+                                 CONSTRAINT `fk_refresh_token_parent`
+                                     FOREIGN KEY (`parent_token_id`)
+                                         REFERENCES `refresh_token` (`id`)
+                                         ON DELETE SET NULL
+                                         ON UPDATE RESTRICT
+
+) ENGINE=InnoDB
+  AUTO_INCREMENT=1
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci
+    COMMENT='Refresh tokens for JWT authentication';
 
 -- ----------------------------
--- Records of refresh_token
+-- Sample data for refresh_token (Optional)
 -- ----------------------------
+-- INSERT INTO `refresh_token` VALUES
+-- (1, 'sample-token-1', 1, '2026-02-27 00:00:00.000000',
+--  '2026-01-27 00:00:00.000000', 'system', NULL, NULL,
+--  NULL, NULL, FALSE, NULL, NULL, NULL,
+--  '192.168.1.100', 'Mozilla/5.0', 'device-1', 'Chrome on Windows',
+--  'family-1', NULL, NULL, 0);
+
+-- ----------------------------
+-- Create view for active tokens
+-- ----------------------------
+CREATE OR REPLACE VIEW `v_active_refresh_tokens` AS
+SELECT
+    rt.*,
+    u.username,
+    u.email,
+    u.full_name
+FROM refresh_token rt
+         INNER JOIN users u ON rt.user_id = u.id
+WHERE rt.deleted_at IS NULL
+  AND rt.revoked = FALSE
+  AND rt.expiry_date > NOW(6);
+
+-- ----------------------------
+-- Stored Procedures
+-- ----------------------------
+
+-- Procedure 1: Clean up expired tokens
+DROP PROCEDURE IF EXISTS `sp_cleanup_expired_refresh_tokens`;
+
+DELIMITER $$
+
+CREATE PROCEDURE `sp_cleanup_expired_refresh_tokens`()
+BEGIN
+    DECLARE affected_rows INT DEFAULT 0;
+
+    -- Soft delete expired tokens
+    UPDATE refresh_token
+    SET deleted_at = NOW(6),
+        deleted_by = 'system_cleanup',
+        updated_at = NOW(6),
+        updated_by = 'system_cleanup'
+    WHERE expiry_date < NOW(6)
+      AND deleted_at IS NULL
+      AND revoked = FALSE;
+
+    SET affected_rows = ROW_COUNT();
+
+    -- Hard delete tokens older than 90 days
+    DELETE FROM refresh_token
+    WHERE deleted_at < DATE_SUB(NOW(6), INTERVAL 90 DAY)
+       OR (revoked = TRUE AND revoked_at < DATE_SUB(NOW(6), INTERVAL 90 DAY));
+
+    SELECT CONCAT('Cleaned up ', affected_rows, ' expired refresh tokens') AS result;
+END$$
+
+DELIMITER ;
+
+-- Procedure 2: Revoke all tokens for a user
+DROP PROCEDURE IF EXISTS `sp_revoke_user_refresh_tokens`;
+
+DELIMITER $$
+
+CREATE PROCEDURE `sp_revoke_user_refresh_tokens`(
+    IN p_user_id BIGINT,
+    IN p_revoked_by VARCHAR(100),
+    IN p_reason VARCHAR(255)
+)
+BEGIN
+    UPDATE refresh_token
+    SET revoked = TRUE,
+        revoked_at = NOW(6),
+        revoked_by = p_revoked_by,
+        revoked_reason = p_reason,
+        updated_at = NOW(6),
+        updated_by = p_revoked_by
+    WHERE user_id = p_user_id
+      AND deleted_at IS NULL
+      AND revoked = FALSE;
+
+    SELECT ROW_COUNT() AS tokens_revoked;
+END$$
+
+DELIMITER ;
+
+-- Procedure 3: Get token statistics
+DROP PROCEDURE IF EXISTS `sp_get_refresh_token_stats`;
+
+DELIMITER $$
+
+CREATE PROCEDURE `sp_get_refresh_token_stats`()
+BEGIN
+    -- Overall statistics
+    SELECT
+        COUNT(*) AS total_tokens,
+        COUNT(CASE WHEN deleted_at IS NULL AND revoked = FALSE THEN 1 END) AS active_tokens,
+        COUNT(CASE WHEN revoked = TRUE THEN 1 END) AS revoked_tokens,
+        COUNT(CASE WHEN deleted_at IS NOT NULL THEN 1 END) AS deleted_tokens,
+        COUNT(CASE WHEN expiry_date < NOW(6) THEN 1 END) AS expired_tokens,
+        COUNT(DISTINCT user_id) AS unique_users,
+        COUNT(DISTINCT ip_address) AS unique_ip_addresses,
+        AVG(use_count) AS avg_use_count,
+        MAX(use_count) AS max_use_count
+    FROM refresh_token;
+
+    -- Top users by active tokens
+    SELECT
+        u.username,
+        u.email,
+        COUNT(*) AS active_token_count
+    FROM refresh_token rt
+             INNER JOIN users u ON rt.user_id = u.id
+    WHERE rt.deleted_at IS NULL
+      AND rt.revoked = FALSE
+      AND rt.expiry_date > NOW(6)
+    GROUP BY u.username, u.email
+    ORDER BY active_token_count DESC
+    LIMIT 10;
+END$$
+
+DELIMITER ;
+
+-- ----------------------------
+-- Create Event for automatic cleanup
+-- ----------------------------
+DROP EVENT IF EXISTS `evt_cleanup_expired_refresh_tokens`;
+
+CREATE EVENT `evt_cleanup_expired_refresh_tokens`
+    ON SCHEDULE EVERY 1 DAY
+        STARTS CURRENT_TIMESTAMP
+    DO
+    CALL sp_cleanup_expired_refresh_tokens();
+
+-- Enable event scheduler
+SET GLOBAL event_scheduler = ON;
+
+-- =====================================================
+-- VERIFICATION QUERIES
+-- =====================================================
+
+-- Verify table structure
+SELECT
+    COLUMN_NAME,
+    COLUMN_TYPE,
+    IS_NULLABLE,
+    COLUMN_DEFAULT,
+    COLUMN_COMMENT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'refresh_token'
+ORDER BY ORDINAL_POSITION;
+
+-- Verify indexes
+SELECT
+    INDEX_NAME,
+    COLUMN_NAME,
+    SEQ_IN_INDEX,
+    NON_UNIQUE
+FROM INFORMATION_SCHEMA.STATISTICS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'refresh_token'
+ORDER BY INDEX_NAME, SEQ_IN_INDEX;
+
+-- Verify foreign keys
+SELECT
+    CONSTRAINT_NAME,
+    COLUMN_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'refresh_token'
+  AND REFERENCED_TABLE_NAME IS NOT NULL;
+
+-- =====================================================
+-- NOTES FOR USAGE
+-- =====================================================
+-- 1. Thay thế phần định nghĩa bảng refresh_token trong init-db.sql bằng nội dung file này
+-- 2. Không cần chạy file migration riêng biệt
+-- 3. Bảng đã có đầy đủ các fields theo RefreshToken.java entity:
+--    - Audit fields: created_at, created_by, updated_at, updated_by
+--    - Soft delete: deleted_at, deleted_by
+--    - Revocation: revoked, revoked_at, revoked_by, revoked_reason
+--    - Security: ip_address, user_agent, device_id, device_name
+--    - Rotation: token_family, parent_token_id
+--    - Tracking: last_used_at, use_count
+-- 4. Tất cả các indexes đã được tạo sẵn
+-- 5. Stored procedures và event scheduler đã được thiết lập
+-- =====================================================
 
 -- ----------------------------
 -- Table structure for tables
@@ -417,8 +663,9 @@ CREATE TABLE `user_roles`  (
 -- Records of user_roles
 -- ----------------------------
 INSERT INTO `user_roles` VALUES (1, 'ADMIN');
-INSERT INTO `user_roles` VALUES (3, 'CUSTOMER');
 INSERT INTO `user_roles` VALUES (2, 'STAFF');
+INSERT INTO `user_roles` VALUES (3, 'CUSTOMER');
+INSERT INTO `user_roles` VALUES (4, 'SYSTEM');
 
 -- ----------------------------
 -- Table structure for users
@@ -445,10 +692,10 @@ CREATE TABLE `users`  (
 -- ----------------------------
 INSERT INTO `users` VALUES (1, '123 Admin St', '2025-06-25 13:26:46.000000', 'dinhngocvuit@gmail.com', 'Admin User', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0123456789', 'admin', 1);
 INSERT INTO `users` VALUES (2, '456 Customer Ave', '2025-06-25 13:26:46.000000', 'ngocvu.ngoc06@gmail.com', 'Customer A', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654321', 'customer', 3);
-INSERT INTO `users` VALUES (3, 'Thu Duc', '2025-06-26 09:00:10.484677', 'dinhngocvuit@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0962805614', 'admin333', 1);
-INSERT INTO `users` VALUES (4, 'Thu Duc', '2025-07-01 15:18:11.825185', 'ngocvu.ngoc06@gmail.com', 'Push', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654332', 'testpush', 3);
-INSERT INTO `users` VALUES (5, 'Thu Duc', '2025-07-01 16:08:41.616760', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '231231', 'testpush1', 3);
-INSERT INTO `users` VALUES (6, 'Thu Duc', '2025-07-02 15:33:53.182822', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654321', 'newuser', 3);
+INSERT INTO `users` VALUES (3, 'Thu Duc, Ho Chi Minh', '2025-06-26 09:00:10.484677', 'dinhngocvuit@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0962805614', 'admin333', 1);
+INSERT INTO `users` VALUES (4, 'Kim Lien, Ha Noi', '2025-07-01 15:18:11.825185', 'ngocvu.ngoc06@gmail.com', 'Push', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654332', 'testpush', 3);
+INSERT INTO `users` VALUES (5, 'Xuan Loc, Dong Nai', '2025-07-01 16:08:41.616760', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '231231', 'testpush1', 3);
+INSERT INTO `users` VALUES (6, 'Tan Binh, Ho Chi Minh', '2025-07-02 15:33:53.182822', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654321', 'newuser', 3);
 
 -- ----------------------------------
 ALTER TABLE payments

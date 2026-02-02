@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.management.restaurant.model.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.domain.Auditable;
-
-import java.io.Serializable;
 
 @Entity
 @Data

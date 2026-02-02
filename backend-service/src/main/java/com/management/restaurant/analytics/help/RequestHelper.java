@@ -128,7 +128,7 @@ public class RequestHelper {
     }
 
     /**
-     * Phát hiện browser từ User-Agent
+     * Detect browser from User-Agent
      */
     private String detectBrowser(String userAgent) {
         String ua = userAgent.toLowerCase();
@@ -314,4 +314,30 @@ public class RequestHelper {
         }
     }
 
+    /**
+     * Extract device name from User-Agent
+     */
+    public String extractDeviceName(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent == null) {
+            return "Unknown Device";
+        }
+
+        // Parse User-Agent to extract device info
+        if (userAgent.contains("Mobile")) {
+            if (userAgent.contains("iPhone")) return "iPhone";
+            if (userAgent.contains("iPad")) return "iPad";
+            if (userAgent.contains("Android")) return "Android Mobile";
+            return "Mobile Device";
+        }
+
+        if (userAgent.contains("Windows")) return "Windows PC";
+        if (userAgent.contains("Mac")) return "Mac";
+        if (userAgent.contains("Linux")) return "Linux PC";
+        if (userAgent.contains("Chrome")) return "Chrome Browser";
+        if (userAgent.contains("Firefox")) return "Firefox Browser";
+        if (userAgent.contains("Safari")) return "Safari Browser";
+
+        return "Unknown Device";
+    }
 }

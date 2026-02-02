@@ -3,18 +3,23 @@ package com.management.restaurant.service.implement;
 import com.management.restaurant.dto.AuthResponse;
 import com.management.restaurant.dto.OAuth2LoginRequest;
 import com.management.restaurant.event.ChatEventProducer;
+import com.management.restaurant.model.Image;
 import com.management.restaurant.model.RefreshToken;
 import com.management.restaurant.model.User;
+import com.management.restaurant.repository.ImageRepository;
 import com.management.restaurant.repository.RefreshTokenRepository;
 import com.management.restaurant.security.JwtService;
+import com.management.restaurant.service.AuthService;
 import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.oauth2.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -22,7 +27,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class OAuth2ServiceImpl implements OAuth2Service {
-
     private final OAuth2ProviderFactory providerFactory;
     private final UserOAuth2Service userService;
     private final JwtService jwtService;
@@ -30,9 +34,10 @@ public class OAuth2ServiceImpl implements OAuth2Service {
     private final RateLimitService rateLimitService;
     private final AuditService auditService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AuthService authService;
 
     @Override
-    public AuthResponse authenticateOAuth2User(OAuth2LoginRequest request) {
+    public AuthResponse authenticateOAuth2User(OAuth2LoginRequest request, HttpServletRequest httpRequest) {
         String provider = request.getProvider();
         String email = null;
 
@@ -51,7 +56,7 @@ public class OAuth2ServiceImpl implements OAuth2Service {
             //convert chat message data
             handleChatSessionConversion(request, user);
             //build response
-            AuthResponse response = buildAuthResponse(user, token);
+            AuthResponse response = buildAuthResponse(user, token, httpRequest);
 
             auditService.logOAuth2Success(provider, email);
             log.info("OAuth2 login successful for user: {}, provider: {}",
@@ -89,33 +94,55 @@ public class OAuth2ServiceImpl implements OAuth2Service {
         }
     }
 
-    private AuthResponse buildAuthResponse(User user, String token) {
-        return new AuthResponse(
-                user.getId(),
-                token,
-                user.getUsername(),
-                user.getRole().getName().name(),
-                userService.getAvatarUrl(user),
-                user.getEmail(),
-                user.getFullName(),
-                issueRefreshToken(user) // refreshToken
-        );
-    }
+    private AuthResponse buildAuthResponse(User user, String token, HttpServletRequest httpRequest) {
+        String refreshToken = jwtService.generateToken(user);
+        // Validate JWT refresh token
+        if (!jwtService.validateRefreshToken(refreshToken)) {
+            log.warn("❌ Invalid or expired refresh token");
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
 
-    private String issueRefreshToken(User user) {
-        RefreshToken rt = refreshTokenRepository.findByUser_Id(user.getId())
-                .orElseGet(() -> {
-                    RefreshToken n = new RefreshToken();
-                    n.setUser(user);
-                    return n;
-                });
+        // Verify token exists in database
+        RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh token not found in database"));
 
-        String token = UUID.randomUUID() + "." + UUID.randomUUID();
+        // Check if token is valid
+        if (!tokenEntity.isValid()) {
+            log.warn("❌ Token is not valid - expired: {}, revoked: {}, deleted: {}",
+                    tokenEntity.isExpired(),
+                    tokenEntity.isRevoked(),
+                    tokenEntity.getDeletedAt() != null);
+            refreshTokenRepository.delete(tokenEntity);
+            throw new RuntimeException("Refresh token is invalid");
+        }
 
-        rt.setToken(token);
-        rt.setExpiryDate(LocalDateTime.now().plusDays(7));
-        refreshTokenRepository.save(rt);
+        // Check if user is still active
+        if (!user.isActive()) {
+            throw new RuntimeException("User account is not active");
+        }
 
-        return token;
+        // Track usage
+        tokenEntity.incrementUseCount();
+        refreshTokenRepository.save(tokenEntity);
+
+        // Rotate refresh token for security
+        String newRefreshToken = authService.rotateRefreshToken(tokenEntity, user, httpRequest);
+
+        // Generate new access token
+        String newAccessToken = jwtService.generateToken(user);
+
+        log.info("✅ Token refreshed successfully for user: {}", user.getUsername());
+
+        return AuthResponse.builder()
+                .userId(user.getId())
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .username(user.getUsername())
+                .role(user.getRole().getName().name())
+                .avatarUrl(authService.getAvatarUrl(user))
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .emailVerified(user.hasVerifiedEmail())
+                .build();
     }
 }

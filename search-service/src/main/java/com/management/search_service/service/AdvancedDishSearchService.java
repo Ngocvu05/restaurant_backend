@@ -11,10 +11,14 @@ import com.management.search_service.dto.DishSearchResultDto;
 import com.management.search_service.dto.SearchAggregationsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,12 +27,17 @@ import java.util.stream.Collectors;
 public class AdvancedDishSearchService {
 
     private final ElasticsearchClient elasticsearchClient;
+    private final CustomCacheService customCacheService;
 
     /**
-     * 1. FUZZY SEARCH - Tìm kiếm với khả năng chịu lỗi chính tả
-     * Ví dụ: "pho" có thể tìm thấy "phở", "pho bo", "pho ga"
+     * 1. FUZZY SEARCH - Cache với maxEdits parameter
+     * High traffic endpoint - use L1 + L2 cache
      */
+    @Cacheable(value = "search",
+            key = "'fuzzy:' + #keyword + ':' + #maxEdits",
+            cacheManager = "redisCacheManager")
     public List<DishSearchResultDto> fuzzySearch(String keyword, int maxEdits) {
+        log.info("Fuzzy search: keyword={}, maxEdits={} [CACHE MISS]", keyword, maxEdits);
         try {
             SearchResponse<DishDocument> response = elasticsearchClient.search(s -> s
                             .index("dishes")
@@ -57,10 +66,14 @@ public class AdvancedDishSearchService {
     }
 
     /**
-     * 2. AUTOCOMPLETE với N-gram
-     * Gợi ý nhanh khi user đang gõ
+     * 2. AUTOCOMPLETE - L1 cache preferred (fast, frequent access)
+     * Short TTL: 5 minutes
      */
+    @Cacheable(value = "suggestions",
+            key = "'autocomplete:' + #prefix",
+            cacheManager = "caffeineCacheManager")
     public List<String> autocomplete(String prefix) {
+        log.info("Autocomplete for prefix: {} [CACHE MISS]", prefix);
         try {
             SearchResponse<DishDocument> response = elasticsearchClient.search(s -> s
                             .index("dishes")
@@ -100,13 +113,18 @@ public class AdvancedDishSearchService {
     }
 
     /**
-     * 3. AGGREGATIONS - Thống kê và faceted search
-     * Trả về kết quả tìm kiếm + thống kê theo category, price range, rating
+     * 3. AGGREGATIONS - Cache results (complex query, expensive)
+     * Use L2 cache with longer TTL
      */
+    @Cacheable(value = "search",
+            key = "'agg:' + #keyword + ':' + (#category ?: 'null') + ':' + (#minPrice ?: 'null') + ':' + (#maxPrice ?: 'null')",
+            cacheManager = "redisCacheManager")
     public SearchAggregationsDto searchWithAggregations(String keyword,
                                                         String category,
                                                         BigDecimal minPrice,
                                                         BigDecimal maxPrice) {
+        log.info("Aggregations search: keyword={}, category={}, price={}-{} [CACHE MISS]",
+                keyword, category, minPrice, maxPrice);
         try {
             SearchResponse<DishDocument> response = elasticsearchClient.search(s -> {
                 // Build query
@@ -150,10 +168,14 @@ public class AdvancedDishSearchService {
     }
 
     /**
-     * 4. CUSTOM SCORING - Tùy chỉnh thứ tự kết quả
-     * Ưu tiên món ăn: có đánh giá cao, được đặt nhiều, mới cập nhật
+     * 4. CUSTOM SCORING - Cache with keyword
+     * Results may change over time (ratings, orders), so use shorter TTL
      */
+    @Cacheable(value = "search",
+            key = "'scoring:' + #keyword",
+            cacheManager = "redisCacheManager")
     public List<DishSearchResultDto> searchWithCustomScoring(String keyword) {
+        log.info("Custom scoring search for: {} [CACHE MISS]", keyword);
         try {
             SearchResponse<DishDocument> response = elasticsearchClient.search(s -> s
                             .index("dishes")
@@ -211,8 +233,12 @@ public class AdvancedDishSearchService {
     }
 
     /**
-     * 5. MORE LIKE THIS - Tìm món ăn tương tự
+     * 5. MORE LIKE THIS - Cache recommendations
+     * Good candidate for caching as results are stable
      */
+    @Cacheable(value = "search",
+            key = "'similar:' + #dishId + ':' + #size",
+            cacheManager = "redisCacheManager")
     public List<DishDocument> findSimilarDishes(Long dishId, int size) {
         try {
             SearchResponse<DishDocument> response = elasticsearchClient.search(s -> s
@@ -247,6 +273,7 @@ public class AdvancedDishSearchService {
     /**
      * 6. PERCOLATE - Reverse search (lưu query, match với document mới)
      * Useful cho alerting: "Thông báo khi có món phở mới giá < 50k"
+     * Search alerts - Not cached (write operation)
      */
     public void registerSearchAlert(String alertId, String keyword, BigDecimal maxPrice) {
         // Implementation depends on your alerting system
@@ -290,7 +317,7 @@ public class AdvancedDishSearchService {
             );
         }
 
-        // Chỉ show món available
+        // Only show available dishes
         boolQuery.filter(f -> f
                 .term(t -> t
                         .field("isAvailable")

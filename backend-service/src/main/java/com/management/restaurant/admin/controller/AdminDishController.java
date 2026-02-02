@@ -45,6 +45,4 @@ public class AdminDishController {
         dishService.delete(id);
         return ResponseEntity.ok("Deleted");
     }
-
-
 }

@@ -1,18 +1,26 @@
 package com.management.restaurant.service.monitor;
 
+import com.management.restaurant.helper.SessionInfo;
+import com.management.restaurant.helper.TokenStatistics;
+import com.management.restaurant.model.User;
+import com.management.restaurant.repository.RefreshTokenRepository;
+import com.management.restaurant.service.RefreshTokenService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class MetricsService {
     private final MeterRegistry meterRegistry;
-
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenService refreshTokenService;
     /**
      * Record booking creation time
      */
@@ -77,5 +85,38 @@ public class MetricsService {
                 .tag("status", success ? "success" : "failed")
                 .register(meterRegistry)
                 .increment();
+    }
+
+    /**
+     * Get token statistics for monitoring
+     */
+    public TokenStatistics getStatistics() {
+        long totalTokens = refreshTokenRepository.count();
+        long activeTokens = refreshTokenRepository.countByRevokedFalseAndDeletedAtNull();
+        long expiredTokens = refreshTokenRepository.countExpiredTokens(LocalDateTime.now());
+        long revokedTokens = refreshTokenRepository.countByRevokedTrue();
+
+        return TokenStatistics.builder()
+                .totalTokens(totalTokens)
+                .activeTokens(activeTokens)
+                .expiredTokens(expiredTokens)
+                .revokedTokens(revokedTokens)
+                .build();
+    }
+
+    /**
+     * Get user's active sessions (devices)
+     */
+    public List<SessionInfo> getUserActiveSessions(User user) {
+        return refreshTokenService.findActiveTokensByUser(user).stream()
+                .map(token -> SessionInfo.builder()
+                        .deviceId(token.getDeviceId())
+                        .deviceName(token.getDeviceName())
+                        .ipAddress(token.getIpAddress())
+                        .lastUsedAt(token.getLastUsedAt())
+                        .createdAt(token.getCreatedAt())
+                        .useCount(token.getUseCount())
+                        .build())
+                .toList();
     }
 }

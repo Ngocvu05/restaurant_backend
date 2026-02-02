@@ -1,14 +1,12 @@
 package com.management.chat_service.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import lombok.NoArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@NoArgsConstructor
 public class EnvConfig {
-    private EnvConfig(){
-        throw new IllegalStateException("Utility class");
-    }
-
     private static final Dotenv dotenv = Dotenv.configure()
             .ignoreIfMissing()
             .load();

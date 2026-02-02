@@ -1,103 +1,144 @@
 package com.management.restaurant.security;
 
+import com.management.restaurant.dto.security.TokenInfo;
 import com.management.restaurant.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.core.io.Resource;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * JWT Service with RS256 (Asymmetric Encryption)
+ * <p>
+ * Security Benefits of RS256 over HS256:
+ * 1. Private key never leaves the server
+ * 2. Public key can be shared for token verification
+ * 3. Better for microservices architecture
+ * 4. Prevents secret key leakage in client-side code
+ * 5. Supports key rotation without service interruption
+ */
 @Service
 @Slf4j
 @RefreshScope
 public class JwtService {
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    @Value("${jwt.private-key-path:classpath:keys/private_key.pem}")
+    private Resource privateKeyResource;
 
-    // Access token: 15 minutes (recommended for high security)
-    // Can be adjusted based on your security requirements
-    @Value("${jwt.access-token-expiration:900000}")
+    @Value("${jwt.public-key-path:classpath:keys/public_key.pem}")
+    private Resource publicKeyResource;
+
+    @Value("${jwt.access-token-expiration:900000}") // 15 minutes
     private long accessTokenExpiration;
 
-    @Value("${jwt.refresh-token-expiration:604800000}")
+    @Value("${jwt.refresh-token-expiration:604800000}") // 7 days
     private long refreshTokenExpiration;
 
-    private Key getSignKey() {
-        // Checking type of secret key is Base64 or not
-        try {
-            byte[] decoded = Base64.getDecoder().decode(jwtSecret);
-            // If secret is Base64, decoded before use
-            return Keys.hmacShaKeyFor(decoded);
-        } catch (Exception e) {
-            log.info(">>> DEBUG - Secret is NOT Base64, using raw string");
-            return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        }
+    @Value("${jwt.issuer:restaurant-service}")
+    private String issuer;
+
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
+
+    // ========================================
+    // INITIALIZATION
+    // ========================================
+
+    @PostConstruct
+    public void init() throws Exception {
+        log.info("🔑 Initializing JWT Service with RS256...");
+        this.privateKey = loadPrivateKey();
+        this.publicKey = loadPublicKey();
+        log.info("✅ JWT Keys loaded successfully");
     }
 
     /**
-     * Generate access token (short-lived)
-     * <p>
-     * Security features:
-     * - jti (JWT ID) for token tracking and revocation
-     * - iat (issued at) for age validation
-     * - exp (expiration) - 15 minutes default
-     * - nbf (not before) to prevent premature use
+     * Load Private Key from PEM file
+     */
+    private PrivateKey loadPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        //String key = new String(Files.readAllBytes(privateKeyResource.getFile().toPath()))
+        String key = new String(privateKeyResource.getInputStream().readAllBytes())
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+
+        byte[] keyBytes = Base64.getDecoder().decode(key);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+
+        log.info("🔐 Private key loaded from: {}", privateKeyResource.getFilename());
+        return kf.generatePrivate(spec);
+    }
+
+    /**
+     * Load Public Key from PEM file
+     */
+    private PublicKey loadPublicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        //String key = new String(Files.readAllBytes(publicKeyResource.getFile().toPath()))
+        String key = new String(publicKeyResource.getInputStream().readAllBytes())
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+
+        byte[] keyBytes = Base64.getDecoder().decode(key);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+
+        log.info("🔓 Public key loaded from: {}", publicKeyResource.getFilename());
+        return kf.generatePublic(spec);
+    }
+
+    // ========================================
+    // TOKEN GENERATION
+    // ========================================
+
+    /**
+     * Generate Access Token with RS256
      */
     public String generateToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(System.currentTimeMillis() + accessTokenExpiration);
 
-        Key key = getSignKey();
-
         String token = Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("id", user.getId())
-                .claim("role", user.getRole().getName().name())
+                .claim("role", "ROLE_" + user.getRole().getName().name())
                 .claim("type", "access")
                 .setId(UUID.randomUUID().toString())
+                .setIssuer(issuer)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setNotBefore(now)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
 
-        log.info("Generated access token for user: {} (expires in {} minutes)",
+        log.info("✅ Generated access token for user: {} (expires in {} minutes)",
                 user.getUsername(), accessTokenExpiration / 60000);
-
-        //  Check token parse session
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            log.info(">>> DEBUG - Token validation success: {}", claims.getSubject());
-        } catch (Exception e) {
-            log.error(">>> DEBUG - Token validation failed: {}", e.getMessage());
-        }
 
         return token;
     }
 
     /**
-     * Generate REFRESH token (long-lived: 7 days)
-     * <p>
-     * Should be stored in database for:
-     * - Token rotation
-     * - Revocation capability
-     * - Usage tracking
+     * Generate Refresh Token with RS256
      */
     public String generateRefreshToken(User user) {
         Date now = new Date();
@@ -108,9 +149,10 @@ public class JwtService {
                 .claim("id", user.getId())
                 .claim("type", "refresh")
                 .setId(UUID.randomUUID().toString())
+                .setIssuer(issuer)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .signWith(privateKey, SignatureAlgorithm.RS256)  // 🔑 RS256
                 .compact();
 
         log.info("✅ Generated refresh token for user: {} (expires in {} days)",
@@ -119,51 +161,54 @@ public class JwtService {
         return token;
     }
 
+    // ========================================
+    // TOKEN VALIDATION
+    // ========================================
+
     /**
-     * Comprehensive token validation
-     * <p>
-     * Checks:
-     * 1. Signature validity
-     * 2. Token not expired
-     * 3. Token is access type (not refresh)
-     * 4. NotBefore timestamp valid
-     * 5. Token age reasonable
+     * Validate Access Token using Public Key
      */
     public boolean validateToken(String token) {
         try {
             Claims claims = getClaims(token);
 
-            // Check 1: Expiration
+            // Check 1: Issuer validation
+            if (!issuer.equals(claims.getIssuer())) {
+                log.warn("❌ Invalid issuer: {}", claims.getIssuer());
+                return false;
+            }
+
+            // Check 2: Expiration
             if (claims.getExpiration().before(new Date())) {
                 log.warn("❌ Token expired for user: {}", claims.getSubject());
                 return false;
             }
 
-            // Check 2: Not Before
+            // Check 3: Not Before
             if (claims.getNotBefore() != null && claims.getNotBefore().after(new Date())) {
                 log.warn("❌ Token not yet valid for user: {}", claims.getSubject());
                 return false;
             }
 
-            // Check 3: Token type (must be "access")
+            // Check 4: Token type (must be "access")
             String tokenType = claims.get("type", String.class);
             if (!"access".equals(tokenType)) {
                 log.warn("❌ Invalid token type: {} for user: {}", tokenType, claims.getSubject());
                 return false;
             }
 
-            // Check 4: Token age (prevent very old tokens)
+            // Check 5: Token age
             Date issuedAt = claims.getIssuedAt();
             if (issuedAt != null) {
                 long tokenAge = System.currentTimeMillis() - issuedAt.getTime();
-                if (tokenAge > accessTokenExpiration + 60000) { // +1 min grace period
+                if (tokenAge > accessTokenExpiration + 60000) {
                     log.warn("❌ Token too old for user: {} (age: {} ms)",
                             claims.getSubject(), tokenAge);
                     return false;
                 }
             }
 
-            log.info("✅ Token validated successfully for user: {}", claims.getSubject());
+            log.debug("✅ Token validated successfully for user: {}", claims.getSubject());
             return true;
 
         } catch (ExpiredJwtException e) {
@@ -176,11 +221,17 @@ public class JwtService {
     }
 
     /**
-     * Validate refresh token
+     * Validate Refresh Token
      */
     public boolean validateRefreshToken(String token) {
         try {
             Claims claims = getClaims(token);
+
+            // Check issuer
+            if (!issuer.equals(claims.getIssuer())) {
+                log.warn("❌ Invalid refresh token issuer");
+                return false;
+            }
 
             // Check token type
             String tokenType = claims.get("type", String.class);
@@ -203,30 +254,44 @@ public class JwtService {
         }
     }
 
+    // ========================================
+    // TOKEN PARSING
+    // ========================================
+
     /**
-     *  Extract username from token
+     * Get Claims using Public Key
+     */
+    public Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(publicKey)  // 🔑 Use public key for verification
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    /**
+     * Extract username from token
      */
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
     /**
-     * Get token ID (jti) for revocation tracking
+     * Get token ID (jti)
      */
     public String getTokenId(String token) {
         return getClaims(token).getId();
     }
 
     /**
-     * Get token expiration date
+     * Get token expiration
      */
     public Date getTokenExpiration(String token) {
         return getClaims(token).getExpiration();
     }
 
     /**
-     * Get remaining time until token expires (in seconds)
-     * Useful for Redis TTL when blacklisting
+     * Get remaining time in seconds
      */
     public long getTokenRemainingTime(String token) {
         try {
@@ -254,18 +319,7 @@ public class JwtService {
     }
 
     /**
-     * Get all claims from token
-     */
-    public Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    /**
-     * Build UserPrincipal from token claims
+     * Build UserPrincipal from token
      */
     public UserPrincipal getUserFromToken(String token) {
         Claims claims = getClaims(token);
@@ -277,13 +331,13 @@ public class JwtService {
         return new UserPrincipal(
                 id,
                 username,
-                null, // Never store password in token
+                null,
                 Collections.singletonList(new SimpleGrantedAuthority(role))
         );
     }
 
     /**
-     * Get detailed token information (for debugging)
+     * Get detailed token information
      */
     public TokenInfo getTokenInfo(String token) {
         try {
@@ -295,6 +349,7 @@ public class JwtService {
                     .userId(claims.get("id", Long.class))
                     .role(claims.get("role", String.class))
                     .type(claims.get("type", String.class))
+                    .issuer(claims.getIssuer())
                     .issuedAt(claims.getIssuedAt())
                     .expiresAt(claims.getExpiration())
                     .notBefore(claims.getNotBefore())
@@ -307,22 +362,10 @@ public class JwtService {
         }
     }
 
-    // ========================================
-    // INNER CLASS: Token Information
-    // ========================================
-
-    @lombok.Data
-    @lombok.Builder
-    public static class TokenInfo {
-        private String tokenId;
-        private String username;
-        private Long userId;
-        private String role;
-        private String type;
-        private Date issuedAt;
-        private Date expiresAt;
-        private Date notBefore;
-        private boolean isExpired;
-        private long remainingSeconds;
+    /**
+     * Get Public Key as String (for sharing with other services)
+     */
+    public String getPublicKeyString() {
+        return Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
 }

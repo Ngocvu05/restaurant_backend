@@ -152,9 +152,20 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // Actuator but not auto-config Elasticsearch health
     implementation('org.springframework.boot:spring-boot-starter-actuator')
+
+    // JCache support
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.hibernate:hibernate-jcache:6.4.4.Final'
+    implementation 'javax.cache:cache-api:1.1.1'
+    implementation 'io.lettuce:lettuce-core'
+
+    // JCache provider ( Caffeine performance cache ):
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'com.github.ben-manes.caffeine:jcache:3.1.8'
 
     // Prometheus metrics -> monitoring
     implementation 'io.micrometer:micrometer-registry-prometheus'

@@ -10,6 +10,9 @@ import co.elastic.clients.util.NamedValue;
 import com.management.search_service.dto.SearchAnalyticsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +24,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class SearchAnalyticsService {
-
     private final ElasticsearchClient elasticsearchClient;
     private static final String ANALYTICS_INDEX = "search_analytics";
 
     /**
-     * Track search event (async để không ảnh hưởng performance)
+     * Track search event - Evict analytics caches
+     * Async to not impact search performance
      */
     @Async
+    @Caching(evict = {
+            @CacheEvict(value = "analytics", key = "'top:*'", allEntries = true, cacheManager = "redisCacheManager"),
+            @CacheEvict(value = "analytics", key = "'zero:*'", allEntries = true, cacheManager = "redisCacheManager"),
+            @CacheEvict(value = "analytics", key = "'trending'", cacheManager = "redisCacheManager"),
+            @CacheEvict(value = "analytics", key = "'ctr:*'", allEntries = true, cacheManager = "redisCacheManager")
+    })
     public void trackSearch(String keyword, Long resultCount, String userId, String sessionId) {
         try {
             Map<String, Object> document = new HashMap<>();
@@ -51,9 +60,10 @@ public class SearchAnalyticsService {
     }
 
     /**
-     * Track click event
+     * Track click event - Evict CTR cache
      */
     @Async
+    @CacheEvict(value = "analytics", key = "'ctr:*'", allEntries = true, cacheManager = "redisCacheManager")
     public void trackClick(String keyword, Long dishId, int position, String sessionId) {
         try {
             Map<String, Object> document = new HashMap<>();
@@ -76,8 +86,12 @@ public class SearchAnalyticsService {
     }
 
     /**
-     * Get top searched keywords (last N days)
+     * Get top searched keywords - Cache for 1 hour
+     * High-value query, expensive aggregation
      */
+    @Cacheable(value = "analytics",
+            key = "'top:' + #limit + ':' + #daysBack",
+            cacheManager = "redisCacheManager")
     public List<SearchAnalyticsDto> getTopSearches(int limit, int daysBack) {
         try {
             String timeFilter = "now-" + daysBack + "d/d";
@@ -146,9 +160,12 @@ public class SearchAnalyticsService {
     }
 
     /**
-     * Get zero-result searches (để improve indexing)
-     * Useful để biết user đang tìm gì mà không có kết quả
+     * Get zero-result searches - Cache for 1 hour
+     * Important for SEO and content strategy
      */
+    @Cacheable(value = "analytics",
+            key = "'zero:' + #limit + ':' + #daysBack",
+            cacheManager = "redisCacheManager")
     public List<SearchAnalyticsDto> getZeroResultSearches(int limit, int daysBack) {
         try {
             String timeFilter = "now-" + daysBack + "d/d";
@@ -213,11 +230,15 @@ public class SearchAnalyticsService {
     }
 
     /**
-     * Get trending searches (searches với growth rate cao)
+     * Get trending searches - Cache for 30 minutes
+     * Complex calculation, good cache candidate
      */
+    @Cacheable(value = "analytics",
+            key = "'trending:' + #limit",
+            cacheManager = "redisCacheManager")
     public List<SearchAnalyticsDto> getTrendingSearches(int limit) {
         try {
-            // So sánh 7 ngày gần nhất vs 7 ngày trước đó
+            // Compare last 7 days vs previous 7 days
             SearchResponse<Map> recentResponse = elasticsearchClient.search(s -> s
                             .index(ANALYTICS_INDEX)
                             .size(0)
@@ -286,8 +307,12 @@ public class SearchAnalyticsService {
     }
 
     /**
-     * Get click-through rate (CTR) by keyword
+     * Get click-through rates - Cache for 30 minutes
+     * Expensive dual query
      */
+    @Cacheable(value = "analytics",
+            key = "'ctr:' + #daysBack",
+            cacheManager = "redisCacheManager")
     public Map<String, Double> getClickThroughRates(int daysBack) {
         try {
             String timeFilter = "now-" + daysBack + "d/d";

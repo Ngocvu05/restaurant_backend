@@ -1,11 +1,11 @@
 package com.management.restaurant.service.advance;
 
+import com.management.restaurant.analytics.service.LockingExamplesService;
 import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.model.Dish;
 import com.management.restaurant.model.TableEntity;
 import com.management.restaurant.repository.DishRepository;
 import com.management.restaurant.repository.TableRepository;
-import com.management.restaurant.analytics.service.LockingExamplesService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.LockTimeoutException;

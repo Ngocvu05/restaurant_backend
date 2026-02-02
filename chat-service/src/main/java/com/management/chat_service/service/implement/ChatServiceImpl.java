@@ -28,7 +28,8 @@ public class ChatServiceImpl implements IChatService {
     private final IChatWebSocketService chatWebSocketService;
 
     @Override
-    public ChatMessageDTO processMessage(String roomId, Long senderId, String senderName, String content, SenderType senderType) {
+    public ChatMessageDTO processMessage(String roomId, Long senderId, String senderName, String content,
+                                         SenderType senderType) {
         ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
 

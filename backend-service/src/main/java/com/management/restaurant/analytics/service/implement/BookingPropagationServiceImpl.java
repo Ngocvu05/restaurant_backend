@@ -1,6 +1,7 @@
 package com.management.restaurant.analytics.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
+import com.management.restaurant.analytics.service.BookingPropagationService;
 import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.model.Booking;
 import com.management.restaurant.model.Notification;
@@ -8,7 +9,6 @@ import com.management.restaurant.model.OrderHistory;
 import com.management.restaurant.repository.BookingRepository;
 import com.management.restaurant.repository.NotificationRepository;
 import com.management.restaurant.repository.OrderHistoryRepository;
-import com.management.restaurant.analytics.service.BookingPropagationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

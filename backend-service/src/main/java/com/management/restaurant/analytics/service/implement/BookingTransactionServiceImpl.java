@@ -2,7 +2,6 @@ package com.management.restaurant.analytics.service.implement;
 
 import com.management.restaurant.admin.service.NotificationService;
 import com.management.restaurant.analytics.service.BookingTransactionService;
-import com.management.restaurant.analytics.service.MongoUserSessionService;
 import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.contains.TableStatus;
 import com.management.restaurant.exception.ResourceNotFoundException;

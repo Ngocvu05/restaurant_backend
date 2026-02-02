@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  config:
+    activate:
+      on-profile: docker
+
   application:
     name: api-gateway
   main:
@@ -47,6 +51,10 @@ spring:
 
       default-filters:
         - PreserveHostHeader
+        - name: LocalResponseCache
+          args:
+            size: 100MB
+            timeToLive: 5m
 
   data:
     redis:
@@ -104,8 +112,9 @@ management:
       enabled: true
 
 jwt:
-  secret: ${JWT_SECRET}
-  algorithm: HS256
+  public-key-path: classpath:keys/public_key.pem
+  access-token-expiration: 900000        # 15 minutes
+  issuer: restaurant-service
 
 logging:
   level:

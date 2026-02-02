@@ -10,7 +10,6 @@ import com.management.chat_service.status.SenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
@@ -27,7 +26,7 @@ public class AIWorkerImpl implements IAIWorker {
     private final ChatRoomRepository chatRoomRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Set<String> processingSessionIds = ConcurrentHashMap.newKeySet();
-    
+
     @Qualifier("aiWorkerExecutor")
     private TaskExecutor aiWorkerExecutor;
 

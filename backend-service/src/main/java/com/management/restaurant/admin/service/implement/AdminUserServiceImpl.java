@@ -7,7 +7,9 @@ import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.mapper.UserMapper;
 import com.management.restaurant.model.User;
 import com.management.restaurant.repository.UserRepository;
+import com.management.restaurant.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,11 +17,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
     private final UserRepository userRepository;
     private final UserRoleCache userRoleCache;
     private final UserMapper userMapper;
+    private final AuthService authService;
 
     @Override
     public List<UserDTO> getAllUsers() {
@@ -71,5 +75,38 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public void delete(Long id) {
         userRepository.deleteById(id);
+    }
+
+    /**
+     * @param userId
+     * @param durationMinutes
+     */
+    @Override
+    public void lockUserAccount(Long userId, int durationMinutes) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.lockAccount(durationMinutes);
+        userRepository.save(user);
+
+        // Revoke all tokens
+        authService.revokeAllUserTokens(userId);
+
+        log.info("✅ Account locked for user: {} (duration: {} minutes)",
+                user.getUsername(), durationMinutes);
+    }
+
+    /**
+     * @param userId
+     */
+    @Override
+    public void unlockUserAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.unlockAccount();
+        userRepository.save(user);
+
+        log.info("✅ Account unlocked for user: {}", user.getUsername());
     }
 }

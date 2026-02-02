@@ -14,4 +14,14 @@ public interface AdminUserService {
     UserDTO update(Long id, UserDTO dto);
 
     void delete(Long id);
+
+    /**
+     * Admin: Lock user account
+     */
+    void lockUserAccount(Long userId, int durationMinutes);
+
+    /**
+     * Admin: Unlock user account
+     */
+    void unlockUserAccount(Long userId);
 }

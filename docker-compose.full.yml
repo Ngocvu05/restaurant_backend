@@ -3,6 +3,9 @@ services:
     image: mysql:8
     container_name: mysql
     restart: always
+    command: >
+      --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      --default-time-zone='+07:00'
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: restaurant
@@ -20,6 +23,7 @@ services:
       - ./init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
       - ./init-analytics-db.sql:/docker-entrypoint-initdb.d/02-init-analytics-db.sql
       - ./init-chat-db.sql:/docker-entrypoint-initdb.d/03-init-chat-db.sql
+      - ./init-refresh-token-migration.sql:/docker-entrypoint-initdb.d/04-init-refresh-token-migration.sql
     networks:
       - microservices-network
 
@@ -205,7 +209,6 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
       # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # Email Configuration
@@ -285,7 +288,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
-      - JWT_SECRET=${JWT_SECRET}
+      #- JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
       # Logging Configuration
       - LOG_FILE_PATH=./logs/<service-name>.log
@@ -372,7 +375,6 @@ services:
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
 
       # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # WebSocket Configuration
@@ -453,7 +455,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
-      - JWT_SECRET=${JWT_SECRET}
+      #- JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # Gateway routes for chat service
@@ -555,17 +557,17 @@ services:
       - microservices-network
 
   # MySQL Exporter for Prometheus
-#  mysql-exporter:
-#    image: prom/mysqld-exporter:latest
-#    container_name: mysql-exporter
-#    environment:
-#      - DATA_SOURCE_NAME=restaurant_user:restaurant_pass@(mysql:3306)/restaurant
-#    ports:
-#      - "9104:9104"
-#    depends_on:
-#      - mysql
-#    networks:
-#      - microservices-network
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    environment:
+      - DATA_SOURCE_NAME=restaurant_user:restaurant_pass@(mysql:3306)/restaurant
+    ports:
+      - "9104:9104"
+    depends_on:
+      - mysql
+    networks:
+      - microservices-network
 
   # Redis Exporter for Prometheus
   redis-exporter:

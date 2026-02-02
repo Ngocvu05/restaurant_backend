@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/backend-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/chat-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/chat-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/search-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/search-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/search-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/search-service.test.iml" />
     </modules>
   </component>
 </project>

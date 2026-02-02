@@ -4,6 +4,34 @@ spring:
       - org.springframework.boot.actuate.autoconfigure.elasticsearch.ElasticsearchReactiveHealthContributorAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.data.elasticsearch.ElasticsearchHealthContributorAutoConfiguration
 
+  data:
+    # Redis Configuration (L2 Cache)
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:admin}
+      database: 1  # Use database 1 (user-service uses 0)
+      timeout: 60000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+  # Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000      # 1 hour
+      cache-null-values: false
+      key-prefix: "search:"      # Prefix for search service
+      use-key-prefix: true
+
+    # Caffeine (L1 Cache)
+    caffeine:
+      initial-capacity: 100
+      maximum-size: 1000
+      expire-after-write: 10     # minutes
+
   elasticsearch:
     uris: http://elasticsearch:9200
 
