@@ -698,6 +698,70 @@ INSERT INTO `users` VALUES (5, 'Xuan Loc, Dong Nai', '2025-07-01 16:08:41.616760
 INSERT INTO `users` VALUES (6, 'Tan Binh, Ho Chi Minh', '2025-07-02 15:33:53.182822', 'ngocvu.ngoc06@gmail.com', 'Ngoc Vu', '$2a$10$/MIrJqi2rExvSW6.tc7/hO587VjHxUOjO7CUbYzVFQsRWKExsfA.e', '0987654321', 'newuser', 3);
 
 -- ----------------------------------
+CREATE TABLE IF NOT EXISTS oauth2_links (
+                                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- User reference
+                                            user_id BIGINT NOT NULL,
+
+    -- OAuth2 provider info
+                                            provider VARCHAR(50) NOT NULL COMMENT 'OAuth2 provider name (google, facebook, github, apple, etc.)',
+                                            provider_user_id VARCHAR(255) NOT NULL COMMENT 'Unique user ID from OAuth2 provider',
+                                            provider_email VARCHAR(255),
+                                            provider_display_name VARCHAR(255),
+                                            provider_picture_url VARCHAR(500),
+
+    -- Token storage (should be encrypted in prod)
+                                            access_token VARCHAR(1000),
+                                            refresh_token VARCHAR(1000),
+                                            token_expires_at TIMESTAMP NULL,
+                                            scopes VARCHAR(500),
+
+    -- Tracking
+                                            linked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                            last_used_at TIMESTAMP NULL,
+                                            is_primary BOOLEAN DEFAULT FALSE COMMENT 'Primary OAuth2 provider for user',
+
+    -- Metadata
+                                            metadata TEXT,
+
+    -- Audit fields (Soft delete)
+                                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                            updated_at TIMESTAMP NULL,
+                                            deleted_at TIMESTAMP NULL,
+                                            created_by VARCHAR(255),
+                                            updated_by VARCHAR(255),
+                                            deleted_by VARCHAR(255),
+
+    -- Constraints
+                                            CONSTRAINT fk_oauth2_links_user
+                                                FOREIGN KEY (user_id)
+                                                    REFERENCES users(id)
+                                                    ON DELETE CASCADE,
+
+                                            CONSTRAINT uk_user_provider
+                                                UNIQUE (user_id, provider)
+) COMMENT='Stores OAuth2 provider links for users';
+
+CREATE INDEX idx_oauth2_links_user_id
+    ON oauth2_links(user_id, deleted_at);
+
+CREATE INDEX idx_oauth2_links_provider
+    ON oauth2_links(provider, deleted_at);
+
+CREATE INDEX idx_oauth2_links_provider_user_id
+    ON oauth2_links(provider, provider_user_id);
+
+CREATE INDEX idx_oauth2_links_provider_email
+    ON oauth2_links(provider, provider_email);
+
+CREATE INDEX idx_oauth2_links_token_expiry
+    ON oauth2_links(token_expires_at);
+
+CREATE INDEX idx_oauth2_links_last_used
+    ON oauth2_links(last_used_at, deleted_at);
+-- ---------------------------------------------
+
 ALTER TABLE payments
     MODIFY COLUMN payment_method
         ENUM('CASH','CARD','BANK_TRANSFER','MOMO','VNPAY')

@@ -62,18 +62,29 @@ public class SystemTokenManager {
                 HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
                 ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
+                // Direct accessToken field (no wrapper)
                 if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                     Map<String, Object> body = response.getBody();
                     log.info("📥 Response body: {}", body);
                     String token = null;
-                    if (body.containsKey("success") && body.get("success") == Boolean.TRUE) {
-                        // Format has wrapper
+                    if (body.containsKey("accessToken")) {
+                        token = (String) body.get("accessToken");
+                        log.info("✅ Found accessToken in direct format");
+                    }
+                    // Legacy format with wrapper (fallback)
+                    else if (body.containsKey("success") && body.get("success") == Boolean.TRUE) {
                         Map<String, Object> data = (Map<String, Object>) body.get("data");
-                        token = data.containsKey("accessToken")
-                                ? (String) data.get("accessToken")
-                                : (String) data.get("token");
-                    } else if (body.containsKey("token")) {
+                        if (data != null) {
+                            token = data.containsKey("accessToken")
+                                    ? (String) data.get("accessToken")
+                                    : (String) data.get("token");
+                            log.info("✅ Found token in wrapped format");
+                        }
+                    }
+                    // Very old format
+                    else if (body.containsKey("token")) {
                         token = (String) body.get("token");
+                        log.info("✅ Found token in legacy format");
                     }
 
                     if (token != null && !token.isEmpty()) {
@@ -82,8 +93,15 @@ public class SystemTokenManager {
                         log.info("Token: {}...{}",
                                 systemToken.substring(0, Math.min(20, systemToken.length())),
                                 systemToken.substring(Math.max(0, systemToken.length() - 10)));
+                        // Extract and log token info
+                        String[] parts = token.split("\\.");
+                        if (parts.length == 3) {
+                            log.info("📊 Token structure: Header.Payload.Signature ✓");
+                        }
+
                         return;
                     }
+                    throw new RuntimeException("No token found in response. Keys present: " + body.keySet());
                 }
 
                 throw new RuntimeException("Invalid response from auth service: " + response.getBody());

@@ -67,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RequestHelper requestHelper;
+
     @Autowired
     private ImageRepository imageRepository;
     @Autowired
@@ -317,7 +318,6 @@ public class AuthServiceImpl implements AuthService {
         revokeAllUserTokens(user.getId());
 
         userRepository.save(user);
-
         log.info("✅ Password reset successfully for user: {}", user.getUsername());
     }
 

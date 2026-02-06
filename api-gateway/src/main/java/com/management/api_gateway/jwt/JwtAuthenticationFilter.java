@@ -20,7 +20,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.Set;
 
 /**
- * JWT Authentication Filter for API Gateway
+ * JWT Authentication Filter for API Gateway </br>
  * Uses RS256 with Public Key verification
  */
 @Slf4j

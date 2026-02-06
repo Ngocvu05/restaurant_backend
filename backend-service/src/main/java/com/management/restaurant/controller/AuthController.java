@@ -61,7 +61,8 @@ public class AuthController {
         // 3. Call service to register
         AuthResponse response = authService.register(request, avatarFile);
         // Send notification to admin
-        notificationService.notifyAllAdmins("New Account", "Người dùng mới đã tạo tài khoản: " + request.getUsername());
+        notificationService.notifyAllAdmins("New Account", "Người dùng mới đã tạo tài khoản: "
+                + request.getUsername());
         return ResponseEntity.ok(response);
     }
 
@@ -94,7 +95,8 @@ public class AuthController {
     }
 
     @PostMapping("/oauth2/login")
-    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request,
+                                                    HttpServletRequest httpRequest) {
         try {
             log.info("📥 OAuth2 login attempt: provider={}, email={}", request.getProvider(), request.getEmail());
             AuthResponse response = oAuth2Service.authenticateOAuth2User(request, httpRequest);
@@ -108,7 +110,8 @@ public class AuthController {
             log.error("OAuth2 login failed", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthResponse(null, null, null, null, null, null,
-                            null, null, false, false));
+                            null, null, false, false,
+                            false, null, null, null, null));
         }
     }
 }

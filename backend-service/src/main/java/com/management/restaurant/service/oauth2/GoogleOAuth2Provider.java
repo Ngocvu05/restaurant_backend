@@ -38,7 +38,7 @@ public class GoogleOAuth2Provider implements OAuth2Provider {
     private GoogleIdToken.Payload verifyGoogleIdToken(String idTokenString) throws Exception {
         String googleClientId = EnvConfig.get("GOOGLE_CLIENT_ID");
 
-        if (googleClientId == null || googleClientId.isEmpty()) {
+        if (googleClientId.isEmpty()) {
             throw new IllegalStateException("GOOGLE_CLIENT_ID not configured");
         }
 

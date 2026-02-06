@@ -14,24 +14,24 @@ import java.time.LocalDateTime;
 
 /**
  * Base Entity with Soft Delete support
- *
+ * <p>
  * Entities that extend this class will:
  * 1. Never be physically deleted from database
  * 2. Be marked as "deleted" with timestamp when delete() is called
  * 3. Be automatically filtered from queries (using @Where clause)
  * 4. Track who deleted the record
- *
+ * <p>
  * How Soft Delete works:
  * - When you call repository.delete(entity):
  *   → @SQLDelete intercepts the DELETE SQL
  *   → Converts it to UPDATE statement setting deleted_at = NOW()
  *   → Entity still exists in database but marked as deleted
- *
+ * <p>
  * - When you call repository.findAll() or any query:
  *   → @Where(clause = "deleted_at IS NULL") automatically added to SQL
  *   → Only returns entities where deleted_at is NULL (not deleted)
  *   → Deleted entities are hidden from normal queries
- *
+ * <p>
  * Example usage:
  *
  * @Entity
@@ -39,11 +39,11 @@ import java.time.LocalDateTime;
  *     private String username;
  *     // ... other fields
  * }
- *
+ * <p>
  * // When you delete:
  * userRepository.delete(user);
  * // SQL: UPDATE users SET deleted_at = NOW(), deleted_by = 'admin' WHERE id = 1
- *
+ * <p>
  * // When you query:
  * userRepository.findAll();
  * // SQL: SELECT * FROM users WHERE deleted_at IS NULL
@@ -60,10 +60,10 @@ public abstract class SoftDeletableEntity extends BaseEntity {
 
     /**
      * Timestamp when entity was soft deleted
-     *
+     * <p>
      * - NULL     = Entity is active (not deleted)
      * - NOT NULL = Entity is deleted (soft deleted)
-     *
+     * <p>
      * This field is automatically set by @SQLDelete annotation
      * when repository.delete() is called
      */
@@ -72,10 +72,10 @@ public abstract class SoftDeletableEntity extends BaseEntity {
 
     /**
      * Username of user who deleted this entity
-     *
+     * <p>
      * This is automatically populated by @SQLDelete using CURRENT_USER
      * which comes from the database session user
-     *
+     * <p>
      * Note: If you need more control over who deleted,
      * you can manually call markAsDeleted(username) instead of repository.delete()
      */
@@ -104,10 +104,10 @@ public abstract class SoftDeletableEntity extends BaseEntity {
 
     /**
      * Manually mark entity as deleted (soft delete)
-     *
+     * <p>
      * Use this method when you want to soft delete without calling repository.delete()
      * This gives you more control over the deletion process
-     *
+     * <p>
      * Example:
      * user.markAsDeleted("admin");
      * userRepository.save(user);
@@ -121,14 +121,14 @@ public abstract class SoftDeletableEntity extends BaseEntity {
 
     /**
      * Restore a soft deleted entity
-     *
+     * <p>
      * This unmarks the entity as deleted, making it active again
-     *
+     * <p>
      * Example:
      * User deletedUser = // get from database including deleted
      * deletedUser.restore();
      * userRepository.save(deletedUser);
-     *
+     * <p>
      * Note: To query deleted entities, you need native query:
      * @Query(value = "SELECT * FROM users WHERE id = :id", nativeQuery = true)
      * User findByIdIncludingDeleted(@Param("id") Long id);

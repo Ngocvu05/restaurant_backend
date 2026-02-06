@@ -18,27 +18,27 @@ import java.time.LocalDateTime;
  * Base Entity with automatic auditing support
  * <p>
  * All entities should extend this class to get:
- * - Automatic ID generation (Long type with auto increment)
- * - Created date tracking (when entity was first persisted)
- * - Created by tracking (username who created the entity)
- * - Updated date tracking (when entity was last modified)
- * - Updated by tracking (username who last modified the entity)
+ * <p>- Automatic ID generation (Long type with auto increment)</p>
+ * <p>- Created date tracking (when entity was first persisted)</p>
+ * <p>- Created by tracking (username who created the entity)</p>
+ * <p>- Updated date tracking (when entity was last modified)</p>
+ * <p>- Updated by tracking (username who last modified the entity)</p>
  * <p>
  * How auditing works:
- * 1. @EntityListeners(AuditingEntityListener.class) registers JPA listener
- * 2. When entity is saved, JPA triggers the listener
- * 3. Listener calls AuditorAwareImpl to get current username
- * 4. Automatically populates @CreatedBy and @LastModifiedBy fields
- * 5. Automatically populates @CreatedDate and @LastModifiedDate fields
+ * <p>1. @EntityListeners(AuditingEntityListener.class) registers JPA listener</p>
+ * <p>2. When entity is saved, JPA triggers the listener</p>
+ * <p>3. Listener calls AuditorAwareImpl to get current username</p>
+ * <p>4. Automatically populates @CreatedBy and @LastModifiedBy fields</p>
+ * <p>5. Automatically populates @CreatedDate and @LastModifiedDate fields</p>
  * <p>
  * Example usage:
  *
  * @Entity
  * public class Product extends BaseEntity {
- *     private String name;
- *     private BigDecimal price;
- *     // No need to add id, createdAt, createdBy, etc.
- *     // They are inherited from BaseEntity
+ * <p>   private String name;</p>
+ * <p>   private BigDecimal price;</p>
+ * <p>   No need to add id, createdAt, createdBy, etc.</p>
+ * <p>   They are inherited from BaseEntity</p>
  * }
  * <p>
  * When you save:
@@ -46,20 +46,20 @@ import java.time.LocalDateTime;
  * product.setName("iPhone");
  * productRepository.save(product);
  * <p>
- * // Automatically populated:
- * // product.id = 1 (auto generated)
- * // product.createdAt = 2025-01-01 10:00:00
- * // product.createdBy = "admin" (from SecurityContext)
- * // product.updatedAt = null (not updated yet)
- * // product.updatedBy = null
+ * Automatically populated:
+ * product.id = 1 (auto generated)
+ * product.createdAt = 2025-01-01 10:00:00
+ * product.createdBy = "admin" (from SecurityContext)
+ * product.updatedAt = null (not updated yet)
+ * product.updatedBy = null
  * <p>
  * When you update:
  * product.setPrice(999.99);
  * productRepository.save(product);
  * <p>
- * // Automatically updated:
- * // product.updatedAt = 2025-01-01 11:00:00
- * // product.updatedBy = "admin" (current user)
+ * Automatically updated:
+ * product.updatedAt = 2025-01-01 11:00:00
+ * product.updatedBy = "admin" (current user)
  */
 @Getter
 @Setter

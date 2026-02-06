@@ -18,11 +18,11 @@ import java.util.Map;
 /**
  * Admin Controller for Token Management
  * <p>
- * Endpoints:
- * - View token statistics
- * - Revoke tokens
- * - Monitor active sessions
- * - Security analytics
+ * Endpoints: </br>
+ * - View token statistics </br>
+ * - Revoke tokens  </br>
+ * - Monitor active sessions    </br>
+ * - Security analytics </br>
  */
 @RestController
 @RequestMapping("/api/v1/admin/tokens")
@@ -35,7 +35,7 @@ public class AdminTokenManagementController {
     private final MetricsService metricsService;
 
     /**
-     * Get overall token statistics
+     * Get overall token statistics </br>
      * GET /api/v1/admin/tokens/statistics
      */
     @GetMapping("/statistics")
@@ -45,7 +45,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Get user's active sessions (devices)
+     * Get user's active sessions (devices) </br>
      * GET /api/v1/admin/tokens/sessions/{userId}
      */
     @GetMapping("/sessions/{userId}")
@@ -58,7 +58,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Revoke all tokens for a user
+     * Revoke all tokens for a user </br>
      * DELETE /api/v1/admin/tokens/user/{userId}
      */
     @DeleteMapping("/user/{userId}")
@@ -81,7 +81,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Revoke tokens from specific IP
+     * Revoke tokens from specific IP   </br>
      * DELETE /api/v1/admin/tokens/ip/{ipAddress}
      */
     @DeleteMapping("/ip/{ipAddress}")
@@ -101,7 +101,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Revoke entire token family (rotation chain)
+     * Revoke entire token family (rotation chain)  </br>
      * DELETE /api/v1/admin/tokens/family/{tokenFamily}
      */
     @DeleteMapping("/family/{tokenFamily}")
@@ -121,7 +121,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Manually trigger token cleanup
+     * Manually trigger token cleanup   </br>
      * POST /api/v1/admin/tokens/cleanup
      */
     @PostMapping("/cleanup")
@@ -137,7 +137,7 @@ public class AdminTokenManagementController {
     }
 
     /**
-     * Manually trigger token purge (hard delete)
+     * Manually trigger token purge (hard delete)   </br>
      * POST /api/v1/admin/tokens/purge
      */
     @PostMapping("/purge")

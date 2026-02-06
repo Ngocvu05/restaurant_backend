@@ -17,4 +17,5 @@ public class OAuth2LoginRequest {
     private String providerId;
     private String userAgent;
     private String clientIp;
+    private String idToken;  // For providers like Google
 }

@@ -18,10 +18,10 @@ import java.util.Map;
 /**
  * User Session Management Controller
  * <p>
- * Allows users to:
- * - View their active sessions (devices)
- * - Revoke sessions from other devices
- * - Logout from all devices
+ * Allows users to: </br>
+ * - View their active sessions (devices)   </br>
+ * - Revoke sessions from other devices </br>
+ * - Logout from all devices    </br>
  */
 @RestController
 @RequestMapping("/api/v1/users/sessions")
@@ -33,7 +33,7 @@ public class UserSessionController {
     private final MetricsService metricsService;
 
     /**
-     * Get current user's active sessions
+     * Get current user's active sessions   </br>
      * GET /api/v1/users/sessions
      */
     @GetMapping
@@ -52,7 +52,7 @@ public class UserSessionController {
     }
 
     /**
-     * Logout from all other devices (keep current session)
+     * Logout from all other devices (keep current session) </br>
      * POST /api/v1/users/sessions/revoke-others
      */
     @PostMapping("/revoke-others")
@@ -83,7 +83,7 @@ public class UserSessionController {
     }
 
     /**
-     * Logout from all devices (including current)
+     * Logout from all devices (including current)  </br>
      * POST /api/v1/users/sessions/revoke-all
      */
     @PostMapping("/revoke-all")
@@ -109,7 +109,7 @@ public class UserSessionController {
     }
 
     /**
-     * Get session statistics
+     * Get session statistics   </br>
      * GET /api/v1/users/sessions/stats
      */
     @GetMapping("/stats")

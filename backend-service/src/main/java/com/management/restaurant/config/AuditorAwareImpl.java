@@ -51,7 +51,7 @@ public class AuditorAwareImpl implements AuditorAware<String> {
             // - No JWT token provided
             if ("anonymousUser".equals(authentication.getPrincipal())) {
                 log.info("Anonymous user detected, using 'anonymous' as auditor");
-                return Optional.of("anonymous");
+                return Optional.of("automation");
             }
 
             // Case 3: UserPrincipal (MAIN CASE)

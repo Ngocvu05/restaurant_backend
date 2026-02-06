@@ -113,7 +113,8 @@ management:
 
 jwt:
   public-key-path: classpath:keys/public_key.pem
-  access-token-expiration: 900000        # 15 minutes
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
   issuer: restaurant-service
 
 logging:
