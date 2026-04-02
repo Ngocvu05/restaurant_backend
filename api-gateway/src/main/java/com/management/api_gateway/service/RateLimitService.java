@@ -28,6 +28,11 @@ public class RateLimitService {
         try {
             Long currentCount = redisTemplate.opsForValue().increment(redisKey);
 
+            if (currentCount == null) {
+                log.warn("Redis increment returned null for key: {}", redisKey);
+                return true; // Fail open
+            }
+
             if (currentCount == 1) {
                 // Set expiration for the first request in this minute
                 redisTemplate.expire(redisKey, WINDOW_DURATION);
@@ -42,9 +47,24 @@ public class RateLimitService {
             return allowed;
 
         } catch (Exception e) {
-            log.error("Error checking rate limit for IP: {}", clientIp, e);
-            // Fail open - allow request if Redis is down
+            log.error("Error checking rate limit for IP: {}. Error: {} - {}",
+                    clientIp, e.getClass().getSimpleName(), e.getMessage());
+
+            // IMPORTANT: Fail open - allow request if Redis is down
+            // This prevents Redis outage from taking down the entire system
             return true;
+        }
+    }
+
+    public boolean isRedisAvailable() {
+        try {
+            redisTemplate.getConnectionFactory()
+                    .getConnection()
+                    .ping();
+            return true;
+        } catch (Exception e) {
+            log.warn("Redis health check failed: {}", e.getMessage());
+            return false;
         }
     }
 }

@@ -2,10 +2,9 @@ package com.management.api_gateway.jwt;
 
 import com.management.api_gateway.service.RateLimitService;
 import com.management.api_gateway.util.FilterCommonUtils;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,27 +17,25 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.security.Key;
 import java.util.Set;
 
+/**
+ * JWT Authentication Filter for API Gateway </br>
+ * Uses RS256 with Public Key verification
+ */
 @Slf4j
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final RedisTemplate<String, String> redisTemplate;
     private final RateLimitService rateLimitService;
+    private final JwtService jwtService;
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${jwt.expiration:86400000}")
-    private Long jwtExpiration;
-
-    // Using Set for better performance on lookup operations
     private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
             "/users/api/v1/auth/login",
             "/users/api/v1/auth/register",
             "/users/api/v1/auth/oauth2/login",
             "/users/api/v1/auth/oauth2/refresh-token",
+            "/users/api/v1/auth/refresh-token",
             "/users/api/v1/home",
             "/api/v1/auth/login",
             "/api/v1/auth/register",
@@ -53,9 +50,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     );
 
     public JwtAuthenticationFilter(RedisTemplate<String, String> redisTemplate,
-                                   RateLimitService rateLimitService) {
+                                   RateLimitService rateLimitService,
+                                   JwtService jwtService) {
         this.redisTemplate = redisTemplate;
         this.rateLimitService = rateLimitService;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -65,7 +64,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String method = request.getMethod().name();
         String clientIp = FilterCommonUtils.getClientIpAddress(request);
 
-        log.debug("Processing request: {} {} from IP: {}", method, path, clientIp);
+        log.info("Processing request: {} {} from IP: {}", method, path, clientIp);
 
         // 1. Rate Limiting Check
         if (!rateLimitService.isAllowed(clientIp)) {
@@ -75,15 +74,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // 2. Always allow OPTIONS requests (CORS preflight)
         if (request.getMethod() == HttpMethod.OPTIONS) {
-            log.debug("OPTIONS request detected, allowing without JWT validation");
+            log.info("OPTIONS request detected, allowing without JWT validation");
             return chain.filter(exchange);
         }
 
         // 3. Skip authentication for public endpoints
         if (isPublicEndpoint(path)) {
-            log.debug("Public endpoint detected, skipping JWT validation: {}", path);
+            log.info("Public endpoint detected, skipping JWT validation: {}", path);
 
-            // Remove Authorization headers before forwarding to downstream service
             ServerHttpRequest modifiedRequest = request.mutate()
                     .headers(headers -> {
                         headers.remove("Authorization");
@@ -101,11 +99,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return FilterCommonUtils.handleUnauthorized(exchange, "Missing authentication token");
         }
 
-        return validateToken(token)
+        return validateTokenAsync(token)
                 .flatMap(claims -> {
-                    log.debug("JWT validation successful for user: {}", claims.getSubject());
+                    log.info("JWT validation successful for user: {}", claims.getSubject());
 
-                    // 5. Check if token is blacklisted (logout)
+                    // 5. Check if token is blacklisted
                     return checkTokenBlacklist(token)
                             .flatMap(isBlacklisted -> {
                                 if (isBlacklisted) {
@@ -113,7 +111,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                                     return FilterCommonUtils.handleUnauthorized(exchange, "Token has been revoked");
                                 }
 
-                                // 6. Add comprehensive user info to request headers
+                                // 6. Add user info to request headers
                                 ServerHttpRequest mutatedRequest = request.mutate()
                                         .header("X-User-Id", getClaimAsString(claims, "id"))
                                         .header("X-User-Subject", claims.getSubject())
@@ -132,39 +130,39 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 });
     }
 
-    private Mono<Claims> validateToken(String token) {
+    /**
+     * Validate token asynchronously using JwtService (RS256)
+     */
+    private Mono<Claims> validateTokenAsync(String token) {
         return Mono.fromCallable(() -> {
-            try {
-                Key signingKey = JwtKeyUtil.getSigningKey(jwtSecret);
-                return Jwts.parserBuilder()
-                        .setSigningKey(signingKey)
-                        .build()
-                        .parseClaimsJws(token)
-                        .getBody();
-
-            } catch (ExpiredJwtException ex) {
-                throw new RuntimeException("JWT expired", ex);
-            } catch (UnsupportedJwtException ex) {
-                throw new RuntimeException("Unsupported JWT", ex);
-            } catch (MalformedJwtException ex) {
-                throw new RuntimeException("Malformed JWT", ex);
-            } catch (SecurityException ex) {
-                throw new RuntimeException("Invalid JWT signature", ex);
-            } catch (IllegalArgumentException ex) {
-                throw new RuntimeException("JWT is empty", ex);
-            } catch (JwtException ex) {
-                throw new RuntimeException("Invalid JWT", ex);
+            // Validate token using public key
+            if (!jwtService.validateToken(token)) {
+                throw new RuntimeException("Invalid JWT token");
             }
+
+            // Check token age (max 24 hours)
+            if (jwtService.isTokenTooOld(token, 1440)) {
+                throw new RuntimeException("Token too old");
+            }
+
+            return jwtService.getClaims(token);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * Check if token is blacklisted in Redis
+     */
     private Mono<Boolean> checkTokenBlacklist(String token) {
         return Mono.fromCallable(() -> {
             String tokenHash = DigestUtils.sha256Hex(token);
-            return redisTemplate.hasKey("blacklist:token:" + tokenHash);
+            Boolean hasKey = redisTemplate.hasKey("blacklist:token:" + tokenHash);
+            return hasKey != null && hasKey;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * Extract Bearer token from Authorization header
+     */
     private String extractToken(ServerHttpRequest request) {
         String bearerToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
@@ -173,6 +171,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return null;
     }
 
+    /**
+     * Check if path matches public endpoints
+     */
     private boolean isPublicEndpoint(String path) {
         return PUBLIC_ENDPOINTS.stream().anyMatch(endpoint ->
                 path.equals(endpoint) ||
@@ -181,7 +182,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Safely extract claim value as string, handling null values
+     * Safely extract claim as string
      */
     private String getClaimAsString(Claims claims, String claimName) {
         Object claim = claims.get(claimName);
@@ -189,30 +190,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Get user-friendly error message based on exception type
+     * Get user-friendly error message
      */
     private String getErrorMessage(Throwable throwable) {
-        if (throwable instanceof SecurityException) {
-            return throwable.getMessage();
-        }
-
         String message = throwable.getMessage();
         if (message != null) {
-            if (message.contains("expired")) {
-                return "Token has expired";
-            }
-            if (message.contains("signature")) {
-                return "Invalid token signature";
-            }
-            if (message.contains("malformed")) {
-                return "Invalid token format";
-            }
+            if (message.contains("expired")) return "Token has expired";
+            if (message.contains("signature")) return "Invalid token signature";
+            if (message.contains("malformed")) return "Invalid token format";
+            if (message.contains("old")) return "Token is too old";
         }
         return "Invalid authentication token";
     }
 
     @Override
     public int getOrder() {
-        return -100; // Execute before other filters
+        return -100;
     }
 }

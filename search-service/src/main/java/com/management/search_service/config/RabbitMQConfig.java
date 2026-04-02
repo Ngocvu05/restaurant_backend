@@ -5,8 +5,6 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.retry.MessageRecoverer;
-import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,30 +15,26 @@ import org.springframework.retry.support.RetryTemplate;
 @Configuration
 @EnableRabbit
 public class RabbitMQConfig {
-    // Exchange names
+    // ============ CONSTANTS ============
     public static final String DISH_EXCHANGE = "dish.exchange";
     public static final String USER_EXCHANGE = "user.exchange";
     public static final String REVIEW_EXCHANGE = "review.exchange";
+    public static final String BOOKING_EXCHANGE = "booking.exchange";
 
-    // Queue names
     public static final String DISH_SEARCH_QUEUE = "dish.search.queue";
     public static final String USER_SEARCH_QUEUE = "user.search.queue";
     public static final String REVIEW_SEARCH_QUEUE = "review.search.queue";
+    public static final String BOOKING_SEARCH_QUEUE = "booking.search.queue";
 
-    // Dead Letter Queues
     public static final String DISH_DLQ = "dish.search.dlq";
     public static final String USER_DLQ = "user.search.dlq";
     public static final String REVIEW_DLQ = "review.search.dlq";
+    public static final String BOOKING_DLQ = "booking.search.dlq";
 
-    // Dead Letter Exchanges
-    public static final String DISH_DLX = "dish.dlx";
-    public static final String USER_DLX = "user.dlx";
-    public static final String REVIEW_DLX = "review.dlx";
-
-    // Routing keys
-    public static final String DISH_ROUTING_KEY = "dish.*";
-    public static final String USER_ROUTING_KEY = "user.*";
-    public static final String REVIEW_ROUTING_KEY = "review.*";
+    public static final String DISH_DLX = "dish.exchange.dlx";
+    public static final String USER_DLX = "user.exchange.dlx";
+    public static final String REVIEW_DLX = "review.exchange.dlx";
+    public static final String BOOKING_DLX = "booking.exchange.dlx";
 
     // ============ MAIN EXCHANGES ============
     @Bean
@@ -64,35 +58,48 @@ public class RabbitMQConfig {
                 .build();
     }
 
+    @Bean
+    public TopicExchange bookingExchange() {
+        return ExchangeBuilder.topicExchange(BOOKING_EXCHANGE)
+                .durable(true)
+                .build();
+    }
+
     // ============ DEAD LETTER EXCHANGES ============
     @Bean
-    public DirectExchange dishDeadLetterExchange() {
+    public DirectExchange dishDLX() {
         return ExchangeBuilder.directExchange(DISH_DLX)
                 .durable(true)
                 .build();
     }
 
     @Bean
-    public DirectExchange userDeadLetterExchange() {
+    public DirectExchange userDLX() {
         return ExchangeBuilder.directExchange(USER_DLX)
                 .durable(true)
                 .build();
     }
 
     @Bean
-    public DirectExchange reviewDeadLetterExchange() {
+    public DirectExchange reviewDLX() {
         return ExchangeBuilder.directExchange(REVIEW_DLX)
                 .durable(true)
                 .build();
     }
 
-    // ============ MAIN QUEUES ============
+    @Bean
+    public DirectExchange bookingDLX() {
+        return ExchangeBuilder.directExchange(BOOKING_DLX)
+                .durable(true)
+                .build();
+    }
+
+    // ============ MAIN QUEUES (WITHOUT TTL) ============
     @Bean
     public Queue dishSearchQueue() {
         return QueueBuilder.durable(DISH_SEARCH_QUEUE)
                 .withArgument("x-dead-letter-exchange", DISH_DLX)
                 .withArgument("x-dead-letter-routing-key", "failed")
-                .withArgument("x-message-ttl", 300000) // 5 minutes TTL
                 .build();
     }
 
@@ -101,7 +108,6 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(USER_SEARCH_QUEUE)
                 .withArgument("x-dead-letter-exchange", USER_DLX)
                 .withArgument("x-dead-letter-routing-key", "failed")
-                .withArgument("x-message-ttl", 300000)
                 .build();
     }
 
@@ -110,7 +116,14 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(REVIEW_SEARCH_QUEUE)
                 .withArgument("x-dead-letter-exchange", REVIEW_DLX)
                 .withArgument("x-dead-letter-routing-key", "failed")
-                .withArgument("x-message-ttl", 300000)
+                .build();
+    }
+
+    @Bean
+    public Queue bookingSearchQueue() {
+        return QueueBuilder.durable(BOOKING_SEARCH_QUEUE)
+                .withArgument("x-dead-letter-exchange", BOOKING_DLX)
+                .withArgument("x-dead-letter-routing-key", "failed")
                 .build();
     }
 
@@ -130,47 +143,66 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(REVIEW_DLQ).build();
     }
 
+    @Bean
+    public Queue bookingDeadLetterQueue() {
+        return QueueBuilder.durable(BOOKING_DLQ).build();
+    }
+
     // ============ BINDINGS FOR MAIN QUEUES ============
     @Bean
     public Binding dishSearchBinding() {
         return BindingBuilder.bind(dishSearchQueue())
                 .to(dishExchange())
-                .with(DISH_ROUTING_KEY);
+                .with("dish.*");
     }
 
     @Bean
     public Binding userSearchBinding() {
         return BindingBuilder.bind(userSearchQueue())
                 .to(userExchange())
-                .with(USER_ROUTING_KEY);
+                .with("user.*");
     }
 
     @Bean
     public Binding reviewSearchBinding() {
         return BindingBuilder.bind(reviewSearchQueue())
                 .to(reviewExchange())
-                .with(REVIEW_ROUTING_KEY);
+                .with("review.*");
+    }
+
+    @Bean
+    public Binding bookingSearchBinding() {
+        return BindingBuilder.bind(bookingSearchQueue())
+                .to(bookingExchange())
+                .with("booking.*");
     }
 
     // ============ BINDINGS FOR DEAD LETTER QUEUES ============
     @Bean
-    public Binding dishDeadLetterBinding() {
+    public Binding dishDLQBinding() {
         return BindingBuilder.bind(dishDeadLetterQueue())
-                .to(dishDeadLetterExchange())
+                .to(dishDLX())
                 .with("failed");
     }
 
     @Bean
-    public Binding userDeadLetterBinding() {
+    public Binding userDLQBinding() {
         return BindingBuilder.bind(userDeadLetterQueue())
-                .to(userDeadLetterExchange())
+                .to(userDLX())
                 .with("failed");
     }
 
     @Bean
-    public Binding reviewDeadLetterBinding() {
+    public Binding reviewDLQBinding() {
         return BindingBuilder.bind(reviewDeadLetterQueue())
-                .to(reviewDeadLetterExchange())
+                .to(reviewDLX())
+                .with("failed");
+    }
+
+    @Bean
+    public Binding bookingDLQBinding() {
+        return BindingBuilder.bind(bookingDeadLetterQueue())
+                .to(bookingDLX())
                 .with("failed");
     }
 
@@ -190,60 +222,53 @@ public class RabbitMQConfig {
         template.setMandatory(true);
         template.setConfirmCallback((correlationData, ack, cause) -> {
             if (!ack) {
-                System.err.println("Message not delivered: " + cause);
+                System.err.println("❌ Message not delivered: " + cause);
             }
         });
         return template;
     }
 
-    // ============ RETRY CONFIGURATION ============
+    // ============ RETRY TEMPLATE ============
     @Bean
     public RetryTemplate retryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
 
-        // Retry policy: retry 3 times
+        // Retry 3 times
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
         retryPolicy.setMaxAttempts(3);
         retryTemplate.setRetryPolicy(retryPolicy);
 
-        // Exponential backoff policy
+        // Exponential backoff: 1s, 2s, 4s
         ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-        backOffPolicy.setInitialInterval(1000); // 1 second
-        backOffPolicy.setMaxInterval(10000);    // 10 seconds
+        backOffPolicy.setInitialInterval(1000);
+        backOffPolicy.setMaxInterval(10000);
         backOffPolicy.setMultiplier(2.0);
         retryTemplate.setBackOffPolicy(backOffPolicy);
 
         return retryTemplate;
     }
 
-    // ============ MESSAGE RECOVERER ============
-    @Bean
-    public MessageRecoverer messageRecoverer(RabbitTemplate rabbitTemplate) {
-        return new RepublishMessageRecoverer(rabbitTemplate, DISH_DLX, "failed");
-    }
-
     // ============ LISTENER CONTAINER FACTORY ============
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
-            RetryTemplate retryTemplate,
-            MessageRecoverer messageRecoverer) {
+            RetryTemplate retryTemplate) {
 
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter());
 
-        // Concurrency configuration
+        // Concurrency
         factory.setConcurrentConsumers(2);
         factory.setMaxConcurrentConsumers(5);
         factory.setPrefetchCount(1);
 
-        // Retry configuration
+        // Retry
         factory.setRetryTemplate(retryTemplate);
 
-        // Acknowledgment configuration
+        // Acknowledgment
         factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
-        factory.setDefaultRequeueRejected(false);
+        factory.setDefaultRequeueRejected(false); // Go to DLQ on failure
 
         return factory;
     }

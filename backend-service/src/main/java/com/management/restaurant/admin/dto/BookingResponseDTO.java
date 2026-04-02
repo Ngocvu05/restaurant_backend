@@ -1,6 +1,6 @@
 package com.management.restaurant.admin.dto;
 
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

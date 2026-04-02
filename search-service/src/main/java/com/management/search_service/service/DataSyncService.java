@@ -22,6 +22,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -64,6 +65,7 @@ public class DataSyncService {
         try {
             log.info("Syncing dishes from user-service...");
             String url = userServiceBaseUrl + "/dishes/all";
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -80,13 +82,18 @@ public class DataSyncService {
                         .collect(Collectors.toList());
 
                 dishDocumentRepository.saveAll(dishDocuments);
-                log.info("Synced {} dishes to Elasticsearch", dishDocuments.size());
+                log.info("✅ Synced {} dishes to Elasticsearch", dishDocuments.size());
+            } else {
+                log.info("ℹ️ No dishes to sync");
             }
         } catch (HttpClientErrorException.Unauthorized e) {
-            log.error("Authentication failed for dishes sync. Token might be invalid or expired: {}", e.getMessage());
+            log.error("❌ Authentication failed for dishes sync: {}", e.getMessage());
             handleAuthError("dishes", e);
+        } catch (HttpServerErrorException e) {
+            log.error("❌ User-service error (500) while syncing dishes: {}", e.getMessage());
+            log.error("💡 Check if /api/v1/sync/dishes/all endpoint exists in user-service");
         } catch (Exception e) {
-            log.error("Failed to sync dishes: {}", e.getMessage(), e);
+            log.error("❌ Failed to sync dishes: {}", e.getMessage());
         }
     }
 
@@ -94,6 +101,7 @@ public class DataSyncService {
         try {
             log.info("Syncing users from user-service...");
             String url = userServiceBaseUrl + "/users/all";
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -110,13 +118,18 @@ public class DataSyncService {
                         .collect(Collectors.toList());
 
                 userDocumentRepository.saveAll(userDocuments);
-                log.info("Synced {} users to Elasticsearch", userDocuments.size());
+                log.info("✅ Synced {} users to Elasticsearch", userDocuments.size());
+            } else {
+                log.info("ℹ️ No users to sync");
             }
         } catch (HttpClientErrorException.Unauthorized e) {
-            log.error("Authentication failed for users sync. Token might be invalid or expired: {}", e.getMessage());
+            log.error("❌ Authentication failed for users sync: {}", e.getMessage());
             handleAuthError("users", e);
+        } catch (HttpServerErrorException e) {
+            log.error("❌ User-service error (500) while syncing users: {}", e.getMessage());
+            log.error("💡 Check if /api/v1/sync/users/all endpoint exists in user-service");
         } catch (Exception e) {
-            log.error("Failed to sync users: {}", e.getMessage(), e);
+            log.error("❌ Failed to sync users: {}", e.getMessage());
         }
     }
 
@@ -124,6 +137,7 @@ public class DataSyncService {
         try {
             log.info("Syncing reviews from user-service...");
             String url = userServiceBaseUrl + "/reviews/all";
+            log.info("📡 Calling: {}", url);
 
             HttpHeaders headers = createAuthHeaders();
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -140,22 +154,27 @@ public class DataSyncService {
                         .collect(Collectors.toList());
 
                 reviewDocumentRepository.saveAll(reviewDocuments);
-                log.info("Synced {} reviews to Elasticsearch", reviewDocuments.size());
+                log.info("✅ Synced {} reviews to Elasticsearch", reviewDocuments.size());
+            } else {
+                log.info("ℹ️ No reviews to sync");
             }
         } catch (HttpClientErrorException.Unauthorized e) {
-            log.error("Authentication failed for reviews sync. Token might be invalid or expired: {}", e.getMessage());
+            log.error("❌ Authentication failed for reviews sync: {}", e.getMessage());
             handleAuthError("reviews", e);
+        } catch (HttpServerErrorException e) {
+            log.error("❌ User-service error (500) while syncing reviews: {}", e.getMessage());
+            log.error("💡 Check if /api/v1/sync/reviews/all endpoint exists in user-service");
         } catch (Exception e) {
-            log.error("Failed to sync reviews: {}", e.getMessage(), e);
+            log.error("❌ Failed to sync reviews: {}", e.getMessage());
         }
     }
 
     private HttpHeaders createAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        String token = systemTokenManager.getToken();
+        String token = systemTokenManager.getSystemToken();
 
         // Log token info for debugging (without exposing actual token)
-        log.debug("Using token for authentication - Token length: {}, Starts with 'Bearer': {}",
+        log.info("Using token for authentication - Token length: {}, Starts with 'Bearer': {}",
                 token != null ? token.length() : 0,
                 token != null && token.startsWith("Bearer"));
 
@@ -179,11 +198,11 @@ public class DataSyncService {
         log.error("  - Token manager class: {}", systemTokenManager.getClass().getSimpleName());
 
         // Check if token is null or empty
-        String token = systemTokenManager.getToken();
+        String token = systemTokenManager.getSystemToken();
         if (token == null || token.trim().isEmpty()) {
             log.error("  - Token is null or empty!");
         } else {
-            log.debug("  - Token format appears valid (length: {})", token.length());
+            log.info("  - Token format appears valid (length: {})", token.length());
         }
     }
 

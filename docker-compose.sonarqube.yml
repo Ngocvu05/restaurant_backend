@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  sonarqube-db:
+    image: postgres:15-alpine
+    container_name: sonarqube-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar_secure_password_2024
+      POSTGRES_DB: sonarqube
+    volumes:
+      - sonarqube_db:/var/lib/postgresql/data
+    networks:
+      - sonar-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    restart: unless-stopped
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      # Database
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar_secure_password_2024
+
+      # JVM Options - Tối ưu cho môi trường phát triển
+      SONAR_WEB_JAVAADDITIONALOPTS: -Xmx1024m -Xms1024m
+      SONAR_CE_JAVAADDITIONALOPTS: -Xmx1024m -Xms1024m
+      SONAR_SEARCH_JAVAADDITIONALOPTS: -Xmx1024m -Xms1024m
+
+
+      # Performance tuning
+      SONAR_WEB_SYSTEMPASSCODE: sonar_admin_2024
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
+    networks:
+      - sonar-network
+      - microservices-network  # Connect to main network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status | grep -q UP || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s  # SonarQube needs time to start
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    # Note: sysctls không hoạt động trên Docker Desktop Windows
+    # Cần cấu hình trực tiếp trong WSL2 (xem hướng dẫn bên dưới)
+
+networks:
+  sonar-network:
+    driver: bridge
+  microservices-network:
+    external: true
+    name: microservices-network
+
+volumes:
+  sonarqube_db:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:

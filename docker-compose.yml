@@ -3,11 +3,14 @@ services:
     image: mysql:8
     container_name: mysql
     restart: always
+    command: >
+      --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      --default-time-zone='+07:00'
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: restaurant
-      MYSQL_USER: restaurant_user
-      MYSQL_PASSWORD: restaurant_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3306:3306"
     healthcheck:
@@ -17,8 +20,39 @@ services:
       retries: 5
     volumes:
       - ./mysql_data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-      - ./init-chat-db.sql:/docker-entrypoint-initdb.d/init-chat-db.sql
+      # SQL files now in sql_init folder
+      - ./sql_init/01-init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
+      - ./sql_init/02-init-analytics-db.sql:/docker-entrypoint-initdb.d/02-init-analytics-db.sql
+      - ./sql_init/03-init-chat-db.sql:/docker-entrypoint-initdb.d/03-init-chat-db.sql
+      - ./sql_init/04-init-refresh-token-migration.sql:/docker-entrypoint-initdb.d/04-init-refresh-token-migration.sql
+      # User security enhancements
+      - ./sql_init/05-add-user-security-fields.sql:/docker-entrypoint-initdb.d/05-add-user-security-fields.sql
+      # OAuth2 links table
+      - ./sql_init/06-add-oauth2-links.sql:/docker-entrypoint-initdb.d/06-add-oauth2-links.sql
+    networks:
+      - microservices-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INIT_DB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INIT_DB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INIT_DB_DATABASE}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./sql_init/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+    command: mongod --auth
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - microservices-network
 
@@ -26,13 +60,18 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: always
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+    command: >
+      sh -c "redis-server 
+      --appendonly yes 
+      --requirepass $${REDIS_PASSWORD}"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "admin", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,12 +83,12 @@ services:
     container_name: rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: chat_user
-      RABBITMQ_DEFAULT_PASS: chat_pass
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "5672:5672"
-      - "15672:15672"
-      - "61613:61613"
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+      - "61613:61613" # STOMP (WebSocket)
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -101,7 +140,7 @@ services:
       - microservices-network
 
   user-service:
-    image: user-sevice:latest
+    image: user-service:latest
     build:
       context: ./backend-service
     container_name: user-service
@@ -109,45 +148,81 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       discovery-service:
         condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+
+      # MySQL Database Configuration
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL_USER}
+      - SPRING_DATASOURCE_URL_ANALYTICS=${SPRING_DATASOURCE_URL_ANALYTICS}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      # MongoDB Configuration
+      - SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI}
+      - SPRING_DATA_MONGODB_DATABASE=${SPRING_DATA_MONGODB_DATABASE}
+
+      # Redis Configuration
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # Eureka Configuration
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
-      # RabbitMQ configuration
+
+      # RabbitMQ Configuration
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
-      # JWT configuration
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
-      - LOG_FILE_PATH=./logs/<service-name>.log
+
+      # Kafka Configuration
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+      # JWT Configuration
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
+
+      # Email Configuration
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+
+      # Cloudinary Configuration
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+
+      # Logging Configuration
+      - LOG_FILE_PATH=/logs/user-service.log
+
+      # JVM Options
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
     ports:
       - "8081:8081"
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     networks:
       - microservices-network
     volumes:
       - ./logs:/logs
+      - ./uploads:/uploads
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -177,12 +252,20 @@ services:
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      # Database
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+
       # RabbitMQ configuration
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
@@ -190,11 +273,20 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
+      # Logging Configuration
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
-      - APP_USER_SERVICE_BASE_URL=http://user-service:8081/api/v1/sync
+      - APP_USER_SERVICE_BASE_URL=${APP_USER_SERVICE_BASE_URL}
+
+      - USER_SERVICE_LOGIN_URL=${USER_SERVICE_LOGIN_URL}
+      - SYSTEM_USER_USERNAME=${LOGIN_USER_NAME}
+      - SYSTEM_USER_PASSWORD=${LOGIN_USER_PASSWORD}
+      - SYSTEM_TOKEN_RETRY_MAX_ATTEMPTS=10
+      - SYSTEM_TOKEN_RETRY_DELAY_SECONDS=3
+
+      # Server Configuration
+      - SERVER_PORT=${SEARCH_SERVICE_PORT}
     ports:
       - "8082:8082"
     restart: unless-stopped
@@ -233,9 +325,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
       # Redis configuration
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       # RabbitMQ configuration
       - RABBITMQ_HOST=${RABBITMQ_HOST}
@@ -259,7 +351,7 @@ services:
       - APP_AI_CONVERSATION_HISTORY_LIMIT=${APP_AI_CONVERSATION_HISTORY_LIMIT}
 
       # Eureka Configuration
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -267,20 +359,19 @@ services:
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
 
       # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # WebSocket Configuration
-      - WEBSOCKET_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
-      - WEBSOCKET_RELAY_HOST=rabbitmq
-      - WEBSOCKET_RELAY_PORT=61613
-      - WEBSOCKET_CLIENT_LOGIN=guest
-      - WEBSOCKET_CLIENT_PASSCODE=guest
-      - WEBSOCKET_SYSTEM_LOGIN=guest
-      - WEBSOCKET_SYSTEM_PASSCODE=guest
+      - WEBSOCKET_ALLOWED_ORIGINS=${ACCESS_URL}
+      - WEBSOCKET_RELAY_HOST=${WEBSOCKET_RELAY_HOST}
+      - WEBSOCKET_RELAY_PORT=${WEBSOCKET_RELAY_PORT}
+      - WEBSOCKET_CLIENT_LOGIN=${WEBSOCKET_CLIENT_LOGIN}
+      - WEBSOCKET_CLIENT_PASSCODE=${WEBSOCKET_CLIENT_PASSCODE}
+      - WEBSOCKET_SYSTEM_LOGIN=${WEBSOCKET_SYSTEM_LOGIN}
+      - WEBSOCKET_SYSTEM_PASSCODE=${WEBSOCKET_SYSTEM_PASSCODE}
 
       # CORS Configuration
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
+      - CORS_ALLOWED_ORIGINS=${ACCESS_URL}
 
       # Logging Configuration
       - LOG_LEVEL_APP=INFO
@@ -293,7 +384,7 @@ services:
       - LOG_FILE_PATH=./logs/chat-service.log
 
       # Server Configuration
-      - SERVER_PORT=8083
+      - SERVER_PORT=${CHAT_SERVICE_PORT}
 
       # JVM Options for better performance
       - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication
@@ -331,15 +422,34 @@ services:
         condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+
+      # Redis
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # RabbitMQ
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
+
+      - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
+
       # Gateway routes for chat service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_URI=lb://chat-service
       - SPRING_CLOUD_GATEWAY_ROUTES_CHAT_SERVICE_PREDICATES_PATH=/chat/**
+      # Gateway routes for user service
+      - SPRING_CLOUD_GATEWAY_ROUTES_USER_SERVICE_URI=lb://user-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_USER_SERVICE_PREDICATES_PATH=/users/**
+      # Gateway routes for search service
+      - SPRING_CLOUD_GATEWAY_ROUTES_SEARCH_SERVICE_URI=lb://search-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_SEARCH_SERVICE_PREDICATES_PATH=/search/**
     ports:
       - "8080:8080"
     restart: on-failure
@@ -352,42 +462,6 @@ services:
     networks:
       - microservices-network
 
-  # Optional: Prometheus for monitoring
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - microservices-network
-
-  # Optional: Grafana for visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    depends_on:
-      - prometheus
-    networks:
-      - microservices-network
-
   logstash:
     image: docker.elastic.co/logstash/logstash:8.13.0
     container_name: logstash
@@ -396,20 +470,6 @@ services:
       - ./logs:/logs
     ports:
       - "5000:5000"
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.13.0
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - xpack.security.enabled=false
-      - xpack.security.enrollment.enabled=false
-      - xpack.security.http.ssl.enabled=false
-      - xpack.security.transport.ssl.enabled=false
     depends_on:
       - elasticsearch
 
@@ -434,3 +494,5 @@ volumes:
   chat_logs:
   prometheus_data:
   grafana_data:
+  mongodb_data:
+  mongodb_config:

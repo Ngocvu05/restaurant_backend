@@ -150,7 +150,7 @@ management:
         enabled: true
 
 websocket:
-  allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,https://restaurant-frontend.com}
+  allowed-origins: ${ACCESS_URL}
   message-broker:
     enabled: true
     relay-host: ${WEBSOCKET_RELAY_HOST}
@@ -161,6 +161,12 @@ websocket:
     system-passcode: ${WEBSOCKET_SYSTEM_PASSCODE}
     heartbeat-send-interval: 10000
     heartbeat-receive-interval: 10000
+  relay:
+    host: ${WEBSOCKET_RELAY_HOST}
+    port: ${WEBSOCKET_RELAY_PORT}
+  client:
+    login: ${WEBSOCKET_CLIENT_LOGIN}
+    passcode: ${WEBSOCKET_CLIENT_PASSCODE}
 
 # Circuit breaker configuration
 resilience4j:

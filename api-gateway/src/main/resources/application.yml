@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  config:
+    activate:
+      on-profile: docker
+
   application:
     name: api-gateway
   main:
@@ -47,6 +51,42 @@ spring:
 
       default-filters:
         - PreserveHostHeader
+        - name: LocalResponseCache
+          args:
+            size: 100MB
+            timeToLive: 5m
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: 2000ms
+      password: ${REDIS_PASSWORD}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+        shutdown-timeout: 100ms
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST}
+    connection-timeout: 30000
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
+        multiplier: 2
+    listener:
+      simple:
+        missing-queues-fatal: false
 
 eureka:
   client:
@@ -65,11 +105,17 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    redis:
+      enabled: true
+    rabbit:
+      enabled: true
 
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION}
-  algorithm: HS256
+  public-key-path: classpath:keys/public_key.pem
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  issuer: restaurant-service
 
 logging:
   level:

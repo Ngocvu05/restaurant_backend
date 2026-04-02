@@ -4,7 +4,6 @@
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/api-gateway" />
     <file type="web" url="file://$PROJECT_DIR$/backend-service" />
-    <file type="web" url="file://$PROJECT_DIR$/backend/restaurant" />
     <file type="web" url="file://$PROJECT_DIR$/chat-service" />
     <file type="web" url="file://$PROJECT_DIR$/discovery-service" />
     <file type="web" url="file://$PROJECT_DIR$/search-service" />

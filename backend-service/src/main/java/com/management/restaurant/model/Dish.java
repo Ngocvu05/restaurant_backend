@@ -27,9 +27,15 @@ public class Dish {
     private String name;
     private String description;
     private BigDecimal price;
+
     @Column(name = "available")
     private Boolean isAvailable;
     private String category;
+
+    // ===== OPTIMISTIC LOCKING =====
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @Builder.Default
     @JsonManagedReference
@@ -56,6 +62,18 @@ public class Dish {
     @Column(name = "total_reviews", nullable = false)
     private int totalReviews = 0;
 
+    // Audit fields
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void updateRatingStats() {
         if (reviews == null || reviews.isEmpty()) {
             this.averageRating = BigDecimal.ZERO;
@@ -80,7 +98,6 @@ public class Dish {
         }
     }
 
-    // Get rating distribution
     public RatingDistribution getRatingDistribution() {
         if (reviews == null || reviews.isEmpty()) {
             return new RatingDistribution();

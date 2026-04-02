@@ -9,6 +9,7 @@ import com.management.restaurant.repository.UserRepository;
 import com.management.restaurant.service.AuthService;
 import com.management.restaurant.service.OAuth2Service;
 import com.management.restaurant.service.implement.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -60,7 +61,8 @@ public class AuthController {
         // 3. Call service to register
         AuthResponse response = authService.register(request, avatarFile);
         // Send notification to admin
-        notificationService.notifyAllAdmins("New Account", "Người dùng mới đã tạo tài khoản: " + request.getUsername());
+        notificationService.notifyAllAdmins("New Account", "Người dùng mới đã tạo tài khoản: "
+                + request.getUsername());
         return ResponseEntity.ok(response);
     }
 
@@ -93,10 +95,11 @@ public class AuthController {
     }
 
     @PostMapping("/oauth2/login")
-    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request) {
+    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request,
+                                                    HttpServletRequest httpRequest) {
         try {
             log.info("📥 OAuth2 login attempt: provider={}, email={}", request.getProvider(), request.getEmail());
-            AuthResponse response = oAuth2Service.authenticateOAuth2User(request);
+            AuthResponse response = oAuth2Service.authenticateOAuth2User(request, httpRequest);
 
             // Send notification to admin for new OAuth2 users
             notificationService.notifyAllAdmins("New OAuth2 Login",
@@ -106,7 +109,9 @@ public class AuthController {
         } catch (Exception e) {
             log.error("OAuth2 login failed", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponse(null, null, null, null, null, null, null, null));
+                    .body(new AuthResponse(null, null, null, null, null, null,
+                            null, null, false, false,
+                            false, null, null, null, null));
         }
     }
 }

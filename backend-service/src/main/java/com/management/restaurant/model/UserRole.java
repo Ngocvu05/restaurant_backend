@@ -1,6 +1,6 @@
 package com.management.restaurant.model;
 
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

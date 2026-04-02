@@ -1,0 +1,247 @@
+{
+  "dashboard": {
+    "title": "Search Service - Event Processing",
+    "tags": ["search-service", "events", "rabbitmq"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Events Processed",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "event_processed_total{service=\"search-service\"}",
+            "legendFormat": "Total Events"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "orientation": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Events by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "event_processed_count_total{service=\"search-service\"}",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Event Processing Rate (events/min)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(event_processed_count_total{service=\"search-service\"}[5m]) * 60",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "yaxes": [
+          {
+            "label": "Events/min",
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Event Processing Duration (ms)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(event_processing_duration_seconds_bucket{service=\"search-service\"}[5m])) * 1000",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(event_processing_duration_seconds_bucket{service=\"search-service\"}[5m])) * 1000",
+            "legendFormat": "p99"
+          },
+          {
+            "expr": "rate(event_processing_duration_seconds_sum{service=\"search-service\"}[5m]) / rate(event_processing_duration_seconds_count{service=\"search-service\"}[5m]) * 1000",
+            "legendFormat": "avg"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "yaxes": [
+          {
+            "label": "Duration (ms)",
+            "format": "ms"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Dish Events",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "event_dish_count{event_type=\"dish\"}",
+            "legendFormat": "Dishes"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 3,
+          "x": 12,
+          "y": 8
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 6,
+        "title": "User Events",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "event_user_count{event_type=\"user\"}",
+            "legendFormat": "Users"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 3,
+          "x": 15,
+          "y": 8
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Review Events",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "event_review_count{event_type=\"review\"}",
+            "legendFormat": "Reviews"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 3,
+          "x": 18,
+          "y": 8
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Booking Events",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "event_booking_count{event_type=\"booking\"}",
+            "legendFormat": "Bookings"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 3,
+          "x": 21,
+          "y": 8
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Event Processing Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(event_processing_errors_total{service=\"search-service\"}[5m]) * 60",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "name": "High Error Rate Alert"
+        }
+      },
+      {
+        "id": 10,
+        "title": "RabbitMQ Queue Depth",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rabbitmq_queue_messages{queue=~\".*search.*\"}",
+            "legendFormat": "{{queue}}"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

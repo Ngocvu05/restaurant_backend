@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class ChatController {
                 request.setSenderType(SenderType.USER);
             }
 
-            chatProducerService.sendMessageToChatQueue_v2(request);
+            chatProducerService.sendMessageToChatQueue(request);
             log.info(">>> ChatController - Message sent to queue successfully");
 
             return ResponseEntity.ok().body("{\"status\":\"success\",\"message\":\"Message sent\"}");

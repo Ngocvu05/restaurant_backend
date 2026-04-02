@@ -54,12 +54,14 @@ public class DishMapperImpl implements DishMapper {
     public DishAdminDTO toAdminDTO(Dish dish) {
         if (dish == null) return null;
 
-        DishAdminDTO dto = new DishAdminDTO();
-        dto.setId(dish.getId());
-        dto.setName(dish.getName());
-        dto.setPrice(dish.getPrice());
-        dto.setDescription(dish.getDescription());
-        dto.setCategory(dish.getCategory());
+        DishAdminDTO dto = DishAdminDTO.builder()
+                .id(dish.getId())
+                .name(dish.getName())
+                .description(dish.getDescription())
+                .price(dish.getPrice())
+                .category(dish.getCategory())
+                .orderCount(dish.getOrderCount())
+                .build();
 
         // Map image URLs
         if (dish.getImages() != null) {

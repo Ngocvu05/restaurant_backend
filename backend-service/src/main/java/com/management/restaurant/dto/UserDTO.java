@@ -1,7 +1,7 @@
 package com.management.restaurant.dto;
 
-import com.management.restaurant.common.RoleName;
-import com.management.restaurant.common.UserStatus;
+import com.management.restaurant.contains.RoleName;
+import com.management.restaurant.contains.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

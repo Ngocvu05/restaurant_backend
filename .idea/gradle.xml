@@ -5,6 +5,7 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/api-gateway" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>
@@ -14,6 +15,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/backend-service" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>
@@ -23,6 +25,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/backend/restaurant" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>
@@ -32,6 +35,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/chat-service" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>
@@ -41,6 +45,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/discovery-service" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>
@@ -50,6 +55,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/search-service" />
+        <option name="gradleHome" value="C:\Gradle\gradle-8.14.2" />
         <option name="gradleJvm" value="23" />
         <option name="modules">
           <set>

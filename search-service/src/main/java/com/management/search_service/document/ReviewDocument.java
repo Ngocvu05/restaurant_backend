@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Document(indexName = "reviews")
-@Setting(replicas = 0, shards = 1)
+@Setting(replicas = 0, shards = 1, settingPath = "elasticsearch-settings.json")
 public class ReviewDocument {
     @Id
     private String id;

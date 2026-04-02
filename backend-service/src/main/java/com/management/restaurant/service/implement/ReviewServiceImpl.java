@@ -1,6 +1,9 @@
 package com.management.restaurant.service.implement;
 
+import com.management.restaurant.analytics.service.MongoActivityLogService;
 import com.management.restaurant.dto.review.ReviewDTO;
+import com.management.restaurant.event.EventPublisherService;
+import com.management.restaurant.event.model.ReviewEvent;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.exception.ValidationException;
 import com.management.restaurant.mapper.ReviewMapper;
@@ -22,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +36,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final DishRepository dishRepository;
     private final ReviewMapper reviewMapper;
+    private final MongoActivityLogService activityLogService;
+    private final EventPublisherService eventPublisher;
 
     // Spam prevention constants
     private static final int MAX_REVIEWS_PER_EMAIL_PER_DISH = 1;
@@ -70,6 +76,21 @@ public class ReviewServiceImpl implements ReviewService {
         // Update dish rating statistics
         updateDishRatingStats(reviewDTO.getDishId());
 
+        activityLogService.logActivity(
+                null, // Anonymous user - use email as identifier
+                "REVIEW_CREATED",
+                reviewDTO.getCustomerName() + " reviewed " + dish.getName(),
+                Map.of(
+                        "reviewId", savedReview.getId(),
+                        "dishId", reviewDTO.getDishId(),
+                        "dishName", dish.getName(),
+                        "rating", reviewDTO.getRating(),
+                        "customerEmail", reviewDTO.getCustomerEmail(),
+                        "customerName", reviewDTO.getCustomerName()
+                )
+        );
+
+        publishReviewEvent(savedReview, ReviewEvent.Type.REVIEW_CREATED);
         log.info("Review created successfully with ID: {}", savedReview.getId());
         return reviewMapper.toDTO(savedReview);
     }
@@ -94,6 +115,9 @@ public class ReviewServiceImpl implements ReviewService {
         Review existingReview = reviewRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found with id: " + id));
 
+        Boolean oldIsActive = existingReview.getIsActive();
+        Boolean oldIsVerified = existingReview.getIsVerified();
+
         // Update allowed fields
         if (reviewDTO.getRating() != null) {
             existingReview.setRating(reviewDTO.getRating());
@@ -114,6 +138,11 @@ public class ReviewServiceImpl implements ReviewService {
         // Update dish rating statistics if rating changed
         updateDishRatingStats(existingReview.getDishId());
 
+        boolean statusChanged = !Objects.equals(oldIsActive, savedReview.getIsActive())
+                || !Objects.equals(oldIsVerified, savedReview.getIsVerified());
+        publishReviewEvent(savedReview,
+                statusChanged ? ReviewEvent.Type.REVIEW_STATUS_CHANGED : ReviewEvent.Type.REVIEW_UPDATED);
+
         return reviewMapper.toDTO(savedReview);
     }
 
@@ -128,6 +157,7 @@ public class ReviewServiceImpl implements ReviewService {
         // Update dish rating statistics
         updateDishRatingStats(dishId);
 
+        publishReviewEvent(review, ReviewEvent.Type.REVIEW_DELETED);
         log.info("Review deleted with ID: {}", id);
     }
 
@@ -195,6 +225,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         log.info("Review verified with ID: {}", id);
+        publishReviewEvent(savedReview, ReviewEvent.Type.REVIEW_STATUS_CHANGED);
         return reviewMapper.toDTO(savedReview);
     }
 
@@ -207,6 +238,7 @@ public class ReviewServiceImpl implements ReviewService {
         review.setUpdatedAt(LocalDateTime.now());
         Review savedReview = reviewRepository.save(review);
 
+        publishReviewEvent(savedReview, ReviewEvent.Type.REVIEW_STATUS_CHANGED);
         return reviewMapper.toDTO(savedReview);
     }
 
@@ -220,6 +252,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         updateDishRatingStats(review.getDishId());
+        publishReviewEvent(savedReview, ReviewEvent.Type.REVIEW_STATUS_CHANGED);
         return reviewMapper.toDTO(savedReview);
     }
 
@@ -233,6 +266,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         updateDishRatingStats(review.getDishId());
+        publishReviewEvent(savedReview, ReviewEvent.Type.REVIEW_STATUS_CHANGED);
         return reviewMapper.toDTO(savedReview);
     }
 
@@ -277,7 +311,7 @@ public class ReviewServiceImpl implements ReviewService {
         dish.updateRatingStats();
 
         dishRepository.save(dish);
-        log.debug("Updated rating stats for dish ID: {}", dishId);
+        log.info("Updated rating stats for dish ID: {}", dishId);
     }
 
     @Override
@@ -388,5 +422,36 @@ public class ReviewServiceImpl implements ReviewService {
             }
         }
         return false;
+    }
+
+    private void publishReviewEvent(Review review, ReviewEvent.Type type) {
+        if (review == null || type == null) {
+            return;
+        }
+
+        ReviewEvent event = ReviewEvent.builder()
+                .eventType(type.name())
+                .reviewId(review.getId())
+                .dishId(review.getDishId())
+                .customerName(review.getCustomerName())
+                .customerEmail(review.getCustomerEmail())
+                .customerAvatar(review.getCustomerAvatar())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .isActive(review.getIsActive())
+                .isVerified(review.getIsVerified())
+                .createdAt(review.getCreatedAt())
+                .build();
+
+        eventPublisher.publishReviewEvent(toRoutingKey(type), event);
+    }
+
+    private String toRoutingKey(ReviewEvent.Type type) {
+        return switch (type) {
+            case REVIEW_CREATED -> "review.created";
+            case REVIEW_UPDATED -> "review.updated";
+            case REVIEW_DELETED -> "review.deleted";
+            case REVIEW_STATUS_CHANGED -> "review.status.changed";
+        };
     }
 }

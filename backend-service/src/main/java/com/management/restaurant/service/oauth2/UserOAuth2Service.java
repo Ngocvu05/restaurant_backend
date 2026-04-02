@@ -1,6 +1,6 @@
 package com.management.restaurant.service.oauth2;
 
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.model.Image;
 import com.management.restaurant.model.User;
 import com.management.restaurant.repository.ImageRepository;
@@ -34,7 +34,7 @@ public class UserOAuth2Service {
             log.warn("Multiple users found with email: {}. Count: {}", email, users.size());
             User user = users.stream()
                     .max((u1, u2) -> u1.getId().compareTo(u2.getId()))
-                    .orElse(users.get(0));
+                    .orElse(users.getFirst());
             return updateExistingUser(user, fullName);
         }
     }

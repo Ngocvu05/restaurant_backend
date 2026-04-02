@@ -1,6 +1,6 @@
 package com.management.restaurant.admin.dto;
 
-import com.management.restaurant.common.PaymentMethod;
+import com.management.restaurant.contains.PaymentMethod;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;

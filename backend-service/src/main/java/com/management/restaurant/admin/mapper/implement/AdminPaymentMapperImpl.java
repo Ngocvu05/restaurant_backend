@@ -2,8 +2,8 @@ package com.management.restaurant.admin.mapper.implement;
 
 import com.management.restaurant.admin.dto.PaymentConfirmationDTO;
 import com.management.restaurant.admin.mapper.AdminPaymentMapper;
-import com.management.restaurant.common.PaymentMethod;
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentMethod;
+import com.management.restaurant.contains.PaymentStatus;
 import com.management.restaurant.model.Payment;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +34,6 @@ public class AdminPaymentMapperImpl implements AdminPaymentMapper {
             return null;
         }
         return Payment.builder()
-                .id(dto.getId())
                 .amount(dto.getAmount())
                 .adminNote(dto.getAdminNote())
                 .paymentMethod(PaymentMethod.valueOf(dto.getPaymentMethod()))
@@ -44,7 +43,6 @@ public class AdminPaymentMapperImpl implements AdminPaymentMapper {
                 .customerNote(dto.getCustomerNote())
                 .transactionReference(dto.getTransactionReference())
                 .status(PaymentStatus.valueOf(dto.getStatus()))
-                .createdAt(dto.getCreatedAt())
                 .build();
     }
 }

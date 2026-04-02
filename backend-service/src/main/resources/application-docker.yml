@@ -1,0 +1,114 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    jdbc-url: jdbc:mysql://mysql:3306/restaurant?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: restaurant_user
+    password: restaurant_pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    analytics:
+      jdbc-url: jdbc:mysql://mysql:3306/analytics?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      username: restaurant_user
+      password: restaurant_pass
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+
+          facebook:
+            client-id: ${FACEBOOK_APP_ID}
+            client-secret: ${FACEBOOK_APP_SECRET}
+            scope:
+              - email
+              - public_profile
+
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
+
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  data:
+    mongodb:
+      uri: mongodb://restaurant_user:restaurant_pass@mongodb:27017/restaurant_events?authSource=restaurant_events
+      database: restaurant_events
+
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:admin}
+      database: 0
+      timeout: 60000
+      lettuce:
+        pool:
+          max-active: 8          # Maximum number of connections
+          max-idle: 8            # Maximum idle connections
+          min-idle: 2            # Minimum idle connections
+          max-wait: -1ms         # Maximum wait time for connection
+        shutdown-timeout: 100ms
+      redisson:
+        config: |
+          singleServerConfig:
+            address: "redis://redis:6379"
+            database: 0
+            password: ${REDIS_PASSWORD}
+            connectionPoolSize: 64
+            connectionMinimumIdleSize: 10
+            connectTimeout: 10000
+            timeout: 3000
+            retryAttempts: 3
+            retryInterval: 1500
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "restaurant:"
+      use-key-prefix: true
+    caffeine:
+      maximum-size: 1000
+      expire-after-write: 10
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: chat_user
+    password: chat_pass
+    virtual-host: /
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    com.management.restaurant: DEBUG
+    org.springframework.orm.jpa: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.zaxxer.hikari: DEBUG

@@ -24,4 +24,5 @@ public interface NotificationService {
     void markAllAsRead(Long userId);
 
     Page<Notification> getTopNNotificationsByUser(Long userId, int limit);
+    void sendNotification(String message);
 }

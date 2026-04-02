@@ -3,7 +3,7 @@ package com.management.restaurant.admin.service.implement;
 import com.management.restaurant.admin.dto.NotificationDTO;
 import com.management.restaurant.admin.mapper.NotificationMapper;
 import com.management.restaurant.admin.service.NotificationService;
-import com.management.restaurant.common.RoleName;
+import com.management.restaurant.contains.RoleName;
 import com.management.restaurant.exception.NotFoundException;
 import com.management.restaurant.model.Notification;
 import com.management.restaurant.model.User;
@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -136,6 +138,13 @@ public class NotificationServiceImpl implements NotificationService {
     public Page<Notification> getTopNNotificationsByUser(Long userId, int limit) {
         Pageable topN = PageRequest.of(0, limit, Sort.by("createdAt").descending());
         return notificationRepository.findByToUser_Id(userId, topN);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
+    public void sendNotification(String message) {
+        log.info("Sending notification in new transaction: {}", message);
+        // Implementation
     }
 
     public void markAllAsRead(Long userId) {

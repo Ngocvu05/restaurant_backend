@@ -20,7 +20,7 @@ public class ChatRoomMapperImpl implements IChatRoomMapper {
         if (chatRoom == null) return null;
 
         ChatMessage lastMessage = chatRoom.getMessages() != null && !chatRoom.getMessages().isEmpty()
-                ? chatRoom.getMessages().get(chatRoom.getMessages().size() - 1)
+                ? chatRoom.getMessages().getLast()
                 : null;
 
         long unreadCount = chatRoom.getMessages() != null

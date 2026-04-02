@@ -1,6 +1,6 @@
 package com.management.restaurant.repository;
 
-import com.management.restaurant.common.PaymentStatus;
+import com.management.restaurant.contains.PaymentStatus;
 import com.management.restaurant.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

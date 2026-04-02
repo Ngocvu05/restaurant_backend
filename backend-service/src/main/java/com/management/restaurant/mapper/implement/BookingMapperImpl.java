@@ -1,14 +1,16 @@
 package com.management.restaurant.mapper.implement;
 
-import com.management.restaurant.common.BookingStatus;
+import com.management.restaurant.contains.BookingStatus;
 import com.management.restaurant.dto.BookingDTO;
 import com.management.restaurant.dto.PreOrderDTO;
 import com.management.restaurant.mapper.BookingMapper;
 import com.management.restaurant.model.*;
 import com.management.restaurant.repository.DishRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,77 +23,110 @@ public class BookingMapperImpl implements BookingMapper {
     public BookingDTO toDTO(Booking booking) {
         if (booking == null) return null;
 
-        return BookingDTO.builder()
-                .id(booking.getId())
-                .userId(booking.getUser() != null ? booking.getUser().getId() : null)
-                .username(booking.getUser() != null ? booking.getUser().getUsername() : null)
-                .tableId(booking.getTable() != null ? booking.getTable().getId() : null)
-                .bookingTime(booking.getBookingTime())
-                .numberOfGuests(booking.getNumberOfGuests())
-                .note(booking.getNote())
-                .status(booking.getStatus() != null ? booking.getStatus().name() : null)
-                .preOrderDishes(booking.getPreOrders() != null
-                        ? booking.getPreOrders().stream()
-                        .map(pre -> PreOrderDTO.builder()
-                                .id(pre.getId())
-                                .bookingId(pre.getBooking() != null ? pre.getBooking().getId() : null)
-                                .dishId(pre.getDish().getId())
-                                .quantity(pre.getQuantity())
-                                .note(pre.getNote())
-                                .build())
-                        .collect(Collectors.toList())
-                        : null)
-                .totalAmount(booking.getTotalAmount())
-                .build();
+        BookingDTO dto = new BookingDTO();
+        dto.setId(booking.getId());
+        dto.setBookingTime(booking.getBookingTime());
+        dto.setNumberOfGuests(booking.getNumberOfGuests());
+        dto.setNumberOfPeople(booking.getNumberOfGuests()); // Same as numberOfGuests
+        dto.setNote(booking.getNote());
+        dto.setStatus(booking.getStatus() != null ? booking.getStatus().name() : null);
+        dto.setTotalAmount(booking.getTotalAmount());
+
+        // ✅ Safely handle User
+        if (booking.getUser() != null && Hibernate.isInitialized(booking.getUser())) {
+            dto.setUserId(booking.getUser().getId());
+            dto.setUsername(booking.getUser().getUsername());
+        }
+
+        // ✅ Safely handle Table
+        if (booking.getTable() != null && Hibernate.isInitialized(booking.getTable())) {
+            dto.setTableId(booking.getTable().getId());
+        }
+
+        // ✅ Safely handle PreOrders collection
+        if (booking.getPreOrders() != null && Hibernate.isInitialized(booking.getPreOrders())) {
+            dto.setPreOrderDishes(
+                    booking.getPreOrders().stream()
+                            .map(this::toPreOrderDTO)
+                            .collect(Collectors.toList())
+            );
+        } else {
+            dto.setPreOrderDishes(Collections.emptyList());
+        }
+
+        return dto;
     }
 
     @Override
     public Booking toEntity(BookingDTO dto) {
         if (dto == null) return null;
 
-        Booking booking = new Booking();
-        booking.setId(dto.getId());
-
+        User user = null;
         if (dto.getUserId() != null) {
-            User user = new User();
-            user.setId(dto.getUserId());
-            booking.setUser(user);
-        } else if (dto.getUsername() != null) {
-            User user = new User();
-            user.setUsername(dto.getUsername());
-            booking.setUser(user);
+            user = User.builder()
+                    .username(dto.getUsername())
+                    .build();
+            user.setId(dto.getUserId()); // Set ID via setter
         }
 
+        // Build Table reference
+        TableEntity table = null;
         if (dto.getTableId() != null) {
-            TableEntity table = new TableEntity();
+            table = TableEntity.builder().build();
             table.setId(dto.getTableId());
-            booking.setTable(table);
         }
 
-        booking.setBookingTime(dto.getBookingTime());
-        booking.setNumberOfGuests(dto.getNumberOfGuests());
-        booking.setNote(dto.getNote());
+        // Build main Booking entity
+        Booking booking = Booking.builder()
+                .user(user)
+                .table(table)
+                .bookingTime(dto.getBookingTime())
+                .numberOfGuests(dto.getNumberOfGuests())
+                .note(dto.getNote())
+                .status(dto.getStatus() != null ? BookingStatus.valueOf(dto.getStatus()) : null)
+                .totalAmount(dto.getTotalAmount())
+                .build();
 
-        if (dto.getStatus() != null) {
-            booking.setStatus(BookingStatus.valueOf(dto.getStatus()));
+        // Set ID separately (not in builder for entities extending base)
+        if (dto.getId() != null) {
+            booking.setId(dto.getId());
         }
 
+        // Build PreOrders
         if (dto.getPreOrderDishes() != null) {
             List<PreOrder> preorders = dto.getPreOrderDishes().stream()
                     .map(p -> {
-                        PreOrder preorder = new PreOrder();
-                        preorder.setQuantity(p.getQuantity());
-                        preorder.setNote(p.getNote());
                         Dish dish = dishRepository.findById(p.getDishId()).orElse(null);
-                        preorder.setDish(dish);
-                        preorder.setBooking(booking);
+
+                        PreOrder preorder = PreOrder.builder()
+                                .dish(dish)
+                                .booking(booking)
+                                .quantity(p.getQuantity())
+                                .note(p.getNote())
+                                .build();
+
+                        if (p.getId() != null) {
+                            preorder.setId(p.getId());
+                        }
+
                         return preorder;
                     })
                     .collect(Collectors.toList());
             booking.setPreOrders(preorders);
         }
-        booking.setTotalAmount(dto.getTotalAmount());
-
         return booking;
+    }
+
+    private PreOrderDTO toPreOrderDTO(PreOrder preOrder) {
+        if (preOrder == null) {
+            return null;
+        }
+
+        PreOrderDTO dto = new PreOrderDTO();
+        dto.setDishId(preOrder.getDish() != null ? preOrder.getDish().getId() : null);
+        dto.setQuantity(preOrder.getQuantity());
+        dto.setNote(preOrder.getNote());
+
+        return dto;
     }
 }

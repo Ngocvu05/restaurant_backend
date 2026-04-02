@@ -29,12 +29,17 @@ public class PaymentMapperImpl implements PaymentMapper {
         payment.setAmount(dto.getAmount());
         payment.setStatus(dto.getStatus() != null ? dto.getStatus() : null);
         payment.setPaymentMethod(dto.getPaymentMethod() != null ? dto.getPaymentMethod() : null);
+
+        Booking booking = null;
         if (dto.getBookingId() != null) {
-            Booking booking = new Booking();
             booking.setId(dto.getBookingId());
             payment.setBooking(booking);
         }
-
-        return payment;
+        return Payment.builder()
+                .amount(dto.getAmount())
+                .status(dto.getStatus())
+                .paymentMethod(dto.getPaymentMethod())
+                .booking(booking)
+                .build();
     }
 }

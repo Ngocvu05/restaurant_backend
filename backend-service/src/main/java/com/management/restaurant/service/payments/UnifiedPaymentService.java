@@ -1,6 +1,6 @@
 package com.management.restaurant.service.payments;
 
-import com.management.restaurant.common.PaymentMethod;
+import com.management.restaurant.contains.PaymentMethod;
 import com.management.restaurant.dto.PaymentDTO;
 
 import java.math.BigDecimal;
