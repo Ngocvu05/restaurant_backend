@@ -11,21 +11,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * User Entity with Auditing & Soft Delete
+ * Enhanced User Entity with Complete Security & Tracking
  * <p>
- * Changes from original:
- * - Extends SoftDeletableEntity (has audit fields + soft delete)
- * - Removed manual createdAt (now from BaseEntity)
- * - Removed manual ID (now from BaseEntity)
- * - Added @EqualsAndHashCode, @ToString to prevent circular references
+ * Security Features:   </br>
+ * - Failed login tracking & auto-locking   </br>
+ * - Password reset with tokens     </br>
+ * - Email verification     </br>
+ * - Two-factor authentication (2FA)    </br>
+ * - Force password change
  * <p>
- * New Security Features:
- * - Failed login attempt tracking
- * - Account locking mechanism
- * - Password reset token management
- * - Last login tracking
- * - Email verification
- * - Two-factor authentication support
+ * Tracking Features:   </br>
+ * - Last login timestamp   </br>
+ * - Last login IP address  </br>
+ * - Last login device & user agent </br>
+ * - Total login counter    </br>
+ * - Password change history
  */
 @Entity
 @Data
@@ -36,6 +36,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true, exclude = {"images", "refreshTokens"})
 @ToString(exclude = {"images", "refreshTokens"})
 public class User extends SoftDeletableEntity {
+    // ===== BASIC INFO =====
+
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
@@ -55,6 +57,7 @@ public class User extends SoftDeletableEntity {
     private String address;
 
     // ===== ROLE & STATUS =====
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role;
@@ -67,7 +70,7 @@ public class User extends SoftDeletableEntity {
     // ===== SECURITY FEATURES =====
 
     /**
-     * Number of consecutive failed login attempts
+     * Number of consecutive failed login attempts  </br>
      * Reset to 0 on successful login
      */
     @Column(name = "failed_login_attempts")
@@ -75,32 +78,25 @@ public class User extends SoftDeletableEntity {
     private Integer failedLoginAttempts = 0;
 
     /**
-     * Account locked until this timestamp
+     * Account locked until this timestamp  </br>
      * Null if not locked
      */
     @Column(name = "account_locked_until")
     private LocalDateTime accountLockedUntil;
 
     /**
-     * Token for password reset
+     * Token for password reset </br>
      * Should be random, unique, and expire after use
      */
     @Column(name = "reset_password_token", length = 100)
     private String resetPasswordToken;
 
     /**
-     * Expiry time for password reset token
+     * Expiry time for password reset token </br>
      * Typically 1-24 hours from generation
      */
     @Column(name = "reset_token_expiry")
     private LocalDateTime resetTokenExpiry;
-
-    /**
-     * Last successful login timestamp
-     * Useful for security auditing
-     */
-    @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
 
     /**
      * Email verification status
@@ -129,7 +125,7 @@ public class User extends SoftDeletableEntity {
     private Boolean twoFactorEnabled = false;
 
     /**
-     * Two-factor authentication secret
+     * Two-factor authentication secret </br>
      * For TOTP (Google Authenticator, etc.)
      */
     @Column(name = "two_factor_secret", length = 32)
@@ -142,12 +138,59 @@ public class User extends SoftDeletableEntity {
     private String backupCodes;
 
     /**
-     * Last password change timestamp
+     * Last password change timestamp   </br>
      * For enforcing password rotation policies
      */
     @Column(name = "password_changed_at")
     private LocalDateTime passwordChangedAt;
 
+    /**
+     * Force user to change password on next login  </br>
+     * Admin can set this flag for security reasons
+     */
+    @Column(name = "force_password_change")
+    @Builder.Default
+    private Boolean forcePasswordChange = false;
+
+    // ===== LOGIN TRACKING =====
+
+    /**
+     * Last successful login timestamp  </br>
+     * Useful for security auditing
+     */
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    /**
+     * IP address from last login   </br>
+     * Supports both IPv4 and IPv6
+     */
+    @Column(name = "last_login_ip", length = 45)
+    private String lastLoginIp;
+
+    /**
+     * Device name/type from last login </br>
+     * e.g., "Chrome on Windows", "Mobile Safari on iPhone"
+     */
+    @Column(name = "last_login_device", length = 255)
+    private String lastLoginDevice;
+
+    /**
+     * Full user agent string from last login   </br>
+     * Contains browser, OS, and device information
+     */
+    @Column(name = "last_login_user_agent", length = 500)
+    private String lastLoginUserAgent;
+
+    /**
+     * Total number of successful logins    </br>
+     * Incremented on each successful login
+     */
+    @Column(name = "login_count")
+    @Builder.Default
+    private Integer loginCount = 0;
+
+    // ===== RELATIONSHIPS =====
 
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -189,8 +232,8 @@ public class User extends SoftDeletableEntity {
     }
 
     /**
-     * Record failed login attempt
-     * Lock account after configured threshold (e.g., 5 attempts)
+     * Record failed login attempt  </br>
+     * Lock account after configured threshold
      *
      * @param maxAttempts Maximum allowed attempts before locking
      * @param lockDurationMinutes How long to lock account
@@ -204,12 +247,28 @@ public class User extends SoftDeletableEntity {
     }
 
     /**
-     * Reset failed login attempts on successful login
+     * Reset failed login attempts on successful login  </br>
+     * Also update login tracking information
+     *
+     * @param ipAddress IP address of login
+     * @param device Device name/type
+     * @param userAgent Full user agent string
      */
-    public void recordSuccessfulLogin() {
+    public void recordSuccessfulLogin(String ipAddress, String device, String userAgent) {
         this.failedLoginAttempts = 0;
         this.accountLockedUntil = null;
         this.lastLoginAt = LocalDateTime.now();
+        this.lastLoginIp = ipAddress;
+        this.lastLoginDevice = device;
+        this.lastLoginUserAgent = userAgent;
+        this.loginCount = (this.loginCount == null ? 0 : this.loginCount) + 1;
+    }
+
+    /**
+     * Overloaded method for backward compatibility
+     */
+    public void recordSuccessfulLogin() {
+        recordSuccessfulLogin(null, null, null);
     }
 
     /**
@@ -257,11 +316,7 @@ public class User extends SoftDeletableEntity {
             return false;
         }
 
-        if (this.resetTokenExpiry == null || LocalDateTime.now().isAfter(this.resetTokenExpiry)) {
-            return false;
-        }
-
-        return true;
+        return this.resetTokenExpiry != null && !LocalDateTime.now().isAfter(this.resetTokenExpiry);
     }
 
     /**
@@ -323,17 +378,32 @@ public class User extends SoftDeletableEntity {
     public void updatePassword(String newEncodedPassword) {
         this.password = newEncodedPassword;
         this.passwordChangedAt = LocalDateTime.now();
+        this.forcePasswordChange = false; // Clear force flag
         // Clear reset token if any
         this.clearPasswordResetToken();
     }
 
     /**
+     * Force user to change password on next login
+     */
+    public void requirePasswordChange() {
+        this.forcePasswordChange = true;
+    }
+
+    /**
+     * Check if user needs to change password
+     */
+    public boolean needsPasswordChange() {
+        return Boolean.TRUE.equals(this.forcePasswordChange);
+    }
+
+    /**
      * Enable two-factor authentication
      */
-    public void enableTwoFactor(String secret, List<String> backupCodes) {
+    public void enableTwoFactor(String secret, List<String> backupCodesList) {
         this.twoFactorEnabled = true;
         this.twoFactorSecret = secret;
-        this.backupCodes = String.join(",", backupCodes);
+        this.backupCodes = String.join(",", backupCodesList);
     }
 
     /**
@@ -408,5 +478,18 @@ public class User extends SoftDeletableEntity {
      */
     public boolean hasTwoFactorEnabled() {
         return Boolean.TRUE.equals(twoFactorEnabled);
+    }
+
+    /**
+     * Get login activity summary
+     */
+    public String getLoginActivitySummary() {
+        return String.format(
+                "Last login: %s from IP: %s, Device: %s, Total logins: %d",
+                lastLoginAt != null ? lastLoginAt.toString() : "Never",
+                lastLoginIp != null ? lastLoginIp : "Unknown",
+                lastLoginDevice != null ? lastLoginDevice : "Unknown",
+                loginCount != null ? loginCount : 0
+        );
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component
 public class RequestHelper {
     /**
-     * Get the client's actual IP address
+     * Get the client's actual IP address   </br>
      * Supporting cases where the app is behind a proxy/load balancer.
      */
     public String getCurrentIpAddress() {
@@ -86,7 +86,7 @@ public class RequestHelper {
     }
 
     /**
-     * Lấy User-Agent string
+     * Get User-Agent string
      */
     public String getUserAgent() {
         HttpServletRequest request = getCurrentRequest();
@@ -109,8 +109,8 @@ public class RequestHelper {
     }
 
     /**
-     * Lấy thông tin device từ User-Agent
-     * Parse User-Agent để lấy browser, OS, device type
+     * Get device information from User-Agent   </br>
+     * Parse User-Agent to get browser, OS, device type
      */
     public DeviceInfo getDeviceInfo() {
         String userAgent = getCurrentUserAgent();
@@ -163,7 +163,7 @@ public class RequestHelper {
     }
 
     /**
-     * Phát hiện hệ điều hành từ User-Agent
+     * Detect Operating System from User-Agent
      */
     private String detectOS(String userAgent) {
         String ua = userAgent.toLowerCase();
@@ -214,12 +214,12 @@ public class RequestHelper {
     }
 
     /**
-     * Phát hiện loại thiết bị (Mobile, Tablet, Desktop)
+     * Detect Device (Mobile, Tablet, Desktop)
      */
     private String detectDeviceType(String userAgent) {
         String ua = userAgent.toLowerCase();
 
-        // Tablet check (phải check trước mobile vì tablet cũng có "mobile" keyword)
+        // Tablet check (you must check before mobile because tablets also contain the keyword "mobile").
         if (ua.contains("ipad") ||
                 ua.contains("tablet") ||
                 ua.contains("kindle") ||
@@ -243,7 +243,7 @@ public class RequestHelper {
     }
 
     /**
-     * Phát hiện tên thiết bị cụ thể
+     * Detect the specific device name
      */
     private String detectDeviceName(String userAgent) {
         String ua = userAgent.toLowerCase();
@@ -285,7 +285,7 @@ public class RequestHelper {
         return detectDeviceType(userAgent);
     }
 
-    // Inner class để chứa thông tin device
+    // Inner class to contain device information
     public static class DeviceInfo {
         private final String browser;
         private final String os;

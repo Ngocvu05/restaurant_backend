@@ -35,19 +35,19 @@ import java.util.UUID;
 /**
  * Enhanced Authentication Service with security improvements
  * <p>
- * Security features:
- * - Short-lived access tokens
- * - Secure refresh token rotation
- * - Token blacklisting on logout
- * - All tokens revocation on password change
+ * Security features:   </br>
+ * - Short-lived access tokens  </br>
+ * - Secure refresh token rotation  </br>
+ * - Token blacklisting on logout   </br>
+ * - All tokens revocation on password change   </br>
  * - Login attempt tracking (implement rate limiting separately)
  * <p>
- *  New Features:
- *  - IP address and User Agent tracking
- *  - Device identification and tracking
- *  - Token family for refresh token rotation
- *  - Usage tracking (use_count, last_used_at)
- *  - Security audit trail
+ *  New Features:   </br>
+ *  - IP address and User Agent tracking    </br>
+ *  - Device identification and tracking    </br>
+ *  - Token family for refresh token rotation   </br>
+ *  - Usage tracking (use_count, last_used_at)  </br>
+ *  - Security audit trail  </br>
  *  - Automatic token cleanup
  */
 
@@ -207,8 +207,13 @@ public class AuthServiceImpl implements AuthService {
                     remainingAttempts + " attempts remaining.");
         }
 
-        // Successful login - reset security counters
-        user.recordSuccessfulLogin();
+        // Extract tracking information from request
+        String ipAddress = requestHelper.getCurrentIpAddress();
+        String device = requestHelper.getDeviceInfoString();
+        String userAgent = requestHelper.getUserAgent();
+
+        // Successful login - record with tracking
+        user.recordSuccessfulLogin(ipAddress, device, userAgent);
         userRepository.save(user);
 
         // Generate tokens with security tracking
@@ -220,8 +225,16 @@ public class AuthServiceImpl implements AuthService {
             chatEventProducer.sendSessionConversion(request.getSessionId(), user.getId());
         }
 
-        log.info("✅ User logged in successfully: {} (Last login: {})",
-                user.getUsername(), user.getLastLoginAt());
+        // Enhanced logging with tracking info
+        log.info("✅ User logged in successfully: {} | IP: {} | Device: {} | Login #{}",
+                user.getUsername(),
+                ipAddress,
+                device,
+                user.getLoginCount());
+
+        // Check if password change required
+        boolean requiresPasswordChange = user.needsPasswordChange() ||
+                user.isPasswordExpired(90); // 90 days policy
 
         return AuthResponse.builder()
                 .userId(user.getId())
@@ -234,6 +247,8 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .emailVerified(user.hasVerifiedEmail())
                 .twoFactorEnabled(user.hasTwoFactorEnabled())
+                .requiresPasswordChange(requiresPasswordChange)
+                .lastLoginAt(user.getLastLoginAt())
                 .build();
     }
 
@@ -443,8 +458,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     *  @param userId
-     *  Revoke all refresh tokens for a user
+     *  @param userId   </br>
+     *  Revoke all refresh tokens for a user    </br>
      *  Useful for password change or security breach
      */
     @Override

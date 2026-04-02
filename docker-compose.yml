@@ -7,10 +7,10 @@ services:
       --sql-mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
       --default-time-zone='+07:00'
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: restaurant
-      MYSQL_USER: restaurant_user
-      MYSQL_PASSWORD: restaurant_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3306:3306"
     healthcheck:
@@ -20,10 +20,15 @@ services:
       retries: 5
     volumes:
       - ./mysql_data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
-      - ./init-analytics-db.sql:/docker-entrypoint-initdb.d/02-init-analytics-db.sql
-      - ./init-chat-db.sql:/docker-entrypoint-initdb.d/03-init-chat-db.sql
-      #- ./init-refresh-token-migration.sql:/docker-entrypoint-initdb.d/04-init-refresh-token-migration.sql
+      # SQL files now in sql_init folder
+      - ./sql_init/01-init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
+      - ./sql_init/02-init-analytics-db.sql:/docker-entrypoint-initdb.d/02-init-analytics-db.sql
+      - ./sql_init/03-init-chat-db.sql:/docker-entrypoint-initdb.d/03-init-chat-db.sql
+      - ./sql_init/04-init-refresh-token-migration.sql:/docker-entrypoint-initdb.d/04-init-refresh-token-migration.sql
+      # User security enhancements
+      - ./sql_init/05-add-user-security-fields.sql:/docker-entrypoint-initdb.d/05-add-user-security-fields.sql
+      # OAuth2 links table
+      - ./sql_init/06-add-oauth2-links.sql:/docker-entrypoint-initdb.d/06-add-oauth2-links.sql
     networks:
       - microservices-network
 
@@ -32,15 +37,15 @@ services:
     container_name: mongodb
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin_password
-      MONGO_INITDB_DATABASE: restaurant_events
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INIT_DB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INIT_DB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INIT_DB_DATABASE}
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
-      - ./init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+      - ./sql_init/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
     command: mongod --auth
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
@@ -78,12 +83,12 @@ services:
     container_name: rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: chat_user
-      RABBITMQ_DEFAULT_PASS: chat_pass
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "5672:5672"
-      - "15672:15672"
-      - "61613:61613"
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+      - "61613:61613" # STOMP (WebSocket)
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -165,12 +170,12 @@ services:
       - SPRING_DATA_MONGODB_DATABASE=${SPRING_DATA_MONGODB_DATABASE}
 
       # Redis Configuration
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       # Eureka Configuration
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -184,7 +189,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VIRTUAL_HOST=${RABBITMQ_VIRTUAL_HOST}
 
-      # Kafka Configuration (nếu cần)
+      # Kafka Configuration
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
       # JWT Configuration
@@ -248,18 +253,19 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
       # Database
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_NAME=restaurant
-      - DB_USERNAME=restaurant_user
-      - DB_PASSWORD=restaurant_pass
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
 
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=30
       - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=90
+
       # RabbitMQ configuration
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
@@ -271,16 +277,16 @@ services:
       # Logging Configuration
       - LOG_FILE_PATH=./logs/<service-name>.log
       # User service connection
-      - APP_USER_SERVICE_BASE_URL=http://user-service:8081/api/v1/sync
+      - APP_USER_SERVICE_BASE_URL=${APP_USER_SERVICE_BASE_URL}
 
-      - USER_SERVICE_LOGIN_URL=http://user-service:8081/api/v1/auth/login
-      - SYSTEM_USER_USERNAME=admin
-      - SYSTEM_USER_PASSWORD=admin123
+      - USER_SERVICE_LOGIN_URL=${USER_SERVICE_LOGIN_URL}
+      - SYSTEM_USER_USERNAME=${LOGIN_USER_NAME}
+      - SYSTEM_USER_PASSWORD=${LOGIN_USER_PASSWORD}
       - SYSTEM_TOKEN_RETRY_MAX_ATTEMPTS=10
       - SYSTEM_TOKEN_RETRY_DELAY_SECONDS=3
 
       # Server Configuration
-      - SERVER_PORT=8082
+      - SERVER_PORT=${SEARCH_SERVICE_PORT}
     ports:
       - "8082:8082"
     restart: unless-stopped
@@ -319,8 +325,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 
       # Redis configuration
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       # RabbitMQ configuration
@@ -345,7 +351,7 @@ services:
       - APP_AI_CONVERSATION_HISTORY_LIMIT=${APP_AI_CONVERSATION_HISTORY_LIMIT}
 
       # Eureka Configuration
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -356,16 +362,16 @@ services:
       - JWT_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
 
       # WebSocket Configuration
-      - WEBSOCKET_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
-      - WEBSOCKET_RELAY_HOST=rabbitmq
-      - WEBSOCKET_RELAY_PORT=61613
-      - WEBSOCKET_CLIENT_LOGIN=guest
-      - WEBSOCKET_CLIENT_PASSCODE=guest
-      - WEBSOCKET_SYSTEM_LOGIN=guest
-      - WEBSOCKET_SYSTEM_PASSCODE=guest
+      - WEBSOCKET_ALLOWED_ORIGINS=${ACCESS_URL}
+      - WEBSOCKET_RELAY_HOST=${WEBSOCKET_RELAY_HOST}
+      - WEBSOCKET_RELAY_PORT=${WEBSOCKET_RELAY_PORT}
+      - WEBSOCKET_CLIENT_LOGIN=${WEBSOCKET_CLIENT_LOGIN}
+      - WEBSOCKET_CLIENT_PASSCODE=${WEBSOCKET_CLIENT_PASSCODE}
+      - WEBSOCKET_SYSTEM_LOGIN=${WEBSOCKET_SYSTEM_LOGIN}
+      - WEBSOCKET_SYSTEM_PASSCODE=${WEBSOCKET_SYSTEM_PASSCODE}
 
       # CORS Configuration
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:4200
+      - CORS_ALLOWED_ORIGINS=${ACCESS_URL}
 
       # Logging Configuration
       - LOG_LEVEL_APP=INFO
@@ -378,7 +384,7 @@ services:
       - LOG_FILE_PATH=./logs/chat-service.log
 
       # Server Configuration
-      - SERVER_PORT=8083
+      - SERVER_PORT=${CHAT_SERVICE_PORT}
 
       # JVM Options for better performance
       - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication
@@ -416,14 +422,14 @@ services:
         condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE}
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
       # Redis
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       # RabbitMQ
